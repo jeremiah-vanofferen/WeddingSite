@@ -252,3 +252,7 @@ name, email, phone, address, rsvp, plusOne
 Import mode options:
 - **Merge** — Upserts guests by email (existing records updated)
 - **Replace** — Clears the entire guest list before importing
+
+## AI Assistance
+
+This project was built with the assistance of [GitHub Copilot](https://github.com/features/copilot) (powered by Claude Sonnet 4.6). AI assistance was used throughout development for code generation, code review, security analysis, test authoring, and documentation.
