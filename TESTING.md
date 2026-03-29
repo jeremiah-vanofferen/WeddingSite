@@ -22,6 +22,7 @@ This project has full test coverage across the frontend (React) and backend (Exp
   - [Test Files](#backend-test-files)
   - [Patterns & Conventions](#backend-patterns--conventions)
 - [Writing New Tests](#writing-new-tests)
+- [CI](#ci)
 
 ---
 
@@ -136,7 +137,7 @@ All test files live in `src/__tests__/`.
 | [RSVP.test.jsx](src/__tests__/RSVP.test.jsx) | `RSVP` | 4 | Form fields, successful submission, API error handling |
 | [Contact.test.jsx](src/__tests__/Contact.test.jsx) | `Contact` | 4 | Form fields, API submission, error state display |
 | [Schedule.test.jsx](src/__tests__/Schedule.test.jsx) | `Schedule` | 4 | Event list fetch, time formatting, empty state |
-| [Admin.test.jsx](src/__tests__/Admin.test.jsx) | `Admin` | 16 | Auth guard, dashboard stats, modal open/close, message management |
+| [Admin.test.jsx](src/__tests__/Admin.test.jsx) | `Admin` | 16 | Auth guard, dashboard stats, modal open/close, save-error display, message management |
 | [GuestManagementModal.test.jsx](src/__tests__/GuestManagementModal.test.jsx) | `GuestManagementModal` | 18 | Guest list display, add/edit/delete, CSV upload, bulk import (merge & replace) |
 | [ScheduleModal.test.jsx](src/__tests__/ScheduleModal.test.jsx) | `ScheduleModal` | 7 | Event CRUD, add/edit modals, deletion |
 | [PhotoGalleryModal.test.jsx](src/__tests__/PhotoGalleryModal.test.jsx) | `PhotoGalleryModal` | 12 | Photo list, featured toggle, add/edit/delete |
@@ -222,11 +223,11 @@ All test files live in `backend/__tests__/`.
 | [auth.test.js](backend/__tests__/auth.test.js) | `POST /api/auth/login`, `GET /api/auth/verify` | 8 | Missing credentials (400), wrong password (401), valid login returns JWT, token verification |
 | [guests.test.js](backend/__tests__/guests.test.js) | `GET/POST/PUT/DELETE /api/guests` | 9 | List guests, add guest, duplicate email (409), update, delete, auth guard (401) |
 | [guests-extended.test.js](backend/__tests__/guests-extended.test.js) | `POST /api/guests/bulk` | 8 | CSV bulk import (merge & replace modes), transaction commit, rollback on error |
-| [public.test.js](backend/__tests__/public.test.js) | `/api/health`, `/api/public/settings`, `/api/rsvp`, `/api/messages` | 7 | Health check, public settings, RSVP submission, contact message submission |
+| [public.test.js](backend/__tests__/public.test.js) | `/api/health`, `/api/public/settings`, `/api/rsvp`, `/api/messages` | 9 | Health check, public settings, RSVP submission (including guest-count validation), contact message submission |
 | [schedule.test.js](backend/__tests__/schedule.test.js) | `GET/POST/PUT/DELETE /api/schedule` | 9+ | List events, add event, update (including reorder via transaction), delete, auth guard |
 | [settings-messages.test.js](backend/__tests__/settings-messages.test.js) | `/api/settings`, `/api/messages` | 13 | Get/update settings, list messages, mark as read, admin email lookup |
 
-**Total: 64 backend tests**
+**Total: 66 backend tests**
 
 ### Backend Patterns & Conventions
 
@@ -281,6 +282,19 @@ Protected routes are tested both with a valid token and without one. `jsonwebtok
 ```js
 jwt.verify.mockImplementation((token, secret, cb) => cb(null, { id: 1, username: 'admin' }));
 ```
+
+---
+
+## CI
+
+Two GitHub Actions workflows automatically run lint and tests on every push and pull request.
+
+| Workflow | Runs | Steps |
+|---|---|---|
+| `.github/workflows/frontend-ci.yml` | On changes to `src/**`, `public/**`, config files | `npm ci` → `npm run lint` → `npm test` |
+| `.github/workflows/backend-ci.yml` | On changes to `backend/**` | `npm ci` → `npm run lint` → `npm test` |
+
+Both workflows use Node.js 22, cache `node_modules` via `npm ci`, and cancel in-progress runs when a newer commit is pushed to the same branch.
 
 ---
 

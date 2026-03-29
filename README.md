@@ -120,10 +120,27 @@ npm install
 npm run dev          # http://localhost:5000
 ```
 
+## CI / GitHub Actions
+
+Two GitHub Actions workflows run automatically on every push to `main`, `master`, or `develop`, and on any pull request that touches the relevant paths.
+
+| Workflow | File | Triggers on |
+|---|---|---|
+| Frontend CI | `.github/workflows/frontend-ci.yml` | `src/**`, `public/**`, `package*.json`, `vite.config.js`, `eslint.config.js` |
+| Backend CI | `.github/workflows/backend-ci.yml` | `backend/**` |
+
+Each workflow runs **lint → test** in sequence. Concurrent runs on the same branch are cancelled to avoid redundant work.
+
+To use these as required status checks, go to **Settings → Branches → Branch protection rules** in GitHub and add `Lint and Test Frontend` / `Lint and Test Backend` as required checks.
+
 ## Project Structure
 
 ```
 .
+├── .github/
+│   └── workflows/
+│       ├── frontend-ci.yml # GitHub Actions — lint + test frontend
+│       └── backend-ci.yml  # GitHub Actions — lint + test backend
 ├── Dockerfile              # Frontend container (Node 22 Alpine)
 ├── Dockerfile.backend      # Backend container (Node 22 Alpine)
 ├── docker-compose.yml      # Orchestrates frontend, backend, and postgres
@@ -209,9 +226,20 @@ npm run dev          # http://localhost:5000
 | `GMAIL_USER` | No | Gmail address for sending notifications |
 | `GMAIL_PASS` | No | Gmail App Password |
 | `ADMIN_EMAIL` | No | Recipient address for email notifications |
-| `VITE_API_URL` | No | Backend API base URL (default: `http://backend:5000/api`) |
+| `VITE_API_URL` | No | Backend API base URL (default: `/api` — same origin via Vite proxy) |
 
 > `ADMIN_USERNAME` and `ADMIN_PASSWORD` are consumed by the PostgreSQL container at database initialization. The password is hashed using bcrypt (`pgcrypto`) and stored in `admin_users` — the plaintext is never persisted.
+
+## RSVP Guest Count Rules
+
+The `/api/rsvp` endpoint enforces the following rules on the `guests` field:
+
+| RSVP status | Allowed guest count |
+|---|---|
+| `yes` (attending) | 1 or more |
+| `no` (not attending) | 0 or more |
+
+Passing a non-integer or a negative number returns `400`. Passing `guests: 0` with `rsvp: "yes"` returns `400` with `"Attending guests must be at least 1"`.
 
 ## Guest CSV Import
 
