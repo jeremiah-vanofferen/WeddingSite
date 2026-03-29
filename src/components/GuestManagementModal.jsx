@@ -1,5 +1,5 @@
 // GuestManagementModal.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Papa from 'papaparse';
 import PropTypes from 'prop-types';
 import { API_BASE_URL } from '../utils/api';
@@ -17,6 +17,25 @@ export function GuestManagementModal({ onClose }) {
   useEffect(() => {
     fetchGuests();
   }, []);
+
+  const stats = useMemo(() => {
+    let attending = 0;
+    let pending = 0;
+    let notAttending = 0;
+
+    for (const guest of guestList) {
+      if (guest.rsvp === 'Yes') attending += 1;
+      else if (guest.rsvp === 'No') notAttending += 1;
+      else pending += 1;
+    }
+
+    return {
+      total: guestList.length,
+      attending,
+      pending,
+      notAttending,
+    };
+  }, [guestList]);
 
   const fetchGuests = async () => {
     try {
@@ -106,17 +125,18 @@ export function GuestManagementModal({ onClose }) {
       }
 
       // Parse RSVP status
-      const rsvpRaw = row.RSVP || row.rsvp || row.Status || row.status || 'Pending';
+      const rsvpRaw = String(row.RSVP || row.rsvp || row.Status || row.status || 'Pending').toLowerCase();
       let rsvp = 'Pending';
-      if (rsvpRaw.toLowerCase().includes('yes') || rsvpRaw.toLowerCase().includes('attending')) {
+      if (rsvpRaw.includes('yes') || rsvpRaw.includes('attending')) {
         rsvp = 'Yes';
-      } else if (rsvpRaw.toLowerCase().includes('no') || rsvpRaw.toLowerCase().includes('not')) {
+      } else if (rsvpRaw.includes('no') || rsvpRaw.includes('not')) {
         rsvp = 'No';
       }
 
       // Parse plus one
       const plusOneRaw = row['Plus One'] || row.plusOne || row.PlusOne || row['+1'] || 'No';
-      const plusOne = plusOneRaw.toLowerCase().includes('yes') || plusOneRaw.toLowerCase().includes('true') || plusOneRaw === '1';
+      const plusOneValue = String(plusOneRaw).toLowerCase();
+      const plusOne = plusOneValue.includes('yes') || plusOneValue.includes('true') || plusOneValue === '1';
 
       // Parse address and phone (optional fields)
       const address = row.Address || row.address || row.ADDRESS || '';
@@ -271,19 +291,19 @@ export function GuestManagementModal({ onClose }) {
           <div className="guest-stats">
             <div className="stat-card">
               <h4>Total Guests</h4>
-              <span className="stat-number">{guestList.length}</span>
+              <span className="stat-number">{stats.total}</span>
             </div>
             <div className="stat-card">
               <h4>Attending</h4>
-              <span className="stat-number">{guestList.filter(g => g.rsvp === 'Yes').length}</span>
+              <span className="stat-number">{stats.attending}</span>
             </div>
             <div className="stat-card">
               <h4>Pending</h4>
-              <span className="stat-number">{guestList.filter(g => g.rsvp === 'Pending').length}</span>
+              <span className="stat-number">{stats.pending}</span>
             </div>
             <div className="stat-card">
               <h4>Not Attending</h4>
-              <span className="stat-number">{guestList.filter(g => g.rsvp === 'No').length}</span>
+              <span className="stat-number">{stats.notAttending}</span>
             </div>
           </div>
 

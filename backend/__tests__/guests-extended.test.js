@@ -27,6 +27,12 @@ const app = require('../server');
 const pool = Pool.mock.results[0].value;
 const AUTH = 'Bearer test-token';
 
+const silenceExpectedConsole = () => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+};
+
 const setupAuth = () =>
   jwt.verify.mockImplementation((_, __, cb) =>
     cb(null, { id: 1, username: 'admin' })
@@ -42,6 +48,7 @@ const makeClient = () => {
 describe('POST /api/guests/bulk', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 
@@ -110,6 +117,7 @@ describe('POST /api/guests/bulk', () => {
 describe('GET /api/guests (500 error path)', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 
@@ -123,6 +131,7 @@ describe('GET /api/guests (500 error path)', () => {
 describe('PUT /api/guests/:id (409 duplicate and 500 paths)', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 
@@ -149,6 +158,7 @@ describe('PUT /api/guests/:id (409 duplicate and 500 paths)', () => {
 describe('DELETE /api/guests/:id (500 path)', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 

@@ -27,6 +27,12 @@ const app = require('../server');
 const pool = Pool.mock.results[0].value;
 const AUTH = 'Bearer test-token';
 
+const silenceExpectedConsole = () => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+};
+
 // Default: all protected routes authenticate successfully
 const setupAuth = () =>
   jwt.verify.mockImplementation((_, __, cb) =>
@@ -36,6 +42,7 @@ const setupAuth = () =>
 describe('GET /api/guests', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 
@@ -57,6 +64,7 @@ describe('GET /api/guests', () => {
 describe('POST /api/guests', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 
@@ -106,6 +114,7 @@ describe('POST /api/guests', () => {
 describe('PUT /api/guests/:id', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 
@@ -135,6 +144,7 @@ describe('PUT /api/guests/:id', () => {
 describe('DELETE /api/guests/:id', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 

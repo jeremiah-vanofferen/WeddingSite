@@ -17,7 +17,7 @@ const defaultSettings = { websiteName: 'Test Wedding' };
 
 function renderNav(settings = defaultSettings) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Navigation settings={settings} />
     </MemoryRouter>
   );

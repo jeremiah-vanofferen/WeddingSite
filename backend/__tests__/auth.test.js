@@ -29,8 +29,17 @@ const app = require('../server');
 // Capture the pool returned by the Pool constructor in server.js
 const pool = Pool.mock.results[0].value;
 
+const silenceExpectedConsole = () => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+};
+
 describe('POST /api/auth/login', () => {
-  beforeEach(() => jest.resetAllMocks());
+  beforeEach(() => {
+    jest.resetAllMocks();
+    silenceExpectedConsole();
+  });
 
   it('returns 400 when username and password are missing', async () => {
     const res = await request(app).post('/api/auth/login').send({});
@@ -86,7 +95,10 @@ describe('POST /api/auth/login', () => {
 });
 
 describe('GET /api/auth/verify', () => {
-  beforeEach(() => jest.resetAllMocks());
+  beforeEach(() => {
+    jest.resetAllMocks();
+    silenceExpectedConsole();
+  });
 
   it('returns 401 when no Authorization header is provided', async () => {
     const res = await request(app).get('/api/auth/verify');

@@ -29,9 +29,11 @@ describe('GuestManagementModal', () => {
   });
 
   it('shows error message when API fails to load guests', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     global.fetch = vi.fn(() => Promise.resolve({ ok: false }));
     render(<GuestManagementModal onClose={vi.fn()} />);
     await waitFor(() => expect(screen.getByText(/Failed to load guests/i)).toBeInTheDocument());
+    consoleErrorSpy.mockRestore();
   });
 
   it('calls onClose when Close button is clicked', async () => {

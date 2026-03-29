@@ -27,6 +27,12 @@ const app = require('../server');
 const pool = Pool.mock.results[0].value;
 const AUTH = 'Bearer test-token';
 
+const silenceExpectedConsole = () => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+};
+
 const setupAuth = () =>
   jwt.verify.mockImplementation((_, __, cb) =>
     cb(null, { id: 1, username: 'admin' })
@@ -35,6 +41,7 @@ const setupAuth = () =>
 describe('GET /api/settings', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 
@@ -66,6 +73,7 @@ describe('GET /api/settings', () => {
 describe('PUT /api/settings', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 
@@ -94,6 +102,7 @@ describe('PUT /api/settings', () => {
 describe('GET /api/settings/admin-email', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 
@@ -121,6 +130,7 @@ describe('GET /api/settings/admin-email', () => {
 describe('PUT /api/settings/admin-email', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 
@@ -157,6 +167,7 @@ describe('PUT /api/settings/admin-email', () => {
 describe('GET /api/messages', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 
@@ -183,6 +194,7 @@ describe('GET /api/messages', () => {
 describe('PUT /api/messages/:id/read', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 

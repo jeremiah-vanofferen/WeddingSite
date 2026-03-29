@@ -114,7 +114,7 @@ describe('Admin – logged in', () => {
   it('opens WeddingDetailsModal on Edit Details click', async () => {
     render(<Admin />);
     fireEvent.click(screen.getByText('Edit Details'));
-    expect(screen.getByTestId('wedding-details-modal')).toBeInTheDocument();
+    expect(await screen.findByTestId('wedding-details-modal')).toBeInTheDocument();
     fireEvent.click(screen.getByText('CloseWD'));
     expect(screen.queryByTestId('wedding-details-modal')).not.toBeInTheDocument();
   });
@@ -122,13 +122,13 @@ describe('Admin – logged in', () => {
   it('opens ViewDetailsModal on View Details click', async () => {
     render(<Admin />);
     fireEvent.click(screen.getByText('View Details'));
-    expect(screen.getByTestId('view-details-modal')).toBeInTheDocument();
+    expect(await screen.findByTestId('view-details-modal')).toBeInTheDocument();
   });
 
   it('opens GuestManagementModal on Manage Guests click', async () => {
     render(<Admin />);
     fireEvent.click(screen.getByText('Manage Guests'));
-    expect(screen.getByTestId('guest-management-modal')).toBeInTheDocument();
+    expect(await screen.findByTestId('guest-management-modal')).toBeInTheDocument();
     fireEvent.click(screen.getByText('CloseGuests'));
     expect(screen.queryByTestId('guest-management-modal')).not.toBeInTheDocument();
   });
@@ -136,13 +136,27 @@ describe('Admin – logged in', () => {
   it('opens AddGuestModal on Add Guest click', async () => {
     render(<Admin />);
     fireEvent.click(screen.getByText('Add Guest'));
-    expect(screen.getByTestId('add-guest-modal')).toBeInTheDocument();
+    expect(await screen.findByTestId('add-guest-modal')).toBeInTheDocument();
+  });
+
+  it('submits add guest to API when saved', async () => {
+    render(<Admin />);
+    fireEvent.click(screen.getByText('Add Guest'));
+    await screen.findByTestId('add-guest-modal');
+    fireEvent.click(screen.getByText('SaveGuest'));
+
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/guests'),
+        expect.objectContaining({ method: 'POST' })
+      )
+    );
   });
 
   it('opens ScheduleModal on Edit Schedule click', async () => {
     render(<Admin />);
     fireEvent.click(screen.getByText('Edit Schedule'));
-    expect(screen.getByTestId('schedule-modal')).toBeInTheDocument();
+    expect(await screen.findByTestId('schedule-modal')).toBeInTheDocument();
   });
 
   it('opens AddEventModal and saves a new event', async () => {
@@ -157,7 +171,7 @@ describe('Admin – logged in', () => {
 
     render(<Admin />);
     fireEvent.click(screen.getByText('Add Event'));
-    expect(screen.getByTestId('add-event-modal')).toBeInTheDocument();
+    expect(await screen.findByTestId('add-event-modal')).toBeInTheDocument();
     fireEvent.click(screen.getByText('SaveEvent'));
     await waitFor(() => expect(screen.queryByTestId('add-event-modal')).not.toBeInTheDocument());
   });
@@ -165,13 +179,13 @@ describe('Admin – logged in', () => {
   it('opens PhotoGalleryModal on Manage Photos click', async () => {
     render(<Admin />);
     fireEvent.click(screen.getByText('Manage Photos'));
-    expect(screen.getByTestId('photo-gallery-modal')).toBeInTheDocument();
+    expect(await screen.findByTestId('photo-gallery-modal')).toBeInTheDocument();
   });
 
   it('opens AddPhotoModal and saves a new photo', async () => {
     render(<Admin />);
     fireEvent.click(screen.getByText('Add Photo'));
-    expect(screen.getByTestId('add-photo-modal')).toBeInTheDocument();
+    expect(await screen.findByTestId('add-photo-modal')).toBeInTheDocument();
     fireEvent.click(screen.getByText('SavePhoto'));
     await waitFor(() => expect(screen.queryByTestId('add-photo-modal')).not.toBeInTheDocument());
   });
@@ -179,13 +193,13 @@ describe('Admin – logged in', () => {
   it('opens SettingsModal and saves settings via API', async () => {
     render(<Admin />);
     fireEvent.click(screen.getByText('Edit Settings'));
-    expect(screen.getByTestId('settings-modal')).toBeInTheDocument();
+    expect(await screen.findByTestId('settings-modal')).toBeInTheDocument();
 
     global.fetch = vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({}) }));
     fireEvent.click(screen.getByText('SaveSettings'));
 
     await waitFor(() =>
-      expect(global.fetch).toHaveBeenCalledWith('/api/settings', expect.objectContaining({ method: 'PUT' }))
+      expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/settings'), expect.objectContaining({ method: 'PUT' }))
     );
   });
 

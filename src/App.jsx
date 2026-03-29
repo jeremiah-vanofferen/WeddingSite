@@ -1,31 +1,39 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { AuthProvider } from './AuthContext'
 import Navigation from './Navigation'
 import Home from './pages/Home'
 import Schedule from './pages/Schedule'
 import Contact from './pages/Contact'
-import Admin from './pages/Admin'
 import RSVP from './pages/RSVP'
 import { DEFAULT_SETTINGS } from './utils/constants'
 import './App.css'
+
+const Admin = lazy(() => import('./pages/Admin'));
 
 function App() {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
   useEffect(() => {
+    let isActive = true;
+
     const fetchSettings = async () => {
       try {
         const res = await fetch('/api/public/settings');
         const data = await res.json();
-        if (data && !data.error) {
+        if (isActive && data && !data.error) {
           setSettings(prev => ({ ...prev, ...data }));
         }
       } catch {
         // Silently use defaults if unreachable
       }
     };
+
     fetchSettings();
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -65,14 +73,21 @@ function App() {
 
   return (
     <AuthProvider>
-      <Router>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Navigation settings={settings} />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/rsvp" element={<RSVP />} />
-          <Route path="/admin" element={<Admin />} />
+          <Route
+            path="/admin"
+            element={(
+              <Suspense fallback={null}>
+                <Admin />
+              </Suspense>
+            )}
+          />
         </Routes>
       </Router>
     </AuthProvider>

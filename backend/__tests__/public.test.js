@@ -28,6 +28,12 @@ const app = require('../server');
 
 const pool = Pool.mock.results[0].value;
 
+const silenceExpectedConsole = () => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+};
+
 describe('GET /api/health', () => {
   it('returns 200 with status OK', async () => {
     const res = await request(app).get('/api/health');
@@ -37,7 +43,10 @@ describe('GET /api/health', () => {
 });
 
 describe('GET /api/public/settings', () => {
-  beforeEach(() => jest.resetAllMocks());
+  beforeEach(() => {
+    jest.resetAllMocks();
+    silenceExpectedConsole();
+  });
 
   it('returns public settings as a key/value map', async () => {
     pool.query.mockResolvedValueOnce({
@@ -54,7 +63,10 @@ describe('GET /api/public/settings', () => {
 });
 
 describe('GET /api/schedule', () => {
-  beforeEach(() => jest.resetAllMocks());
+  beforeEach(() => {
+    jest.resetAllMocks();
+    silenceExpectedConsole();
+  });
 
   it('returns the schedule list', async () => {
     const events = [
@@ -69,7 +81,10 @@ describe('GET /api/schedule', () => {
 });
 
 describe('POST /api/rsvp', () => {
-  beforeEach(() => jest.resetAllMocks());
+  beforeEach(() => {
+    jest.resetAllMocks();
+    silenceExpectedConsole();
+  });
 
   it('returns 400 when required fields are missing', async () => {
     const res = await request(app)
@@ -77,6 +92,32 @@ describe('POST /api/rsvp', () => {
       .send({ name: 'John' }); // missing email and rsvp
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('Name, email, and RSVP status are required');
+  });
+
+  it('returns 400 when attending guests is 0', async () => {
+    const res = await request(app)
+      .post('/api/rsvp')
+      .send({ name: 'John Doe', email: 'john@example.com', rsvp: 'yes', guests: 0 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Attending guests must be at least 1');
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  it('allows 0 guests when RSVP is not attending', async () => {
+    const guest = { id: 1, name: 'John Doe', email: 'john@example.com', rsvp: 'No' };
+    pool.query
+      .mockResolvedValueOnce({ rows: [guest] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const res = await request(app)
+      .post('/api/rsvp')
+      .send({ name: 'John Doe', email: 'john@example.com', rsvp: 'no', guests: 0 });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.guest.rsvp).toBe('No');
+    expect(pool.query.mock.calls[0][1][3]).toBe(false);
   });
 
   it('creates an RSVP and returns 201', async () => {
@@ -96,7 +137,10 @@ describe('POST /api/rsvp', () => {
 });
 
 describe('POST /api/messages', () => {
-  beforeEach(() => jest.resetAllMocks());
+  beforeEach(() => {
+    jest.resetAllMocks();
+    silenceExpectedConsole();
+  });
 
   it('returns 400 when required fields are missing', async () => {
     const res = await request(app)

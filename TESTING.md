@@ -128,22 +128,22 @@ All test files live in `src/__tests__/`.
 
 | File | Component Under Test | Test Count | What Is Covered |
 |---|---|---|---|
-| [App.test.jsx](src/__tests__/App.test.jsx) | `App` | 7 | Routing, settings fetch on mount, CSS variable application, theme class, event name propagation |
-| [AuthContext.test.jsx](src/__tests__/AuthContext.test.jsx) | `AuthContext` | 7 | Token verification, login / logout, `localStorage` persistence |
+| [App.test.jsx](src/__tests__/App.test.jsx) | `App` | 8 | Routing, settings fetch on mount, CSS variable application, theme class, event name propagation |
+| [AuthContext.test.jsx](src/__tests__/AuthContext.test.jsx) | `AuthContext` | 6 | Token verification, login / logout, `localStorage` persistence |
 | [Navigation.test.jsx](src/__tests__/Navigation.test.jsx) | `Navigation` | 7 | Auth-based nav items, logout button visibility, website name display |
 | [LoginModal.test.jsx](src/__tests__/LoginModal.test.jsx) | `LoginModal` | 5 | Form rendering, field input, credential submission, close button |
 | [Home.test.jsx](src/__tests__/Home.test.jsx) | `Home` | 3 | Welcome message, venue details, API failure resilience |
 | [RSVP.test.jsx](src/__tests__/RSVP.test.jsx) | `RSVP` | 4 | Form fields, successful submission, API error handling |
 | [Contact.test.jsx](src/__tests__/Contact.test.jsx) | `Contact` | 4 | Form fields, API submission, error state display |
 | [Schedule.test.jsx](src/__tests__/Schedule.test.jsx) | `Schedule` | 4 | Event list fetch, time formatting, empty state |
-| [Admin.test.jsx](src/__tests__/Admin.test.jsx) | `Admin` | 13 | Auth guard, dashboard stats, modal open/close, message management |
-| [GuestManagementModal.test.jsx](src/__tests__/GuestManagementModal.test.jsx) | `GuestManagementModal` | 13 | Guest list display, add/edit/delete, CSV upload, bulk import (merge & replace) |
+| [Admin.test.jsx](src/__tests__/Admin.test.jsx) | `Admin` | 16 | Auth guard, dashboard stats, modal open/close, message management |
+| [GuestManagementModal.test.jsx](src/__tests__/GuestManagementModal.test.jsx) | `GuestManagementModal` | 18 | Guest list display, add/edit/delete, CSV upload, bulk import (merge & replace) |
 | [ScheduleModal.test.jsx](src/__tests__/ScheduleModal.test.jsx) | `ScheduleModal` | 7 | Event CRUD, add/edit modals, deletion |
 | [PhotoGalleryModal.test.jsx](src/__tests__/PhotoGalleryModal.test.jsx) | `PhotoGalleryModal` | 12 | Photo list, featured toggle, add/edit/delete |
 | [SettingsModal.test.jsx](src/__tests__/SettingsModal.test.jsx) | `SettingsModal` | 5 | Settings form display, reset to defaults, save submission |
 | [WeddingDetailsModal.test.jsx](src/__tests__/WeddingDetailsModal.test.jsx) | `WeddingDetailsModal` | 5 | View details, toggle edit mode, form fields |
 
-**Total: ~96 frontend tests**
+**Total: 104 frontend tests**
 
 ### Frontend Patterns & Conventions
 
@@ -192,6 +192,10 @@ afterEach(() => {
 });
 ```
 
+**Console noise suppression for expected error paths**
+
+Some tests intentionally trigger failure paths (for example mocked DB/network errors) and now stub `console.error` / `console.warn` inside test setup. This keeps CI and local test output focused on real failures while preserving assertions on 500/4xx behavior.
+
 ---
 
 ## Backend Tests
@@ -222,7 +226,7 @@ All test files live in `backend/__tests__/`.
 | [schedule.test.js](backend/__tests__/schedule.test.js) | `GET/POST/PUT/DELETE /api/schedule` | 9+ | List events, add event, update (including reorder via transaction), delete, auth guard |
 | [settings-messages.test.js](backend/__tests__/settings-messages.test.js) | `/api/settings`, `/api/messages` | 13 | Get/update settings, list messages, mark as read, admin email lookup |
 
-**Total: ~54 backend tests**
+**Total: 64 backend tests**
 
 ### Backend Patterns & Conventions
 

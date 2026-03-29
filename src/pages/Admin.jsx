@@ -1,18 +1,46 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useAuth } from '../AuthContext';
 import { useNavigate } from 'react-router-dom';
 import '../pages/pages.css';
 import './Admin.css';
-import { WeddingDetailsModal, ViewDetailsModal } from '../components/WeddingDetailsModal';
-import { GuestManagementModal, AddGuestModal } from '../components/GuestManagementModal';
-import { ScheduleModal, AddEventModal } from '../components/ScheduleModal';
-import { PhotoGalleryModal, AddPhotoModal } from '../components/PhotoGalleryModal';
-import { SettingsModal } from '../components/SettingsModal';
 import { DEFAULT_SETTINGS } from '../utils/constants';
+import { API_BASE_URL } from '../utils/api';
+
+const getAuthHeaders = (headers = {}) => ({
+  ...headers,
+  Authorization: `Bearer ${localStorage.getItem('authToken')}`
+});
+
+const WeddingDetailsModal = lazy(() =>
+  import('../components/WeddingDetailsModal').then(module => ({ default: module.WeddingDetailsModal }))
+);
+const ViewDetailsModal = lazy(() =>
+  import('../components/WeddingDetailsModal').then(module => ({ default: module.ViewDetailsModal }))
+);
+const GuestManagementModal = lazy(() =>
+  import('../components/GuestManagementModal').then(module => ({ default: module.GuestManagementModal }))
+);
+const AddGuestModal = lazy(() =>
+  import('../components/GuestManagementModal').then(module => ({ default: module.AddGuestModal }))
+);
+const ScheduleModal = lazy(() =>
+  import('../components/ScheduleModal').then(module => ({ default: module.ScheduleModal }))
+);
+const AddEventModal = lazy(() =>
+  import('../components/ScheduleModal').then(module => ({ default: module.AddEventModal }))
+);
+const PhotoGalleryModal = lazy(() =>
+  import('../components/PhotoGalleryModal').then(module => ({ default: module.PhotoGalleryModal }))
+);
+const AddPhotoModal = lazy(() =>
+  import('../components/PhotoGalleryModal').then(module => ({ default: module.AddPhotoModal }))
+);
+const SettingsModal = lazy(() => import('../components/SettingsModal').then(module => ({ default: module.SettingsModal })));
 
 export default function Admin() {
   const { isLoggedIn, logout, adminName } = useAuth();
   const navigate = useNavigate();
+  const [saveError, setSaveError] = useState('');
 
   // State for different admin sections
   const [weddingDetails, setWeddingDetails] = useState({
@@ -34,7 +62,7 @@ export default function Admin() {
 
   // Load schedule from backend on mount
   useEffect(() => {
-    fetch('/api/schedule')
+    fetch(`${API_BASE_URL}/schedule`)
       .then(res => res.json())
       .then(data => Array.isArray(data) ? setSchedule(data) : setSchedule([]))
       .catch(() => {});
@@ -42,8 +70,8 @@ export default function Admin() {
 
   // Load all settings (includes wedding details) from backend on mount
   const fetchSettings = () => {
-    fetch('/api/settings', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+    fetch(`${API_BASE_URL}/settings`, {
+      headers: getAuthHeaders()
     })
       .then(res => res.json())
       .then(data => {
@@ -75,8 +103,8 @@ export default function Admin() {
   const [messages, setMessages] = useState([]);
   useEffect(() => {
     if (isLoggedIn) {
-      fetch('/api/messages', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+      fetch(`${API_BASE_URL}/messages`, {
+        headers: getAuthHeaders()
       })
         .then(res => res.json())
         .then(data => Array.isArray(data) ? setMessages(data) : setMessages([]));
@@ -91,14 +119,15 @@ export default function Admin() {
   // Mark message as read when modal opens
   useEffect(() => {
     if (selectedMessage && !selectedMessage.is_read) {
-      fetch(`/api/messages/${selectedMessage.id}/read`, {
+      fetch(`${API_BASE_URL}/messages/${selectedMessage.id}/read`, {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+        headers: getAuthHeaders()
       })
         .then(res => res.json())
         .then(updated => {
           setMessages(msgs => msgs.map(m => m.id === updated.id ? { ...m, is_read: true } : m));
-        });
+        })
+        .catch(() => {});
     }
   }, [selectedMessage]);
 
@@ -126,23 +155,39 @@ export default function Admin() {
 
   const openModal = (modalType, item = null) => {
     if (modalType === 'settings') fetchSettings();
+    setSaveError('');
     setActiveModal(modalType);
     setEditingItem(item);
   };
 
   const closeModal = () => {
+    setSaveError('');
     setActiveModal(null);
     setEditingItem(null);
   };
 
+  const requestJson = async (url, options, fallbackError) => {
+    const response = await fetch(url, options);
+    let data = null;
+
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
+    if (!response.ok) {
+      throw new Error((data && data.error) || fallbackError || `Request failed with status ${response.status}`);
+    }
+
+    return data;
+  };
+
   const handleSaveSettings = async (newSettings) => {
     setSettings(newSettings);
-    await fetch('/api/settings', {
+    await fetch(`${API_BASE_URL}/settings`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('authToken')}`
-      },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(newSettings)
     });
     window.dispatchEvent(new CustomEvent('settingsChanged', { detail: newSettings }));
@@ -153,6 +198,9 @@ export default function Admin() {
       <div className="admin-header">
         <h1>Admin Dashboard</h1>
         <p>Welcome, {adminName}!</p>
+        {saveError && (
+          <p style={{ color: '#b42318', marginTop: 8 }}>{saveError}</p>
+        )}
       </div>
 
       <div className="admin-section">
@@ -221,125 +269,147 @@ export default function Admin() {
       <button className="logout-btn" onClick={logout}>Logout</button>
 
       {/* Modals */}
-      {activeModal === 'details' && (
-        <WeddingDetailsModal
-          details={weddingDetails}
-          onSave={(newDetails) => {
-            setWeddingDetails(newDetails);
-            fetch('/api/settings', {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${localStorage.getItem('authToken')}`
-              },
-              body: JSON.stringify({
-                weddingDate: newDetails.date,
-                weddingTime: newDetails.time,
-                weddingLocation: newDetails.location,
-                weddingAddress: newDetails.address,
-                weddingDescription: newDetails.description
+      <Suspense fallback={null}>
+        {activeModal === 'details' && (
+          <WeddingDetailsModal
+            details={weddingDetails}
+            onSave={async (newDetails) => {
+              setSaveError('');
+              try {
+                await requestJson(
+                  `${API_BASE_URL}/settings`,
+                  {
+                    method: 'PUT',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({
+                      weddingDate: newDetails.date,
+                      weddingTime: newDetails.time,
+                      weddingLocation: newDetails.location,
+                      weddingAddress: newDetails.address,
+                      weddingDescription: newDetails.description
+                    })
+                  },
+                  'Failed to save wedding details.'
+                );
+                setWeddingDetails(newDetails);
+                closeModal();
+              } catch (error) {
+                setSaveError(error.message || 'Failed to save wedding details.');
+              }
+            }}
+            onClose={closeModal}
+          />
+        )}
+
+        {activeModal === 'view-details' && (
+          <ViewDetailsModal
+            details={weddingDetails}
+            onClose={closeModal}
+          />
+        )}
+
+        {activeModal === 'guests' && (
+          <GuestManagementModal
+            onClose={closeModal}
+          />
+        )}
+
+        {activeModal === 'add-guest' && (
+          <AddGuestModal
+            onSave={async (newGuest) => {
+              setSaveError('');
+              try {
+                await requestJson(
+                  `${API_BASE_URL}/guests`,
+                  {
+                    method: 'POST',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(newGuest)
+                  },
+                  'Failed to add guest.'
+                );
+                closeModal();
+              } catch (error) {
+                setSaveError(error.message || 'Failed to add guest.');
+              }
+            }}
+            onClose={closeModal}
+          />
+        )}
+
+        {activeModal === 'schedule' && (
+          <ScheduleModal
+            schedule={schedule}
+            onSave={(newSchedule) => {
+              // Persist new sort order / edits / deletes to DB then refresh
+              fetch(`${API_BASE_URL}/schedule`, {
+                method: 'PUT',
+                headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ events: newSchedule })
               })
-            }).catch(() => {});
-            closeModal();
-          }}
-          onClose={closeModal}
-        />
-      )}
+                .then(res => res.json())
+                .then(data => Array.isArray(data) ? setSchedule(data) : setSchedule(newSchedule))
+                .catch(() => setSchedule(newSchedule));
+            }}
+            onClose={closeModal}
+          />
+        )}
 
-      {activeModal === 'view-details' && (
-        <ViewDetailsModal
-          details={weddingDetails}
-          onClose={closeModal}
-        />
-      )}
+        {activeModal === 'add-event' && (
+          <AddEventModal
+            onSave={async (newEvent) => {
+              setSaveError('');
+              try {
+                const created = await requestJson(
+                  `${API_BASE_URL}/schedule`,
+                  {
+                    method: 'POST',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(newEvent)
+                  },
+                  'Failed to add schedule event.'
+                );
+                setSchedule(prev => [...prev, created]);
+                closeModal();
+              } catch (error) {
+                setSaveError(error.message || 'Failed to add schedule event.');
+              }
+            }}
+            onClose={closeModal}
+          />
+        )}
 
-      {activeModal === 'guests' && (
-        <GuestManagementModal
-          onClose={closeModal}
-        />
-      )}
+        {activeModal === 'photos' && (
+          <PhotoGalleryModal
+            photos={photos}
+            onSave={(newPhotos) => {
+              setPhotos(newPhotos);
+              saveData('weddingPhotos', newPhotos);
+            }}
+            onClose={closeModal}
+          />
+        )}
 
-      {activeModal === 'add-guest' && (
-        <AddGuestModal
-          onSave={(_newGuest) => {
-            // Guest will be added via API, no need to update local state
-            closeModal();
-          }}
-          onClose={closeModal}
-        />
-      )}
+        {activeModal === 'add-photo' && (
+          <AddPhotoModal
+            onSave={(newPhoto) => {
+              const updatedPhotos = [...photos, { ...newPhoto, id: Date.now() }];
+              setPhotos(updatedPhotos);
+              saveData('weddingPhotos', updatedPhotos);
+              closeModal();
+            }}
+            onClose={closeModal}
+          />
+        )}
 
-      {activeModal === 'schedule' && (
-        <ScheduleModal
-          schedule={schedule}
-          onSave={(newSchedule) => {
-            // Persist new sort order / edits / deletes to DB then refresh
-            fetch('/api/schedule', {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${localStorage.getItem('authToken')}`
-              },
-              body: JSON.stringify({ events: newSchedule })
-            })
-              .then(res => res.json())
-              .then(data => Array.isArray(data) ? setSchedule(data) : setSchedule(newSchedule))
-              .catch(() => setSchedule(newSchedule));
-          }}
-          onClose={closeModal}
-        />
-      )}
-
-      {activeModal === 'add-event' && (
-        <AddEventModal
-          onSave={(newEvent) => {
-            fetch('/api/schedule', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${localStorage.getItem('authToken')}`
-              },
-              body: JSON.stringify(newEvent)
-            })
-              .then(res => res.json())
-              .then(created => setSchedule(prev => [...prev, created]))
-              .catch(() => {});
-            closeModal();
-          }}
-          onClose={closeModal}
-        />
-      )}
-
-      {activeModal === 'photos' && (
-        <PhotoGalleryModal
-          photos={photos}
-          onSave={(newPhotos) => {
-            setPhotos(newPhotos);
-            saveData('weddingPhotos', newPhotos);
-          }}
-          onClose={closeModal}
-        />
-      )}
-
-      {activeModal === 'add-photo' && (
-        <AddPhotoModal
-          onSave={(newPhoto) => {
-            const updatedPhotos = [...photos, { ...newPhoto, id: Date.now() }];
-            setPhotos(updatedPhotos);
-            saveData('weddingPhotos', updatedPhotos);
-            closeModal();
-          }}
-          onClose={closeModal}
-        />
-      )}
-
-      {activeModal === 'settings' && (
-        <SettingsModal
-          settings={settings}
-          onSave={handleSaveSettings}
-          onClose={closeModal}
-        />
-      )}
+        {activeModal === 'settings' && (
+          <SettingsModal
+            settings={settings}
+            onSave={handleSaveSettings}
+            onClose={closeModal}
+          />
+        )}
+      </Suspense>
 
       {/* Message Details Modal */}
       {selectedMessage && (

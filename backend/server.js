@@ -48,7 +48,6 @@ const strictLimiter = rateLimit({
 });
 app.use('/api/auth/login', strictLimiter);
 app.use('/api/rsvp', strictLimiter);
-app.use('/api/messages', strictLimiter);
 
 // Auth middleware
 const authenticateToken = (req, res, next) => {
@@ -75,7 +74,6 @@ app.get('/api/auth/verify', authenticateToken, (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    console.log('Login attempt:', username);
 
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password required' });
@@ -267,8 +265,23 @@ app.post('/api/rsvp', async (req, res) => {
     if (!emailRegex.test(email)) {
       return res.status(400).json({ error: 'Invalid email address' });
     }
+
+    const normalizedRsvp = String(rsvp).toLowerCase();
+    if (normalizedRsvp !== 'yes' && normalizedRsvp !== 'no') {
+      return res.status(400).json({ error: "RSVP status must be 'yes' or 'no'" });
+    }
+
+    const hasGuestsInput = guests !== undefined && guests !== null && String(guests).trim() !== '';
+    const parsedGuests = hasGuestsInput ? Number.parseInt(guests, 10) : (normalizedRsvp === 'yes' ? 1 : 0);
+    if (!Number.isInteger(parsedGuests) || parsedGuests < 0) {
+      return res.status(400).json({ error: 'Guests must be a non-negative integer' });
+    }
+    if (normalizedRsvp === 'yes' && parsedGuests < 1) {
+      return res.status(400).json({ error: 'Attending guests must be at least 1' });
+    }
+
     // Insert or update guest by email
-    const rsvpStatus = rsvp === 'yes' ? 'Yes' : 'No';
+    const rsvpStatus = normalizedRsvp === 'yes' ? 'Yes' : 'No';
     const result = await pool.query(
       `INSERT INTO guests (name, email, rsvp, plus_one, address)
        VALUES ($1, $2, $3, $4, $5)
@@ -279,7 +292,7 @@ app.post('/api/rsvp', async (req, res) => {
          address = EXCLUDED.address,
          updated_at = CURRENT_TIMESTAMP
        RETURNING *`,
-      [name, email, rsvpStatus, guests > 1, dietary || null]
+      [name, email, rsvpStatus, parsedGuests > 1, dietary || null]
     );
 
     // Send email notification to admin
@@ -293,7 +306,7 @@ app.post('/api/rsvp', async (req, res) => {
             pass: process.env.GMAIL_PASS
           }
         });
-        const guestCount = guests > 1 ? `${guests} guests` : '1 guest';
+        const guestCount = `${parsedGuests} guest${parsedGuests === 1 ? '' : 's'}`;
         const dietaryNote = dietary ? `\nDietary notes: ${dietary}` : '';
         await transporter.sendMail({
           from: process.env.GMAIL_USER,
@@ -315,7 +328,7 @@ app.post('/api/rsvp', async (req, res) => {
 });
 
 // Public contact form endpoint
-app.post('/api/messages', async (req, res) => {
+app.post('/api/messages', strictLimiter, async (req, res) => {
   try {
     const { name, email, message } = req.body;
     if (!name || !email || !message) {

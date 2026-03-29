@@ -27,6 +27,12 @@ const app = require('../server');
 const pool = Pool.mock.results[0].value;
 const AUTH = 'Bearer test-token';
 
+const silenceExpectedConsole = () => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+};
+
 const setupAuth = () =>
   jwt.verify.mockImplementation((_, __, cb) =>
     cb(null, { id: 1, username: 'admin' })
@@ -41,6 +47,7 @@ const makeClient = () => {
 describe('POST /api/schedule', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 
@@ -86,6 +93,7 @@ describe('POST /api/schedule', () => {
 describe('PUT /api/schedule/:id', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 
@@ -124,6 +132,7 @@ describe('PUT /api/schedule/:id', () => {
 describe('PUT /api/schedule (reorder)', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 
@@ -175,6 +184,7 @@ describe('PUT /api/schedule (reorder)', () => {
 describe('DELETE /api/schedule/:id', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    silenceExpectedConsole();
     setupAuth();
   });
 
