@@ -366,6 +366,117 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// Get public settings (wedding details + display settings, no auth required)
+app.get('/api/public/settings', async (req, res) => {
+  try {
+    const PUBLIC_KEYS = ['websiteName', 'theme', 'primaryColor', 'primaryColorHover', 'fontFamily',
+      'showCountdown', 'allowRsvp', 'welcomeMessage',
+      'weddingDate', 'weddingTime', 'weddingLocation', 'weddingAddress', 'weddingDescription'];
+    const result = await pool.query(
+      'SELECT key, value FROM settings WHERE key = ANY($1)',
+      [PUBLIC_KEYS]
+    );
+    const settings = Object.fromEntries(result.rows.map(r => [r.key, r.value]));
+    res.json(settings);
+  } catch (error) {
+    console.error('Get public settings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get schedule (public)
+app.get('/api/schedule', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM schedule ORDER BY sort_order, time');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get schedule error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Add a schedule event
+app.post('/api/schedule', authenticateToken, async (req, res) => {
+  try {
+    const { time, event, description } = req.body;
+    if (!time || !event) {
+      return res.status(400).json({ error: 'Time and event name are required' });
+    }
+    const orderResult = await pool.query('SELECT COALESCE(MAX(sort_order), 0) + 1 AS next_order FROM schedule');
+    const sortOrder = orderResult.rows[0].next_order;
+    const result = await pool.query(
+      'INSERT INTO schedule (time, event, description, sort_order) VALUES ($1, $2, $3, $4) RETURNING *',
+      [time, event, description || null, sortOrder]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Add schedule event error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update a schedule event
+app.put('/api/schedule/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { time, event, description } = req.body;
+    const result = await pool.query(
+      'UPDATE schedule SET time = $1, event = $2, description = $3 WHERE id = $4 RETURNING *',
+      [time, event, description || null, id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Update schedule event error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Reorder schedule (replace sort_order for all events)
+app.put('/api/schedule', authenticateToken, async (req, res) => {
+  try {
+    const { events } = req.body;
+    if (!Array.isArray(events)) {
+      return res.status(400).json({ error: 'events must be an array' });
+    }
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      for (let i = 0; i < events.length; i++) {
+        await client.query('UPDATE schedule SET sort_order = $1 WHERE id = $2', [i + 1, events[i].id]);
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+    const result = await pool.query('SELECT * FROM schedule ORDER BY sort_order, time');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Reorder schedule error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete a schedule event
+app.delete('/api/schedule/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('DELETE FROM schedule WHERE id = $1 RETURNING *', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+    res.json({ message: 'Event deleted successfully' });
+  } catch (error) {
+    console.error('Delete schedule event error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Update admin email in settings
 app.put('/api/settings/admin-email', authenticateToken, async (req, res) => {
   try {

@@ -1,92 +1,204 @@
-# React.js App with Docker
+# Wedding Website
 
-A React.js application configured to run in Docker on Ubuntu 24.04 with Node.js 20.x.
+A full-stack wedding website with a React frontend, Node.js/Express backend, and PostgreSQL database. Supports guest management, RSVP, scheduling, contact forms, photo gallery, and a full admin panel.
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, Vite, React Router v6 |
+| Backend | Node.js 22, Express |
+| Database | PostgreSQL 16 |
+| Auth | JWT (jsonwebtoken), bcryptjs |
+| Email | Nodemailer (Gmail SMTP) |
+| Container | Docker, Docker Compose |
 
 ## Features
 
-- React 18 with Vite build tool
-- Docker support for Ubuntu 24.04
-- Node.js 20.x runtime
-- Development and production builds
-- Docker Compose configuration for easy deployment
+- **Home page** — Wedding details, countdown timer, and welcome message (all configurable via admin)
+- **Schedule page** — Publicly visible event timeline, managed from the admin panel
+- **RSVP page** — Guest self-service RSVP with party size and dietary notes; triggers email notification to admin
+- **Contact page** — Contact form that saves messages to the database and emails the admin
+- **Admin panel** — Password-protected dashboard with:
+  - Wedding details management
+  - Guest list (add, edit, delete, bulk CSV import)
+  - Schedule event management (add, edit, delete, reorder)
+  - Photo gallery management
+  - Site settings (theme, colors, font, countdown toggle, RSVP toggle, welcome message, admin email)
+  - Contact message inbox with read/unread tracking
 
 ## Quick Start
 
 ### Prerequisites
-- Docker and Docker Compose installed
-- Or Node.js 20.x and npm for local development
 
-### Build and Run with Docker
+- Docker and Docker Compose
 
-```bash
-# Build the Docker image
-docker build -t wedding-app .
+### 1. Configure Environment Variables
 
-# Run the container
-docker run -p 3000:3000 wedding-app
+Create a `.env` file in the project root:
+
+```env
+# PostgreSQL
+POSTGRES_DB=wedding_db
+POSTGRES_USER=wedding_user
+POSTGRES_PASSWORD=your_secure_password
+
+# Backend
+DATABASE_URL=postgresql://wedding_user:your_secure_password@postgres:5432/wedding_db
+JWT_SECRET=your_jwt_secret_change_this
+
+# Email notifications (optional)
+GMAIL_USER=your@gmail.com
+GMAIL_PASS=your_gmail_app_password
+ADMIN_EMAIL=your@gmail.com
 ```
 
-### Using Docker Compose
+> **Gmail note:** Use an [App Password](https://support.google.com/accounts/answer/185833), not your regular Gmail password.
+
+### 2. Start All Services
 
 ```bash
-# Build and run the container
-docker-compose up
+docker-compose up --build
+```
 
-# Stop the container
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:5000/api |
+| PostgreSQL | localhost:5432 |
+
+### 3. Default Admin Login
+
+Navigate to http://localhost:3000/admin and log in with:
+
+- **Username:** `admin`
+- **Password:** `password123`
+
+> Change the default password immediately after first login by updating the `admin_users` table.
+
+### Stop Services
+
+```bash
 docker-compose down
 ```
 
-### Local Development (without Docker)
+To also remove the database volume:
 
 ```bash
-# Install dependencies
+docker-compose down -v
+```
+
+## Local Development (without Docker)
+
+Requires Node.js 22.x and a running PostgreSQL instance.
+
+```bash
+# Frontend
 npm install
+npm run dev          # http://localhost:3000
 
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
+# Backend (in a separate terminal)
+cd backend
+npm install
+npm run dev          # http://localhost:5000
 ```
 
 ## Project Structure
 
 ```
 .
-├── Dockerfile              # Docker configuration for Ubuntu 24.04
-├── docker-compose.yml      # Docker Compose setup
+├── Dockerfile              # Frontend container (Node 22 Alpine)
+├── Dockerfile.backend      # Backend container (Node 22 Alpine)
+├── docker-compose.yml      # Orchestrates frontend, backend, and postgres
+├── init.sh                 # PostgreSQL initialization script (tables + seed data)
 ├── vite.config.js          # Vite configuration
-├── package.json            # Project dependencies
+├── package.json            # Frontend dependencies
 ├── index.html              # HTML entry point
+├── public/
+│   └── sample-guests.csv   # Sample CSV for bulk guest import
+├── backend/
+│   ├── server.js           # Express API server
+│   └── package.json        # Backend dependencies
 └── src/
     ├── main.jsx            # React entry point
-    ├── App.jsx             # Main App component
-    ├── App.css             # App styles
-    └── index.css           # Global styles
+    ├── App.jsx             # Root component with routing and theme management
+    ├── AuthContext.jsx     # JWT authentication context
+    ├── Navigation.jsx      # Site navigation bar
+    ├── LoginModal.jsx      # Admin login modal
+    ├── components/
+    │   ├── GuestManagementModal.jsx    # Guest CRUD + CSV import
+    │   ├── PhotoGalleryModal.jsx       # Photo gallery management
+    │   ├── ScheduleModal.jsx           # Schedule event management
+    │   ├── SettingsModal.jsx           # Site-wide settings
+    │   └── WeddingDetailsModal.jsx     # Wedding details management
+    └── pages/
+        ├── Home.jsx        # Landing page with countdown
+        ├── Schedule.jsx    # Public event schedule
+        ├── RSVP.jsx        # Guest RSVP form
+        ├── Contact.jsx     # Contact form
+        └── Admin.jsx       # Admin dashboard
 ```
 
-## Configuration
+## Database Schema
 
-### Dockerfile
-- Based on Ubuntu 24.04
-- Installs Node.js 20.x from NodeSource repository
-- Exposes port 3000
-- Runs development server with host binding for container access
+| Table | Description |
+|---|---|
+| `guests` | Guest list with RSVP status, plus-one, phone, address |
+| `admin_users` | Admin accounts with bcrypt-hashed passwords |
+| `messages` | Contact form submissions with read/unread status |
+| `settings` | Key-value store for all site settings |
+| `schedule` | Wedding day event timeline |
 
-### Vite Configuration
-- Development server runs on port 3000
-- Bound to 0.0.0.0 for container access
-- Production build output to `dist/` directory
+## API Endpoints
+
+### Public (no auth required)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/public/settings` | Site settings and wedding details |
+| `GET` | `/api/schedule` | Wedding day schedule |
+| `POST` | `/api/rsvp` | Submit a guest RSVP |
+| `POST` | `/api/messages` | Submit a contact message |
+| `GET` | `/api/health` | Health check |
+
+### Admin (JWT required)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/auth/login` | Authenticate and get JWT |
+| `GET` | `/api/auth/verify` | Verify JWT token |
+| `GET` | `/api/guests` | List all guests |
+| `POST` | `/api/guests` | Add a guest |
+| `PUT` | `/api/guests/:id` | Update a guest |
+| `DELETE` | `/api/guests/:id` | Delete a guest |
+| `POST` | `/api/guests/bulk` | Bulk import guests (CSV) |
+| `GET` | `/api/messages` | List contact messages |
+| `PUT` | `/api/messages/:id/read` | Mark message as read |
+| `GET` | `/api/settings` | Get all settings |
+| `POST` | `/api/settings` | Update settings |
 
 ## Environment Variables
 
-- `NODE_ENV`: Set to production in container (can be overridden)
+| Variable | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `JWT_SECRET` | Yes | Secret key for signing JWTs |
+| `POSTGRES_DB` | Yes | Database name |
+| `POSTGRES_USER` | Yes | Database user |
+| `POSTGRES_PASSWORD` | Yes | Database password |
+| `GMAIL_USER` | No | Gmail address for sending notifications |
+| `GMAIL_PASS` | No | Gmail App Password |
+| `ADMIN_EMAIL` | No | Recipient address for email notifications |
+| `VITE_API_URL` | No | Backend API base URL (default: `http://backend:5000/api`) |
 
-## Notes
+## Guest CSV Import
 
-- The application runs in development mode by default in the Docker container
-- For production deployment, modify the Dockerfile to serve static files from `dist/` with a web server (nginx, etc.)
-- Hot module replacement (HMR) works in development mode with the host binding
+The admin panel supports bulk guest import via CSV. Download the sample from `public/sample-guests.csv`. Expected columns:
+
+```
+name, email, phone, address, rsvp, plusOne
+```
+
+Import mode options:
+- **Merge** — Upserts guests by email (existing records updated)
+- **Replace** — Clears the entire guest list before importing

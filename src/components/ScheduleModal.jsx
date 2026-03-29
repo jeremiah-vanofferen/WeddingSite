@@ -57,11 +57,16 @@ export function ScheduleModal({ schedule, onSave, onClose }) {
                   <div className="timeline-marker"></div>
                   <div className="timeline-content">
                     <div className="event-header">
-                      <h4>{new Date(`2026-08-08T${event.time}`).toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true
-                      })} - {event.event}</h4>
+                      <h4>
+                        <span className="event-time-badge">
+                          {new Date(`2026-08-08T${event.time}`).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          })}
+                        </span>
+                        {event.event}
+                      </h4>
                       <div className="event-actions">
                         <button
                           className="move-btn"

@@ -31,6 +31,7 @@ export function SettingsModal({ settings, onSave, onClose }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave(formData);
+    onClose();
   };
 
   const resetToDefaults = () => {
@@ -39,7 +40,7 @@ export function SettingsModal({ settings, onSave, onClose }) {
       theme: 'elegant',
       primaryColor: '#0a20ca',
       primaryColorHover: '#1894dc',
-      fontFamily: 'serif',
+      fontFamily: 'sans-serif',
       showCountdown: true,
       allowRsvp: true,
       welcomeMessage: 'Thank you for visiting our wedding website. We\'re thrilled to share the details of our celebration with you.',

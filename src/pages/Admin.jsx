@@ -13,7 +13,7 @@ const DEFAULT_SETTINGS = {
   theme: 'elegant',
   primaryColor: '#0a20ca',
   primaryColorHover: '#1894dc',
-  fontFamily: 'serif',
+  fontFamily: 'sans-serif',
   showCountdown: true,
   allowRsvp: true,
   welcomeMessage: 'Thank you for visiting our wedding website. We\'re thrilled to share the details of our celebration with you.',
@@ -26,21 +26,16 @@ export default function Admin() {
 
   // State for different admin sections
   const [weddingDetails, setWeddingDetails] = useState({
-    date: '2026-06-15',
-    time: '16:00',
-    location: 'Beautiful Garden Venue',
-    address: '123 Wedding Lane, City, State 12345',
-    description: 'Join us for a beautiful outdoor ceremony followed by an elegant reception.'
+    date: '',
+    time: '',
+    location: '',
+    address: '',
+    description: ''
   });
 
   const [guests, setGuests] = useState([]); // Will be loaded from API
 
-  const [schedule, setSchedule] = useState([
-    { id: 1, time: '16:00', event: 'Ceremony', description: 'Outdoor wedding ceremony' },
-    { id: 2, time: '17:00', event: 'Cocktail Hour', description: 'Drinks and appetizers' },
-    { id: 3, time: '18:00', event: 'Reception', description: 'Dinner and dancing' },
-    { id: 4, time: '22:00', event: 'End of Evening', description: 'Farewell and thank you' }
-  ]);
+  const [schedule, setSchedule] = useState([]);
 
   const [photos, setPhotos] = useState([
     { id: 1, url: '/placeholder-photo1.jpg', caption: 'Engagement photos', featured: true },
@@ -49,24 +44,43 @@ export default function Admin() {
 
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
-  // Load all settings from backend on mount
+  // Load schedule from backend on mount
   useEffect(() => {
-    if (isLoggedIn) {
-      fetch('/api/settings', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+    fetch('/api/schedule')
+      .then(res => res.json())
+      .then(data => Array.isArray(data) ? setSchedule(data) : setSchedule([]))
+      .catch(() => {});
+  }, []);
+
+  // Load all settings (includes wedding details) from backend on mount
+  const fetchSettings = () => {
+    fetch('/api/settings', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data && !data.error) {
+          // Coerce boolean strings from DB back to actual booleans
+          const coerced = { ...data };
+          if ('showCountdown' in coerced) coerced.showCountdown = coerced.showCountdown === 'true' || coerced.showCountdown === true;
+          if ('allowRsvp' in coerced) coerced.allowRsvp = coerced.allowRsvp === 'true' || coerced.allowRsvp === true;
+          setSettings({ ...DEFAULT_SETTINGS, ...coerced });
+          // Extract wedding details from settings
+          setWeddingDetails(prev => ({
+            ...prev,
+            ...(coerced.weddingDate && { date: coerced.weddingDate }),
+            ...(coerced.weddingTime && { time: coerced.weddingTime }),
+            ...(coerced.weddingLocation && { location: coerced.weddingLocation }),
+            ...(coerced.weddingAddress && { address: coerced.weddingAddress }),
+            ...(coerced.weddingDescription && { description: coerced.weddingDescription }),
+          }));
+        }
       })
-        .then(res => res.json())
-        .then(data => {
-          if (data && !data.error) {
-            // Coerce boolean strings from DB back to actual booleans
-            const coerced = { ...data };
-            if ('showCountdown' in coerced) coerced.showCountdown = coerced.showCountdown === 'true' || coerced.showCountdown === true;
-            if ('allowRsvp' in coerced) coerced.allowRsvp = coerced.allowRsvp === 'true' || coerced.allowRsvp === true;
-            setSettings({ ...DEFAULT_SETTINGS, ...coerced });
-          }
-        })
-        .catch(() => {});
-    }
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    if (isLoggedIn) fetchSettings();
   }, [isLoggedIn]);
 
   // Messages state
@@ -102,17 +116,12 @@ export default function Admin() {
 
   // Load data from localStorage on mount
   useEffect(() => {
-    const savedDetails = localStorage.getItem('weddingDetails');
     const savedGuests = localStorage.getItem('weddingGuests');
-    const savedSchedule = localStorage.getItem('weddingSchedule');
     const savedPhotos = localStorage.getItem('weddingPhotos');
-    const savedSettings = localStorage.getItem('weddingSettings');
 
-    if (savedDetails) setWeddingDetails(JSON.parse(savedDetails));
     if (savedGuests) setGuests(JSON.parse(savedGuests));
-    if (savedSchedule) setSchedule(JSON.parse(savedSchedule));
     if (savedPhotos) setPhotos(JSON.parse(savedPhotos));
-    // Settings are loaded from the database, not localStorage
+    // Settings, schedule, and wedding details are loaded from the database
   }, []);
 
   // Save data to localStorage
@@ -131,6 +140,7 @@ export default function Admin() {
   }
 
   const openModal = (modalType, item = null) => {
+    if (modalType === 'settings') fetchSettings();
     setActiveModal(modalType);
     setEditingItem(item);
   };
@@ -231,7 +241,20 @@ export default function Admin() {
           details={weddingDetails}
           onSave={(newDetails) => {
             setWeddingDetails(newDetails);
-            saveData('weddingDetails', newDetails);
+            fetch('/api/settings', {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${localStorage.getItem('authToken')}`
+              },
+              body: JSON.stringify({
+                weddingDate: newDetails.date,
+                weddingTime: newDetails.time,
+                weddingLocation: newDetails.location,
+                weddingAddress: newDetails.address,
+                weddingDescription: newDetails.description
+              })
+            }).catch(() => {});
             closeModal();
           }}
           onClose={closeModal}
@@ -265,8 +288,18 @@ export default function Admin() {
         <ScheduleModal
           schedule={schedule}
           onSave={(newSchedule) => {
-            setSchedule(newSchedule);
-            saveData('weddingSchedule', newSchedule);
+            // Persist new sort order / edits / deletes to DB then refresh
+            fetch('/api/schedule', {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${localStorage.getItem('authToken')}`
+              },
+              body: JSON.stringify({ events: newSchedule })
+            })
+              .then(res => res.json())
+              .then(data => Array.isArray(data) ? setSchedule(data) : setSchedule(newSchedule))
+              .catch(() => setSchedule(newSchedule));
           }}
           onClose={closeModal}
         />
@@ -275,9 +308,17 @@ export default function Admin() {
       {activeModal === 'add-event' && (
         <AddEventModal
           onSave={(newEvent) => {
-            const updatedSchedule = [...schedule, { ...newEvent, id: Date.now() }];
-            setSchedule(updatedSchedule);
-            saveData('weddingSchedule', updatedSchedule);
+            fetch('/api/schedule', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${localStorage.getItem('authToken')}`
+              },
+              body: JSON.stringify(newEvent)
+            })
+              .then(res => res.json())
+              .then(created => setSchedule(prev => [...prev, created]))
+              .catch(() => {});
             closeModal();
           }}
           onClose={closeModal}

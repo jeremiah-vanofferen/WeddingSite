@@ -15,29 +15,29 @@ function App() {
     theme: 'elegant',
     primaryColor: '#0a20ca',
     primaryColorHover: '#1894dc',
-    fontFamily: 'serif',
+    fontFamily: 'sans serif',
     showCountdown: true,
     allowRsvp: true,
     welcomeMessage: 'Thank you for visiting our wedding website. We\'re thrilled to share the details of our celebration with you.'
   });
 
   useEffect(() => {
-    const savedSettings = localStorage.getItem('weddingSettings');
-    if (savedSettings) {
-      try {
-        const parsed = JSON.parse(savedSettings);
-        setSettings(parsed);
-      } catch (error) {
-        console.error('Error parsing saved settings:', error);
-        // Reset to defaults if parsing fails
-        localStorage.removeItem('weddingSettings');
-      }
-    }
+    fetch('/api/public/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data && !data.error) {
+          const coerced = { ...data };
+          if ('showCountdown' in coerced) coerced.showCountdown = coerced.showCountdown === 'true' || coerced.showCountdown === true;
+          if ('allowRsvp' in coerced) coerced.allowRsvp = coerced.allowRsvp === 'true' || coerced.allowRsvp === true;
+          setSettings(prev => ({ ...prev, ...coerced }));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
     const handleSettingsChange = (event) => {
-      setSettings(event.detail);
+      setSettings(prev => ({ ...prev, ...event.detail }));
     };
     window.addEventListener('settingsChanged', handleSettingsChange);
     return () => window.removeEventListener('settingsChanged', handleSettingsChange);

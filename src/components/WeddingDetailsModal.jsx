@@ -123,7 +123,14 @@ export function ViewDetailsModal({ details, onClose }) {
           </div>
         </div>
         <div className="admin-modal-footer">
-          <button type="button" className="cancel-btn" onClick={onClose}>Close</button>
+          <button
+            type="button"
+            className="save-btn"
+            style={{ backgroundColor: 'var(--primary-color, #0a20ca)' }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--primary-color-hover, #1894dc)'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'var(--primary-color, #0a20ca)'}
+            onClick={onClose}
+          >Close</button>
         </div>
       </div>
     </div>

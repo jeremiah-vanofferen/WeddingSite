@@ -14,35 +14,34 @@ export default function Home() {
     theme: 'elegant',
     primaryColor: '#0a20ca',
     primaryColorHover: '#1894dc',
-    fontFamily: 'serif',
+    fontFamily: 'sans serif',
     showCountdown: true,
     allowRsvp: true,
     welcomeMessage: 'Thank you for visiting our wedding website. We\'re thrilled to share the details of our celebration with you.'
   });
 
   useEffect(() => {
-    const savedDetails = localStorage.getItem('weddingDetails');
-    if (savedDetails) {
-      try {
-        setWeddingDetails(JSON.parse(savedDetails));
-      } catch (error) {
-        console.error('Error parsing wedding details:', error);
-      }
-    }
-
-    const savedSettings = localStorage.getItem('weddingSettings');
-    if (savedSettings) {
-      try {
-        const parsedSettings = JSON.parse(savedSettings);
-        // Merge with defaults to ensure all fields exist
-        setSettings(prevSettings => ({
-          ...prevSettings,
-          ...parsedSettings
-        }));
-      } catch (error) {
-        console.error('Error parsing settings:', error);
-      }
-    }
+    fetch('/api/public/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data && !data.error) {
+          setSettings(prev => ({
+            ...prev,
+            ...data,
+            showCountdown: data.showCountdown === 'true' || data.showCountdown === true,
+            allowRsvp: data.allowRsvp === 'true' || data.allowRsvp === true,
+          }));
+          setWeddingDetails(prev => ({
+            ...prev,
+            ...(data.weddingDate && { date: data.weddingDate }),
+            ...(data.weddingTime && { time: data.weddingTime }),
+            ...(data.weddingLocation && { location: data.weddingLocation }),
+            ...(data.weddingAddress && { address: data.weddingAddress }),
+            ...(data.weddingDescription && { description: data.weddingDescription }),
+          }));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Function to get time zone from address

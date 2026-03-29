@@ -40,18 +40,39 @@ CREATE TABLE IF NOT EXISTS settings (
     value TEXT
 );
 
+-- Create schedule table
+CREATE TABLE IF NOT EXISTS schedule (
+    id SERIAL PRIMARY KEY,
+    time VARCHAR(10) NOT NULL,
+    event VARCHAR(255) NOT NULL,
+    description TEXT,
+    sort_order INTEGER DEFAULT 0
+);
+
+-- Insert default schedule events
+INSERT INTO schedule (time, event, description, sort_order) VALUES ('13:00', 'Ceremony', 'Outdoor wedding ceremony', 1) ON CONFLICT DO NOTHING;
+INSERT INTO schedule (time, event, description, sort_order) VALUES ('14:00', 'Cocktail Hour', 'Drinks and appetizers', 2) ON CONFLICT DO NOTHING;
+INSERT INTO schedule (time, event, description, sort_order) VALUES ('15:00', 'Reception', 'Dinner and dancing', 3) ON CONFLICT DO NOTHING;
+INSERT INTO schedule (time, event, description, sort_order) VALUES ('20:00', 'End of Evening', 'Farewell and thank you', 4) ON CONFLICT DO NOTHING;
+
 -- Insert default settings (admin email comes from ADMIN_EMAIL env var)
 INSERT INTO settings (key, value) VALUES ('adminEmail', '${ADMIN_EMAIL:-your@email.com}') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('websiteName', 'My Wedding') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('theme', 'elegant') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('primaryColor', '#0a20ca') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('primaryColorHover', '#1894dc') ON CONFLICT (key) DO NOTHING;
-INSERT INTO settings (key, value) VALUES ('fontFamily', 'sans serif') ON CONFLICT (key) DO NOTHING;
+INSERT INTO settings (key, value) VALUES ('fontFamily', 'sans-serif') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('showCountdown', 'true') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('allowRsvp', 'true') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('welcomeMessage', 'Thank you for visiting our wedding website. We''re thrilled to share the details of our celebration with you.') ON CONFLICT (key) DO NOTHING;
+-- Wedding details
+INSERT INTO settings (key, value) VALUES ('weddingDate', '2026-08-08') ON CONFLICT (key) DO NOTHING;
+INSERT INTO settings (key, value) VALUES ('weddingTime', '13:00') ON CONFLICT (key) DO NOTHING;
+INSERT INTO settings (key, value) VALUES ('weddingLocation', 'Windpoint Lighthouse') ON CONFLICT (key) DO NOTHING;
+INSERT INTO settings (key, value) VALUES ('weddingAddress', '4725 Lighthouse Drive, Wind Point, WI 53402') ON CONFLICT (key) DO NOTHING;
+INSERT INTO settings (key, value) VALUES ('weddingDescription', 'Join us for a beautiful outdoor ceremony followed by an elegant reception.') ON CONFLICT (key) DO NOTHING;
 
--- Insert default admin user (Jeremiah with Wedding8826)
+-- Insert default admin user (username: Jeremiah, password: password123)
 INSERT INTO admin_users (username, password_hash)
 VALUES ('Jeremiah', '\$2a\$10\$eSkin6Cy1ZR8aoLv3c.vjer3FwM1HHPsHdh/4t1J0Gx9cc95sNTIO')
 ON CONFLICT (username) DO NOTHING;
