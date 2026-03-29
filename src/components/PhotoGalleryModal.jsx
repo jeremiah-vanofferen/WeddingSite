@@ -1,5 +1,6 @@
 // PhotoGalleryModal.jsx
 import { useState } from 'react';
+import PropTypes from 'prop-types';
 
 export function PhotoGalleryModal({ photos, onSave, onClose }) {
   const [photoList, setPhotoList] = useState(photos);
@@ -277,3 +278,30 @@ function EditPhotoModal({ photo, onSave, onClose }) {
     </div>
   );
 }
+
+PhotoGalleryModal.propTypes = {
+  photos: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.number,
+    url: PropTypes.string,
+    caption: PropTypes.string,
+    featured: PropTypes.bool,
+  })).isRequired,
+  onSave: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+};
+
+AddPhotoModal.propTypes = {
+  onSave: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+};
+
+EditPhotoModal.propTypes = {
+  photo: PropTypes.shape({
+    id: PropTypes.number,
+    url: PropTypes.string,
+    caption: PropTypes.string,
+    featured: PropTypes.bool,
+  }).isRequired,
+  onSave: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+};

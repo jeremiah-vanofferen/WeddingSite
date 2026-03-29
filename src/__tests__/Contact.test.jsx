@@ -5,7 +5,6 @@ import Contact from '../pages/Contact';
 describe('Contact Page', () => {
   beforeEach(() => {
     global.fetch = vi.fn();
-    vi.spyOn(window, 'alert').mockImplementation(() => {});
   });
 
   it('renders all form fields', () => {
@@ -31,7 +30,7 @@ describe('Contact Page', () => {
     );
   });
 
-  it('shows an alert when the API returns an error', async () => {
+  it('shows an inline error when the API returns an error', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: false,
       json: async () => ({ error: 'Server error' }),
@@ -45,7 +44,7 @@ describe('Contact Page', () => {
     fireEvent.click(screen.getByRole('button', { name: /send message/i }));
 
     await waitFor(() =>
-      expect(window.alert).toHaveBeenCalledWith('Server error')
+      expect(screen.getByRole('alert')).toHaveTextContent('Server error')
     );
   });
 

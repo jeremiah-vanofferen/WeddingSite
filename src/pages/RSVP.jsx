@@ -10,6 +10,8 @@ export default function RSVP() {
     dietary: ''
   });
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -18,6 +20,8 @@ export default function RSVP() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setSubmitting(true);
     try {
       const response = await fetch('/api/rsvp', {
         method: 'POST',
@@ -34,10 +38,12 @@ export default function RSVP() {
         setSubmitted(true);
       } else {
         const data = await response.json();
-        alert(data.error || 'Submission failed. Please try again.');
+        setError(data.error || 'Submission failed. Please try again.');
       }
-    } catch (err) {
-      alert('Network error. Please try again.');
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -80,7 +86,8 @@ export default function RSVP() {
             <label htmlFor="rsvp-dietary">Dietary Restrictions</label>
             <input id="rsvp-dietary" name="dietary" type="text" value={form.dietary} onChange={handleChange} placeholder="Optional" />
           </div>
-          <button type="submit">Submit RSVP</button>
+          {error && <p className="form-error" role="alert">{error}</p>}
+          <button type="submit" disabled={submitting}>{submitting ? 'Submitting…' : 'Submit RSVP'}</button>
         </form>
       </div>
     </div>

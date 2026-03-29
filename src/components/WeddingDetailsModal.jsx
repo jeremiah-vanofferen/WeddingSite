@@ -1,5 +1,6 @@
 // WeddingDetailsModal.jsx
 import { useState } from 'react';
+import PropTypes from 'prop-types';
 
 export function WeddingDetailsModal({ details, onSave, onClose }) {
   const [formData, setFormData] = useState(details);
@@ -136,3 +137,28 @@ export function ViewDetailsModal({ details, onClose }) {
     </div>
   );
 }
+
+WeddingDetailsModal.propTypes = {
+  details: PropTypes.shape({
+    date: PropTypes.string,
+    time: PropTypes.string,
+    location: PropTypes.string,
+    address: PropTypes.string,
+    description: PropTypes.string,
+    timeZone: PropTypes.string,
+  }).isRequired,
+  onSave: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+};
+
+ViewDetailsModal.propTypes = {
+  details: PropTypes.shape({
+    date: PropTypes.string,
+    time: PropTypes.string,
+    location: PropTypes.string,
+    address: PropTypes.string,
+    description: PropTypes.string,
+    timeZone: PropTypes.string,
+  }).isRequired,
+  onClose: PropTypes.func.isRequired,
+};

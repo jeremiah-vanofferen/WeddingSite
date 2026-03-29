@@ -48,6 +48,16 @@
   color: #666;
 }
 
+.form-error {
+  color: #c0392b;
+  background: #fde8e8;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
 .services-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

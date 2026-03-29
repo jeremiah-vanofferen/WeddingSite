@@ -22,7 +22,7 @@ export default function Services() {
     <div className="page">
       <div className="schedule-hero">
         <h1>Wedding Day Schedule</h1>
-        <p>Here's the timeline for our special day.</p>
+        <p>Here&apos;s the timeline for our special day.</p>
       </div>
 
       <div className="public-schedule-timeline">

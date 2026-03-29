@@ -8,17 +8,7 @@ import { GuestManagementModal, AddGuestModal } from '../components/GuestManageme
 import { ScheduleModal, AddEventModal } from '../components/ScheduleModal';
 import { PhotoGalleryModal, AddPhotoModal } from '../components/PhotoGalleryModal';
 import { SettingsModal } from '../components/SettingsModal';
-
-const DEFAULT_SETTINGS = {
-  theme: 'elegant',
-  primaryColor: '#0a20ca',
-  primaryColorHover: '#1894dc',
-  fontFamily: 'sans-serif',
-  showCountdown: true,
-  allowRsvp: true,
-  welcomeMessage: 'Thank you for visiting our wedding website. We\'re thrilled to share the details of our celebration with you.',
-  adminEmail: ''
-};
+import { DEFAULT_SETTINGS } from '../utils/constants';
 
 export default function Admin() {
   const { isLoggedIn, logout, adminName } = useAuth();
@@ -32,8 +22,6 @@ export default function Admin() {
     address: '',
     description: ''
   });
-
-  const [guests, setGuests] = useState([]); // Will be loaded from API
 
   const [schedule, setSchedule] = useState([]);
 
@@ -62,8 +50,8 @@ export default function Admin() {
         if (data && !data.error) {
           // Coerce boolean strings from DB back to actual booleans
           const coerced = { ...data };
-          if ('showCountdown' in coerced) coerced.showCountdown = coerced.showCountdown === 'true' || coerced.showCountdown === true;
-          if ('allowRsvp' in coerced) coerced.allowRsvp = coerced.allowRsvp === 'true' || coerced.allowRsvp === true;
+          if ('showCountdown' in coerced) coerced.showCountdown = coerced.showCountdown === true || coerced.showCountdown === 'true';
+          if ('allowRsvp' in coerced) coerced.allowRsvp = coerced.allowRsvp === true || coerced.allowRsvp === 'true';
           setSettings({ ...DEFAULT_SETTINGS, ...coerced });
           // Extract wedding details from settings
           setWeddingDetails(prev => ({
@@ -97,7 +85,7 @@ export default function Admin() {
 
   // Modal states
   const [activeModal, setActiveModal] = useState(null);
-  const [editingItem, setEditingItem] = useState(null);
+  const [_editingItem, setEditingItem] = useState(null);
   const [selectedMessage, setSelectedMessage] = useState(null);
 
   // Mark message as read when modal opens
@@ -114,12 +102,9 @@ export default function Admin() {
     }
   }, [selectedMessage]);
 
-  // Load data from localStorage on mount
+  // Load photos from localStorage on mount
   useEffect(() => {
-    const savedGuests = localStorage.getItem('weddingGuests');
     const savedPhotos = localStorage.getItem('weddingPhotos');
-
-    if (savedGuests) setGuests(JSON.parse(savedGuests));
     if (savedPhotos) setPhotos(JSON.parse(savedPhotos));
     // Settings, schedule, and wedding details are loaded from the database
   }, []);
@@ -276,7 +261,7 @@ export default function Admin() {
 
       {activeModal === 'add-guest' && (
         <AddGuestModal
-          onSave={(newGuest) => {
+          onSave={(_newGuest) => {
             // Guest will be added via API, no need to update local state
             closeModal();
           }}

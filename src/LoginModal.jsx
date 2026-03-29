@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from './AuthContext';
+import PropTypes from 'prop-types';
 import './LoginModal.css';
 
 export default function LoginModal({ isOpen, onClose }) {
@@ -60,10 +61,12 @@ export default function LoginModal({ isOpen, onClose }) {
           {error && <div className="error-message">{error}</div>}
           <button type="submit" className="submit-btn">Login</button>
         </form>
-        <div className="demo-credentials">
-          <p><small>Demo: Any username/password combo works</small></p>
-        </div>
       </div>
     </div>
   );
 }
+
+LoginModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+};

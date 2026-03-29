@@ -1,6 +1,6 @@
 import { createContext, useState, useContext, useEffect } from 'react';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://backend:5000/api';
+import PropTypes from 'prop-types';
+import { API_BASE_URL } from './utils/api';
 
 const AuthContext = createContext();
 
@@ -85,3 +85,7 @@ export function useAuth() {
   }
   return context;
 }
+
+AuthProvider.propTypes = {
+  children: PropTypes.node.isRequired,
+};

@@ -10,6 +10,9 @@ This project has full test coverage across the frontend (React) and backend (Exp
 - [Running Tests](#running-tests)
   - [In Docker (recommended)](#in-docker-recommended)
   - [Locally](#locally)
+- [Linting](#linting)
+  - [In Docker](#in-docker)
+  - [Locally (lint)](#locally-lint)
 - [Frontend Tests](#frontend-tests)
   - [Configuration](#frontend-configuration)
   - [Test Files](#frontend-test-files)
@@ -57,11 +60,48 @@ Requires Node.js 22.x.
 npm install
 npm test              # Run once
 npm run test:watch    # Watch mode (re-runs on file changes)
+npm run lint          # ESLint check
 
 # Backend — from the backend/ directory
 cd backend
 npm install
 npm test
+```
+
+---
+
+## Linting
+
+The project uses [ESLint](https://eslint.org/) v9 (flat config) for both the frontend and backend. The frontend config lives in [eslint.config.js](eslint.config.js) and covers React/JSX, React Hooks, `react/prop-types`, and strict equality rules. The backend uses the same ESLint installation scoped to `server.js`.
+
+### In Docker
+
+The application must be running via Docker Compose before executing these commands.
+
+```bash
+# Lint frontend (src/)
+docker exec weddingsite-wedding-app-1 npm run lint
+
+# Lint backend (server.js)
+docker exec weddingsite-backend-1 npm run lint
+```
+
+Both commands are also available as VS Code tasks under **Terminal → Run Task…**:
+- **Lint: Frontend (ESLint)**
+- **Lint: Backend (ESLint)**
+- **Lint: All** — runs both sequentially
+
+### Locally (lint)
+
+Requires Node.js 22.x.
+
+```bash
+# Frontend — from the project root
+npm run lint
+
+# Backend — from the backend/ directory
+cd backend
+npm run lint
 ```
 
 ---

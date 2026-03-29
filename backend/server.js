@@ -17,20 +17,38 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
+// Validate required env vars at startup
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is not set');
+  process.exit(1);
+}
+
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? false : true,
+  origin: process.env.NODE_ENV === 'production'
+    ? (process.env.CORS_ORIGIN || false)
+    : true,
   credentials: true
 }));
 app.use(express.json());
 
-// Rate limiting
+// Rate limiting — general API
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100
 });
 app.use('/api/', limiter);
+
+// Stricter rate limiter for auth and public submission endpoints
+const strictLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'Too many requests, please try again later' }
+});
+app.use('/api/auth/login', strictLimiter);
+app.use('/api/rsvp', strictLimiter);
+app.use('/api/messages', strictLimiter);
 
 // Auth middleware
 const authenticateToken = (req, res, next) => {
@@ -65,7 +83,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     const result = await pool.query('SELECT * FROM admin_users WHERE username = $1', [username]);
 
-    if (result.rowCount == 0) {
+    if (result.rowCount === 0) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -179,10 +197,14 @@ app.delete('/api/guests/:id', authenticateToken, async (req, res) => {
 // Bulk import guests
 app.post('/api/guests/bulk', authenticateToken, async (req, res) => {
   try {
-    const { guests, mode } = req.body; // mode: 'replace' or 'merge'
+    const { guests, mode } = req.body;
 
     if (!Array.isArray(guests)) {
       return res.status(400).json({ error: 'Guests must be an array' });
+    }
+
+    if (mode !== 'replace' && mode !== 'merge') {
+      return res.status(400).json({ error: "mode must be 'replace' or 'merge'" });
     }
 
     const client = await pool.connect();
@@ -240,6 +262,10 @@ app.post('/api/rsvp', async (req, res) => {
     const { name, email, rsvp, guests, dietary } = req.body;
     if (!name || !email || !rsvp) {
       return res.status(400).json({ error: 'Name, email, and RSVP status are required' });
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email address' });
     }
     // Insert or update guest by email
     const rsvpStatus = rsvp === 'yes' ? 'Yes' : 'No';
@@ -301,8 +327,6 @@ app.post('/api/messages', async (req, res) => {
     );
     // Send email to admin
     const adminEmail = await getAdminEmail();
-    console.log('Admin email for notification:', adminEmail);
-    console.log('GMAIL_USER configured:', !!process.env.GMAIL_USER);
     if (adminEmail && process.env.GMAIL_USER && process.env.GMAIL_PASS) {
       try {
         const transporter = nodemailer.createTransport({
@@ -376,7 +400,12 @@ app.get('/api/public/settings', async (req, res) => {
       'SELECT key, value FROM settings WHERE key = ANY($1)',
       [PUBLIC_KEYS]
     );
-    const settings = Object.fromEntries(result.rows.map(r => [r.key, r.value]));
+    const raw = Object.fromEntries(result.rows.map(r => [r.key, r.value]));
+    // Normalize boolean strings to actual booleans so clients don't need to coerce
+    const BOOL_KEYS = ['showCountdown', 'allowRsvp'];
+    const settings = Object.fromEntries(
+      Object.entries(raw).map(([k, v]) => [k, BOOL_KEYS.includes(k) ? v === 'true' : v])
+    );
     res.json(settings);
   } catch (error) {
     console.error('Get public settings error:', error);
@@ -539,7 +568,7 @@ app.put('/api/settings', authenticateToken, async (req, res) => {
 });
 
 // Error handling middleware
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
 });

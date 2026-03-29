@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from './AuthContext';
 import LoginModal from './LoginModal';
+import PropTypes from 'prop-types';
 import './Navigation.css';
 
 export default function Navigation({ settings }) {
@@ -33,3 +34,9 @@ export default function Navigation({ settings }) {
     </>
   );
 }
+
+Navigation.propTypes = {
+  settings: PropTypes.shape({
+    websiteName: PropTypes.string,
+  }),
+};

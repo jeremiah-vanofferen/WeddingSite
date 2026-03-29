@@ -1,5 +1,6 @@
 // SettingsModal.jsx
 import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 
 const EMPTY_SETTINGS = {
   websiteName: '',
@@ -279,3 +280,19 @@ export function SettingsModal({ settings, onSave, onClose }) {
     </div>
   );
 }
+
+SettingsModal.propTypes = {
+  settings: PropTypes.shape({
+    websiteName: PropTypes.string,
+    theme: PropTypes.string,
+    primaryColor: PropTypes.string,
+    primaryColorHover: PropTypes.string,
+    fontFamily: PropTypes.string,
+    showCountdown: PropTypes.bool,
+    allowRsvp: PropTypes.bool,
+    welcomeMessage: PropTypes.string,
+    adminEmail: PropTypes.string,
+  }).isRequired,
+  onSave: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+};

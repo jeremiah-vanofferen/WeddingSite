@@ -4,6 +4,8 @@ import '../pages/pages.css';
 export default function Contact() {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -12,6 +14,8 @@ export default function Contact() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setSubmitting(true);
     try {
       const response = await fetch('/api/messages', {
         method: 'POST',
@@ -22,10 +26,12 @@ export default function Contact() {
         setSubmitted(true);
       } else {
         const data = await response.json();
-        alert(data.error || 'Submission failed. Please try again.');
+        setError(data.error || 'Submission failed. Please try again.');
       }
-    } catch (err) {
-      alert('Network error. Please try again.');
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -33,7 +39,7 @@ export default function Contact() {
     return (
       <div className="page">
         <h1>Message Sent</h1>
-        <p>Thank you for reaching out! We'll get back to you soon.</p>
+        <p>Thank you for reaching out! We&apos;ll get back to you soon.</p>
       </div>
     );
   }
@@ -56,7 +62,8 @@ export default function Contact() {
             <label htmlFor="contact-message">Message</label>
             <textarea id="contact-message" name="message" value={form.message} onChange={handleChange} rows="5" required></textarea>
           </div>
-          <button type="submit">Send Message</button>
+          {error && <p className="form-error" role="alert">{error}</p>}
+          <button type="submit" disabled={submitting}>{submitting ? 'Sending…' : 'Send Message'}</button>
         </form>
       </div>
     </div>

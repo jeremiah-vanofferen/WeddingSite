@@ -5,7 +5,6 @@ import RSVP from '../pages/RSVP';
 describe('RSVP Page', () => {
   beforeEach(() => {
     global.fetch = vi.fn();
-    vi.spyOn(window, 'alert').mockImplementation(() => {});
   });
 
   it('renders all form fields', () => {
@@ -34,7 +33,7 @@ describe('RSVP Page', () => {
     );
   });
 
-  it('shows an alert when the API returns an error', async () => {
+  it('shows an inline error when the API returns an error', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: false,
       json: async () => ({ error: 'Submission failed' }),
@@ -49,7 +48,7 @@ describe('RSVP Page', () => {
     fireEvent.click(screen.getByRole('button', { name: /submit rsvp/i }));
 
     await waitFor(() =>
-      expect(window.alert).toHaveBeenCalledWith('Submission failed')
+      expect(screen.getByRole('alert')).toHaveTextContent('Submission failed')
     );
   });
 

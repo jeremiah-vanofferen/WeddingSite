@@ -1,5 +1,6 @@
 // ScheduleModal.jsx
 import { useState } from 'react';
+import PropTypes from 'prop-types';
 
 export function ScheduleModal({ schedule, onSave, onClose }) {
   const [scheduleList, setScheduleList] = useState(schedule);
@@ -251,3 +252,30 @@ function EditEventModal({ event, onSave, onClose }) {
     </div>
   );
 }
+
+ScheduleModal.propTypes = {
+  schedule: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.number,
+    time: PropTypes.string,
+    event: PropTypes.string,
+    description: PropTypes.string,
+  })).isRequired,
+  onSave: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+};
+
+AddEventModal.propTypes = {
+  onSave: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+};
+
+EditEventModal.propTypes = {
+  event: PropTypes.shape({
+    id: PropTypes.number,
+    time: PropTypes.string,
+    event: PropTypes.string,
+    description: PropTypes.string,
+  }).isRequired,
+  onSave: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+};

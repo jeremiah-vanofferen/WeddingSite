@@ -1,8 +1,8 @@
 // GuestManagementModal.jsx
 import { useState, useEffect } from 'react';
 import Papa from 'papaparse';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://backend:5000/api';
+import PropTypes from 'prop-types';
+import { API_BASE_URL } from '../utils/api';
 
 export function GuestManagementModal({ onClose }) {
   const [guestList, setGuestList] = useState([]);
@@ -11,7 +11,6 @@ export function GuestManagementModal({ onClose }) {
   const [uploadMode, setUploadMode] = useState('merge'); // 'merge' or 'replace'
   const [uploadError, setUploadError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   // Fetch guests on component mount
@@ -38,13 +37,8 @@ export function GuestManagementModal({ onClose }) {
       console.error('Error fetching guests:', error);
       setError('Failed to load guests');
     } finally {
-      setLoading(false);
+      // fetch complete
     }
-  };
-
-  const saveGuests = async (guests) => {
-    setGuestList(guests);
-    // No need to call onSave anymore since we're using API
   };
 
   const handleFileUpload = (event) => {
@@ -207,7 +201,7 @@ export function GuestManagementModal({ onClose }) {
       setEditingGuest(null);
     } catch (error) {
       console.error('Update error:', error);
-      alert('Failed to update guest. Please try again.');
+      setError('Failed to update guest. Please try again.');
     }
   };
 
@@ -230,7 +224,7 @@ export function GuestManagementModal({ onClose }) {
         setGuestList(updatedList);
       } catch (error) {
         console.error('Delete error:', error);
-        alert('Failed to delete guest. Please try again.');
+        setError('Failed to delete guest. Please try again.');
       }
     }
   };
@@ -261,7 +255,7 @@ export function GuestManagementModal({ onClose }) {
       setGuestList(updatedList);
     } catch (error) {
       console.error('RSVP update error:', error);
-      alert('Failed to update RSVP. Please try again.');
+      setError('Failed to update RSVP. Please try again.');
     }
   };
 
@@ -391,12 +385,12 @@ export function GuestManagementModal({ onClose }) {
               <h4>CSV Format</h4>
               <p>Your CSV file should include these columns:</p>
               <ul>
-                <li><strong>Name</strong> (required) - Guest's full name</li>
-                <li><strong>Email</strong> (required) - Guest's email address</li>
-                <li><strong>Phone</strong> (optional) - Guest's phone number</li>
-                <li><strong>Address</strong> (optional) - Guest's mailing address</li>
-                <li><strong>RSVP</strong> (optional) - "Yes", "No", or "Pending"</li>
-                <li><strong>Plus One</strong> (optional) - "Yes" or "No"</li>
+                <li><strong>Name</strong> (required) - Guest&apos;s full name</li>
+                <li><strong>Email</strong> (required) - Guest&apos;s email address</li>
+                <li><strong>Phone</strong> (optional) - Guest&apos;s phone number</li>
+                <li><strong>Address</strong> (optional) - Guest&apos;s mailing address</li>
+                <li><strong>RSVP</strong> (optional) - &quot;Yes&quot;, &quot;No&quot;, or &quot;Pending&quot;</li>
+                <li><strong>Plus One</strong> (optional) - &quot;Yes&quot; or &quot;No&quot;</li>
               </ul>
               <a href="/sample-guests.csv" download>Download Sample CSV</a>
             </div>
@@ -668,3 +662,26 @@ function EditGuestModal({ guest, onSave, onClose }) {
     </div>
   );
 }
+
+GuestManagementModal.propTypes = {
+  onClose: PropTypes.func.isRequired,
+};
+
+AddGuestModal.propTypes = {
+  onSave: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+};
+
+EditGuestModal.propTypes = {
+  guest: PropTypes.shape({
+    id: PropTypes.number,
+    name: PropTypes.string,
+    email: PropTypes.string,
+    phone: PropTypes.string,
+    address: PropTypes.string,
+    rsvp: PropTypes.string,
+    plusOne: PropTypes.bool,
+  }).isRequired,
+  onSave: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+};
