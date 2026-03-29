@@ -6,6 +6,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-wedding_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-password123}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sh:/docker-entrypoint-initdb.d/init.sh

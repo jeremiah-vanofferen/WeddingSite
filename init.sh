@@ -1,7 +1,14 @@
 #!/bin/bash
 set -e
 
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+psql -v ON_ERROR_STOP=1 \
+     --username "$POSTGRES_USER" \
+     --dbname "$POSTGRES_DB" \
+     -v admin_username="${ADMIN_USERNAME:-admin}" \
+     -v admin_password="${ADMIN_PASSWORD:-password123}" <<-EOSQL
+
+-- Enable pgcrypto for in-database password hashing
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- Create guests table
 CREATE TABLE IF NOT EXISTS guests (
@@ -72,9 +79,9 @@ INSERT INTO settings (key, value) VALUES ('weddingLocation', 'Windpoint Lighthou
 INSERT INTO settings (key, value) VALUES ('weddingAddress', '4725 Lighthouse Drive, Wind Point, WI 53402') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('weddingDescription', 'Join us for a beautiful outdoor ceremony followed by an elegant reception.') ON CONFLICT (key) DO NOTHING;
 
--- Insert default admin user (username: Jeremiah, password: password123)
+-- Insert admin user (credentials from ADMIN_USERNAME/ADMIN_PASSWORD env vars; defaults: admin/password123)
 INSERT INTO admin_users (username, password_hash)
-VALUES ('Jeremiah', '\$2a\$10\$eSkin6Cy1ZR8aoLv3c.vjer3FwM1HHPsHdh/4t1J0Gx9cc95sNTIO')
+VALUES (:'admin_username', crypt(:'admin_password', gen_salt('bf', 10)))
 ON CONFLICT (username) DO NOTHING;
 
 -- Create indexes
