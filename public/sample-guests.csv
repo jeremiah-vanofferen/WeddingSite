@@ -1,0 +1,6 @@
+Name,Email,Phone,Address,RSVP,Plus One
+John Smith,john@example.com,(555) 123-4567,123 Main St, Springfield, IL 62701,Yes,No
+Jane Doe,jane@example.com,(555) 234-5678,456 Oak Ave, Springfield, IL 62702,Pending,Yes
+Bob Johnson,bob@example.com,(555) 345-6789,789 Pine Rd, Springfield, IL 62703,No,No
+Alice Brown,alice@example.com,(555) 456-7890,321 Elm St, Springfield, IL 62704,Yes,Yes
+Charlie Wilson,charlie@example.com,(555) 567-8901,654 Maple Dr, Springfield, IL 62705,Pending,No

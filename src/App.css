@@ -1,0 +1,91 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Theme Styles */
+body.theme-elegant {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  color: #2c3e50;
+}
+
+body.theme-elegant .demo-card {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(44, 62, 80, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+body.theme-modern {
+  background: #ffffff;
+  color: #1a1a1a;
+}
+
+body.theme-modern .demo-card {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+body.theme-rustic {
+  background: #fdf6e3;
+  color: #8b4513;
+}
+
+body.theme-rustic .demo-card {
+  background: rgba(255, 248, 220, 0.95);
+  border: 2px solid #daa520;
+  box-shadow: 0 6px 20px rgba(139, 69, 19, 0.15);
+}
+
+body.theme-vintage {
+  background: #f0e6d2;
+  color: #6b4423;
+}
+
+body.theme-vintage .demo-card {
+  background: rgba(255, 250, 240, 0.95);
+  border: 1px solid #c4a484;
+  box-shadow: 0 4px 16px rgba(107, 68, 35, 0.1);
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+a {
+  text-decoration: inherit;
+}
+
+button {
+  background-color: var(--primary-color, #0a20ca);
+  color: white;
+  border: none;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.25s;
+}
+
+button:hover {
+  background-color: var(--primary-color-hover, #1894dc);
+}
+
+button:active {
+  transform: scale(0.98);
+}
