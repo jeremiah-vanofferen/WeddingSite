@@ -205,6 +205,7 @@ npm run dev          # http://localhost:5000
 | `POSTGRES_PASSWORD` | Yes | Database password |
 | `ADMIN_USERNAME` | No | Admin login username (default: `admin`) |
 | `ADMIN_PASSWORD` | No | Admin login password (default: `password123`) |
+| `WEBSITE_NAME` | No | Website name shown in nav and home page (default: `My Wedding`) |
 | `GMAIL_USER` | No | Gmail address for sending notifications |
 | `GMAIL_PASS` | No | Gmail App Password |
 | `ADMIN_EMAIL` | No | Recipient address for email notifications |

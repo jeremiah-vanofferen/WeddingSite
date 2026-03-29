@@ -549,10 +549,12 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Start server only when run directly (not when required for testing)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
@@ -576,3 +578,5 @@ async function getAdminEmail() {
   const result = await pool.query("SELECT value FROM settings WHERE key = 'adminEmail'");
   return result.rows[0]?.value || process.env.ADMIN_EMAIL;
 }
+
+module.exports = app;

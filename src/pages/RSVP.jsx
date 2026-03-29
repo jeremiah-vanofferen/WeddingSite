@@ -57,28 +57,28 @@ export default function RSVP() {
       <div className="demo-card">
         <form className="contact-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Name</label>
-            <input name="name" type="text" value={form.name} onChange={handleChange} required />
+            <label htmlFor="rsvp-name">Name</label>
+            <input id="rsvp-name" name="name" type="text" value={form.name} onChange={handleChange} required />
           </div>
           <div className="form-group">
-            <label>Email</label>
-            <input name="email" type="email" value={form.email} onChange={handleChange} required />
+            <label htmlFor="rsvp-email">Email</label>
+            <input id="rsvp-email" name="email" type="email" value={form.email} onChange={handleChange} required />
           </div>
           <div className="form-group">
-            <label>Will you attend?</label>
-            <select name="attending" value={form.attending} onChange={handleChange} required>
+            <label htmlFor="rsvp-attending">Will you attend?</label>
+            <select id="rsvp-attending" name="attending" value={form.attending} onChange={handleChange} required>
               <option value="">Select</option>
               <option value="yes">Yes, I will attend</option>
               <option value="no">No, I cannot attend</option>
             </select>
           </div>
           <div className="form-group">
-            <label>Number of Guests (including you)</label>
-            <input name="guests" type="number" min="0" max="10" value={form.guests} onChange={handleChange} required />
+            <label htmlFor="rsvp-guests">Number of Guests (including you)</label>
+            <input id="rsvp-guests" name="guests" type="number" min="0" max="10" value={form.guests} onChange={handleChange} required />
           </div>
           <div className="form-group">
-            <label>Dietary Restrictions</label>
-            <input name="dietary" type="text" value={form.dietary} onChange={handleChange} placeholder="Optional" />
+            <label htmlFor="rsvp-dietary">Dietary Restrictions</label>
+            <input id="rsvp-dietary" name="dietary" type="text" value={form.dietary} onChange={handleChange} placeholder="Optional" />
           </div>
           <button type="submit">Submit RSVP</button>
         </form>

@@ -45,16 +45,16 @@ export default function Contact() {
       <div className="demo-card">
         <form className="contact-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Name</label>
-            <input name="name" type="text" value={form.name} onChange={handleChange} required />
+            <label htmlFor="contact-name">Name</label>
+            <input id="contact-name" name="name" type="text" value={form.name} onChange={handleChange} required />
           </div>
           <div className="form-group">
-            <label>Email</label>
-            <input name="email" type="email" value={form.email} onChange={handleChange} required />
+            <label htmlFor="contact-email">Email</label>
+            <input id="contact-email" name="email" type="email" value={form.email} onChange={handleChange} required />
           </div>
           <div className="form-group">
-            <label>Message</label>
-            <textarea name="message" value={form.message} onChange={handleChange} rows="5" required></textarea>
+            <label htmlFor="contact-message">Message</label>
+            <textarea id="contact-message" name="message" value={form.message} onChange={handleChange} rows="5" required></textarea>
           </div>
           <button type="submit">Send Message</button>
         </form>

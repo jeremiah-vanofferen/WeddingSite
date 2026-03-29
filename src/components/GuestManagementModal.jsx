@@ -273,6 +273,7 @@ export function GuestManagementModal({ onClose }) {
           <button className="admin-modal-close" onClick={onClose}>&times;</button>
         </div>
         <div className="admin-modal-body">
+          {error && <div className="error-message" role="alert">{error}</div>}
           <div className="guest-stats">
             <div className="stat-card">
               <h4>Total Guests</h4>

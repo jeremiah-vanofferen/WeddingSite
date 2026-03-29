@@ -64,7 +64,7 @@ INSERT INTO schedule (time, event, description, sort_order) VALUES ('20:00', 'En
 
 -- Insert default settings (admin email comes from ADMIN_EMAIL env var)
 INSERT INTO settings (key, value) VALUES ('adminEmail', '${ADMIN_EMAIL:-your@email.com}') ON CONFLICT (key) DO NOTHING;
-INSERT INTO settings (key, value) VALUES ('websiteName', 'My Wedding') ON CONFLICT (key) DO NOTHING;
+INSERT INTO settings (key, value) VALUES ('websiteName', '${WEBSITE_NAME:-My Wedding}') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('theme', 'elegant') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('primaryColor', '#0a20ca') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('primaryColorHover', '#1894dc') ON CONFLICT (key) DO NOTHING;
