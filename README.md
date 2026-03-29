@@ -47,6 +47,10 @@ POSTGRES_PASSWORD=your_secure_password
 DATABASE_URL=postgresql://wedding_user:your_secure_password@postgres:5432/wedding_db
 JWT_SECRET=your_jwt_secret_change_this
 
+# Admin credentials (set before first run to override defaults)
+ADMIN_USERNAME=YourName
+ADMIN_PASSWORD=your_secure_password
+
 # Email notifications (optional)
 GMAIL_USER=your@gmail.com
 GMAIL_PASS=your_gmail_app_password
@@ -67,14 +71,16 @@ docker-compose up --build
 | Backend API | http://localhost:5000/api |
 | PostgreSQL | localhost:5432 |
 
-### 3. Default Admin Login
+### 3. Admin Login
 
-Navigate to http://localhost:3000/admin and log in with:
+Navigate to http://localhost:3000/admin and log in with the credentials set in your `.env` file (`ADMIN_USERNAME` / `ADMIN_PASSWORD`).
+
+If those variables are not set, the fallback defaults are:
 
 - **Username:** `admin`
 - **Password:** `password123`
 
-> Change the default password immediately after first login by updating the `admin_users` table.
+> **Important:** Always set `ADMIN_USERNAME` and `ADMIN_PASSWORD` in `.env` before the first run. Credentials are seeded once at database initialization — changing them in `.env` after the database volume exists has no effect without re-initializing (see below).
 
 ### Stop Services
 
@@ -87,6 +93,17 @@ To also remove the database volume:
 ```bash
 docker-compose down -v
 ```
+
+### Re-seeding the Database
+
+The `init.sh` script only runs when the database volume is first created. To apply changes to admin credentials or other seed data to an existing environment:
+
+```bash
+docker-compose down -v   # removes the postgres_data volume
+docker-compose up --build
+```
+
+> This wipes all data. Export your guest list from the admin panel first if needed.
 
 ## Local Development (without Docker)
 
@@ -186,10 +203,14 @@ npm run dev          # http://localhost:5000
 | `POSTGRES_DB` | Yes | Database name |
 | `POSTGRES_USER` | Yes | Database user |
 | `POSTGRES_PASSWORD` | Yes | Database password |
+| `ADMIN_USERNAME` | No | Admin login username (default: `admin`) |
+| `ADMIN_PASSWORD` | No | Admin login password (default: `password123`) |
 | `GMAIL_USER` | No | Gmail address for sending notifications |
 | `GMAIL_PASS` | No | Gmail App Password |
 | `ADMIN_EMAIL` | No | Recipient address for email notifications |
 | `VITE_API_URL` | No | Backend API base URL (default: `http://backend:5000/api`) |
+
+> `ADMIN_USERNAME` and `ADMIN_PASSWORD` are consumed by the PostgreSQL container at database initialization. The password is hashed using bcrypt (`pgcrypto`) and stored in `admin_users` — the plaintext is never persisted.
 
 ## Guest CSV Import
 
