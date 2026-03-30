@@ -19,11 +19,12 @@ A full-stack wedding website with a React frontend, Node.js/Express backend, and
 - **Schedule page** — Publicly visible event timeline, managed from the admin panel
 - **RSVP page** — Guest self-service RSVP with party size and dietary notes; triggers email notification to admin
 - **Contact page** — Contact form that saves messages to the database and emails the admin
+- **Photo gallery** — Public gallery with lightbox viewing, featured-photo carousel support, and guest photo submission with admin approval
 - **Admin panel** — Password-protected dashboard with:
   - Wedding details management
   - Guest list (add, edit, delete, bulk CSV import)
   - Schedule event management (add, edit, delete, reorder)
-  - Photo gallery management (upload, edit, delete, feature/unfeature)
+  - Photo gallery management (upload, edit caption/URL, delete, feature/unfeature)
   - Pending guest photo approval/rejection queue
   - Site settings (theme, colors, font, countdown toggle, RSVP toggle, welcome message, admin email)
   - Admin password change
@@ -82,7 +83,7 @@ GMAIL_PASS=your_gmail_app_password
 ADMIN_EMAIL=your@gmail.com
 
 # Optional: pre-seed wedding registry URL in settings
-REGISTERY_LINK=https://example.com/your-registry
+REGISTRY_LINK=https://example.com/your-registry
 ```
 
 > **Gmail note:** Use an [App Password](https://support.google.com/accounts/answer/185833), not your regular Gmail password.
@@ -253,6 +254,7 @@ To use these as required status checks, go to **Settings → Branches → Branch
 | `DELETE` | `/api/schedule/:id` | Delete schedule event |
 | `GET` | `/api/gallery/pending` | List pending photo submissions |
 | `PUT` | `/api/gallery/:id/status` | Approve/reject photo submission |
+| `PUT` | `/api/gallery/:id` | Update approved gallery photo metadata |
 | `PUT` | `/api/gallery/:id/featured` | Toggle featured flag |
 | `DELETE` | `/api/gallery/:id` | Delete gallery photo |
 | `POST` | `/api/gallery/upload-file-admin` | Upload and auto-approve photo |
@@ -281,10 +283,12 @@ To use these as required status checks, go to **Settings → Branches → Branch
 | `GMAIL_USER` | No | Gmail address for sending notifications |
 | `GMAIL_PASS` | No | Gmail App Password |
 | `ADMIN_EMAIL` | No | Recipient address for email notifications |
-| `REGISTERY_LINK` | No | Seeds `settings.registryUrl` during first DB initialization |
+| `REGISTRY_LINK` | No | Seeds `settings.registryUrl` during first DB initialization |
 | `VITE_API_URL` | No | Backend API base URL (default: `/api` — same origin via Vite proxy) |
 
 > `ADMIN_USERNAME` and `ADMIN_PASSWORD` are consumed by the PostgreSQL container at database initialization. The password is hashed using bcrypt (`pgcrypto`) and stored in `admin_users` — the plaintext is never persisted.
+
+> `WEBSITE_NAME` and `REGISTRY_LINK` are also seed-time values in `init.sh`. Changing them after the Postgres volume already exists will not retroactively update existing rows in `settings` unless you re-seed or update them through the admin UI/API.
 
 ## RSVP Guest Count Rules
 
