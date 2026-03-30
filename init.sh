@@ -6,7 +6,7 @@ psql -v ON_ERROR_STOP=1 \
      --dbname "$POSTGRES_DB" \
      -v admin_username="${ADMIN_USERNAME:-admin}" \
     -v admin_password="${ADMIN_PASSWORD:-password123}" \
-    -v registry_link="${REGISTRY_LINK:-${REGISTRY_LINK:-}}" <<-EOSQL
+    -v registry_link="${REGISTRY_LINK}" <<-EOSQL
 
 -- Enable pgcrypto for in-database password hashing
 CREATE EXTENSION IF NOT EXISTS pgcrypto;

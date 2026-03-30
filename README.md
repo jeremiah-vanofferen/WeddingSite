@@ -98,7 +98,7 @@ docker-compose up --build
 |---|---|
 | Frontend | http://localhost:3000 |
 | Backend API | http://localhost:5000/api |
-| PostgreSQL | localhost:5432 |
+| PostgreSQL | http://localhost:5432 |
 
 ### 3. Admin Login
 
@@ -188,9 +188,9 @@ To use these as required status checks, go to **Settings → Branches → Branch
     ├── Navigation.jsx      # Site navigation bar
     ├── components/
     │   ├── GuestManagementModal.jsx    # Guest CRUD + CSV import
-  │   ├── LoginModal.jsx              # Admin login modal
+    │   ├── LoginModal.jsx              # Admin login modal
     │   ├── PhotoGalleryModal.jsx       # Photo gallery management
-  │   ├── GalleryApprovalModal.jsx    # Pending photo approvals
+    │   ├── GalleryApprovalModal.jsx    # Pending photo approvals
     │   ├── ScheduleModal.jsx           # Schedule event management
     │   ├── SettingsModal.jsx           # Site-wide settings
     │   └── WeddingDetailsModal.jsx     # Wedding details management
