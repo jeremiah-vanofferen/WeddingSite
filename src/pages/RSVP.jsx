@@ -1,5 +1,6 @@
 import '../pages/pages.css';
 import { useState } from 'react';
+import { API_BASE_URL } from '../utils/api';
 
 export default function RSVP() {
   const [form, setForm] = useState({
@@ -23,7 +24,7 @@ export default function RSVP() {
     setError('');
     setSubmitting(true);
     try {
-      const response = await fetch('/api/rsvp', {
+      const response = await fetch(`${API_BASE_URL}/rsvp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -34,10 +35,18 @@ export default function RSVP() {
           dietary: form.dietary
         })
       });
+
       if (response.ok) {
         setSubmitted(true);
       } else {
-        const data = await response.json();
+        let data = null;
+
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
+
         setError(data.error || 'Submission failed. Please try again.');
       }
     } catch {

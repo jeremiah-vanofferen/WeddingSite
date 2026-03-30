@@ -1,4 +1,8 @@
 import { useState, useEffect } from 'react';
+import { PhotoCarousel } from '../components/PhotoCarousel';
+import { DEFAULT_SETTINGS } from '../utils/constants';
+import { fetchPublicSettings } from '../utils/publicData';
+import { mergeSettings, mergeWeddingDetails } from '../utils/settings';
 import '../pages/pages.css';
 
 export default function Home() {
@@ -7,41 +11,21 @@ export default function Home() {
     time: '16:00',
     location: 'Windpoint Lighthouse',
     address: '4725 Lighthouse Drive, Wind Point, WI 53402',
-    description: 'Join us for a beautiful outdoor ceremony followed by an elegant reception.'
+    description: 'Join us for a beautiful outdoor ceremony followed by an elegant reception.',
+    registryUrl: ''
   });
 
-  const [settings, setSettings] = useState({
-    theme: 'elegant',
-    primaryColor: '#0a20ca',
-    primaryColorHover: '#1894dc',
-    fontFamily: 'sans serif',
-    showCountdown: true,
-    allowRsvp: true,
-    welcomeMessage: 'Thank you for visiting our wedding website. We\'re thrilled to share the details of our celebration with you.'
-  });
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
   useEffect(() => {
-    fetch('/api/public/settings')
-      .then(res => res.json())
-      .then(data => {
-        if (data && !data.error) {
-          setSettings(prev => ({
-            ...prev,
-            ...data,
-            showCountdown: data.showCountdown === 'true' || data.showCountdown === true,
-            allowRsvp: data.allowRsvp === 'true' || data.allowRsvp === true,
-          }));
-          setWeddingDetails(prev => ({
-            ...prev,
-            ...(data.weddingDate && { date: data.weddingDate }),
-            ...(data.weddingTime && { time: data.weddingTime }),
-            ...(data.weddingLocation && { location: data.weddingLocation }),
-            ...(data.weddingAddress && { address: data.weddingAddress }),
-            ...(data.weddingDescription && { description: data.weddingDescription }),
-          }));
-        }
-      })
-      .catch(() => {});
+    fetchPublicSettings().then(data => {
+      if (!data) {
+        return;
+      }
+
+      setSettings(prev => mergeSettings(prev, data));
+      setWeddingDetails(prev => mergeWeddingDetails(prev, data));
+    });
   }, []);
 
   // Function to get time zone from address
@@ -64,12 +48,12 @@ export default function Home() {
 
   return (
     <div className="page">
-      <h1 style={{ color: 'black' }}>{settings.websiteName}</h1>
-      <p>Join us as we celebrate our special day!</p>
-
-      <div className="demo-card">
-        <h3>Welcome</h3>
-        <p>{settings.welcomeMessage}</p>
+      <div className="demo-card home-hero-card">
+        <PhotoCarousel />
+        <div className="home-welcome">
+          <h3>Welcome</h3>
+          <p>{settings.welcomeMessage}</p>
+        </div>
       </div>
       
       <div className="demo-card">
@@ -90,6 +74,9 @@ export default function Home() {
         <p><strong>Address:</strong> {weddingDetails.address}</p>
         {weddingDetails.description && (
           <p><strong>Description:</strong> {weddingDetails.description}</p>
+        )}
+        {weddingDetails.registryUrl && (
+          <p><strong>Registry:</strong> <a href={weddingDetails.registryUrl} target="_blank" rel="noopener noreferrer">View Our Registry</a></p>
         )}
       </div>
     </div>

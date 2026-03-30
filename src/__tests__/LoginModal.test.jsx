@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import LoginModal from '../LoginModal';
+import LoginModal from '../components/LoginModal';
 
 const mockLogin = vi.fn();
 
-vi.mock('../AuthContext', () => ({
+vi.mock('../utils/AuthContext', () => ({
   useAuth: () => ({ login: mockLogin }),
 }));
 

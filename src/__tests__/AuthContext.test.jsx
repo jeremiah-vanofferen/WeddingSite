@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, act, waitFor } from '@testing-library/react';
-import { AuthProvider, useAuth } from '../AuthContext';
+import { AuthProvider, useAuth } from '../utils/AuthContext';
 
 // A helper component that exposes context values via the DOM
 function TestConsumer() {
@@ -36,6 +36,7 @@ describe('AuthContext', () => {
   it('verifies an existing token from localStorage on mount', async () => {
     localStorage.setItem('authToken', 'existing-token');
     global.fetch.mockResolvedValueOnce({
+      ok: true,
       json: async () => ({ user: { id: 1, username: 'admin' } }),
     });
 
@@ -51,6 +52,7 @@ describe('AuthContext', () => {
   it('removes an invalid token from localStorage', async () => {
     localStorage.setItem('authToken', 'bad-token');
     global.fetch.mockResolvedValueOnce({
+      ok: false,
       json: async () => ({ error: 'invalid token' }),
     });
 
@@ -123,6 +125,7 @@ describe('AuthContext', () => {
   it('logout clears the token and logged-in state', async () => {
     localStorage.setItem('authToken', 'some-token');
     global.fetch.mockResolvedValueOnce({
+      ok: true,
       json: async () => ({ user: { id: 1, username: 'admin' } }),
     });
 

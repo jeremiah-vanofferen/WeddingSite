@@ -8,6 +8,7 @@ const sampleDetails = {
   location: 'Windpoint Lighthouse',
   address: '4725 Lighthouse Drive, Wind Point, WI 53402',
   description: 'A beautiful outdoor ceremony.',
+  registryUrl: 'https://www.example.com/registry',
 };
 
 describe('WeddingDetailsModal', () => {
@@ -25,6 +26,7 @@ describe('WeddingDetailsModal', () => {
     expect(screen.getByLabelText(/venue name/i)).toHaveValue('Windpoint Lighthouse');
     expect(screen.getByLabelText(/venue address/i)).toHaveValue('4725 Lighthouse Drive, Wind Point, WI 53402');
     expect(screen.getByLabelText(/description/i)).toHaveValue('A beautiful outdoor ceremony.');
+    expect(screen.getByLabelText(/registry link/i)).toHaveValue('https://www.example.com/registry');
   });
 
   it('calls onSave with updated details when Save is clicked', async () => {
@@ -51,6 +53,7 @@ describe('ViewDetailsModal', () => {
     render(<ViewDetailsModal details={sampleDetails} onClose={vi.fn()} />);
     expect(screen.getByText('Windpoint Lighthouse')).toBeInTheDocument();
     expect(screen.getByText('4725 Lighthouse Drive, Wind Point, WI 53402')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /view our registry/i })).toBeInTheDocument();
     expect(screen.getByText('A beautiful outdoor ceremony.')).toBeInTheDocument();
   });
 

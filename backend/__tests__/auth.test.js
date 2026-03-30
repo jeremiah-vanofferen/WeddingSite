@@ -128,3 +128,104 @@ describe('GET /api/auth/verify', () => {
     expect(res.body.user).toEqual({ id: 1, username: 'admin' });
   });
 });
+
+describe('POST /api/auth/change-password', () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+    silenceExpectedConsole();
+  });
+
+  it('returns 401 when no Authorization header is provided', async () => {
+    const res = await request(app).post('/api/auth/change-password').send({
+      currentPassword: 'old-password',
+      newPassword: 'new-password-123',
+      confirmPassword: 'new-password-123'
+    });
+
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe('Access token required');
+  });
+
+  it('returns 400 when required fields are missing', async () => {
+    jwt.verify.mockImplementationOnce((_, __, cb) => cb(null, { id: 1, username: 'admin' }));
+
+    const res = await request(app)
+      .post('/api/auth/change-password')
+      .set('Authorization', 'Bearer valid-token')
+      .send({ currentPassword: 'old-password' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Current password, new password, and confirmation are required');
+  });
+
+  it('returns 400 when new password and confirmation do not match', async () => {
+    jwt.verify.mockImplementationOnce((_, __, cb) => cb(null, { id: 1, username: 'admin' }));
+
+    const res = await request(app)
+      .post('/api/auth/change-password')
+      .set('Authorization', 'Bearer valid-token')
+      .send({
+        currentPassword: 'old-password',
+        newPassword: 'new-password-123',
+        confirmPassword: 'different-password-123'
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('New password and confirmation do not match');
+  });
+
+  it('returns 401 when current password is incorrect', async () => {
+    jwt.verify.mockImplementationOnce((_, __, cb) => cb(null, { id: 1, username: 'admin' }));
+    pool.query.mockResolvedValueOnce({
+      rowCount: 1,
+      rows: [{ id: 1, password_hash: 'old-hash' }]
+    });
+    bcrypt.compare.mockResolvedValueOnce(false);
+
+    const res = await request(app)
+      .post('/api/auth/change-password')
+      .set('Authorization', 'Bearer valid-token')
+      .send({
+        currentPassword: 'wrong-password',
+        newPassword: 'new-password-123',
+        confirmPassword: 'new-password-123'
+      });
+
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe('Current password is incorrect');
+  });
+
+  it('updates password and returns success when current password is valid', async () => {
+    jwt.verify.mockImplementationOnce((_, __, cb) => cb(null, { id: 1, username: 'admin' }));
+    pool.query
+      .mockResolvedValueOnce({
+        rowCount: 1,
+        rows: [{ id: 1, password_hash: 'old-hash' }]
+      })
+      .mockResolvedValueOnce({ rowCount: 1, rows: [] });
+    bcrypt.compare.mockResolvedValueOnce(true);
+    bcrypt.hash.mockResolvedValueOnce('new-hash');
+
+    const res = await request(app)
+      .post('/api/auth/change-password')
+      .set('Authorization', 'Bearer valid-token')
+      .send({
+        currentPassword: 'old-password',
+        newPassword: 'new-password-123',
+        confirmPassword: 'new-password-123'
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ success: true, message: 'Password changed successfully' });
+    expect(pool.query).toHaveBeenNthCalledWith(
+      1,
+      'SELECT id, password_hash FROM admin_users WHERE id = $1',
+      [1]
+    );
+    expect(pool.query).toHaveBeenNthCalledWith(
+      2,
+      'UPDATE admin_users SET password_hash = $1 WHERE id = $2',
+      ['new-hash', 1]
+    );
+  });
+});

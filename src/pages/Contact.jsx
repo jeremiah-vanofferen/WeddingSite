@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { API_BASE_URL } from '../utils/api';
 import '../pages/pages.css';
 
 export default function Contact() {
@@ -17,15 +18,23 @@ export default function Contact() {
     setError('');
     setSubmitting(true);
     try {
-      const response = await fetch('/api/messages', {
+      const response = await fetch(`${API_BASE_URL}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
       });
+
       if (response.ok) {
         setSubmitted(true);
       } else {
-        const data = await response.json();
+        let data = null;
+
+        try {
+          data = await response.json();
+        } catch {
+          data = null;
+        }
+
         setError(data.error || 'Submission failed. Please try again.');
       }
     } catch {

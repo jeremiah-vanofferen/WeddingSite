@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
-import { useAuth } from './AuthContext';
-import LoginModal from './LoginModal';
+import { useAuth } from './utils/AuthContext';
+import LoginModal from './components/LoginModal';
 import PropTypes from 'prop-types';
 import './Navigation.css';
 
@@ -17,6 +17,7 @@ export default function Navigation({ settings }) {
           <ul className="nav-menu">
             <li><Link to="/">Home</Link></li>
             <li><Link to="/schedule">Schedule</Link></li>
+            <li><Link to="/gallery">Gallery</Link></li>
             <li><Link to="/contact">Contact</Link></li>
             <li><Link to="/rsvp">RSVP</Link></li>
             {isLoggedIn && <li><Link to="/admin">Admin</Link></li>}

@@ -85,6 +85,17 @@ export function WeddingDetailsModal({ details, onSave, onClose }) {
               rows="4"
             />
           </div>
+          <div className="form-group">
+            <label htmlFor="registryUrl">Registry Link</label>
+            <input
+              id="registryUrl"
+              name="registryUrl"
+              type="url"
+              value={formData.registryUrl}
+              onChange={handleChange}
+              placeholder="https://example.com/registry"
+            />
+          </div>
         </form>
         <div className="admin-modal-footer">
           <button type="button" className="cancel-btn" onClick={onClose}>Cancel</button>
@@ -121,6 +132,9 @@ export function ViewDetailsModal({ details, onClose }) {
             <p><strong>Venue:</strong> {details.location}</p>
             <p><strong>Address:</strong> {details.address}</p>
             <p><strong>Description:</strong> {details.description}</p>
+            {details.registryUrl && (
+              <p><strong>Registry:</strong> <a href={details.registryUrl} target="_blank" rel="noopener noreferrer">View Our Registry</a></p>
+            )}
           </div>
         </div>
         <div className="admin-modal-footer">
@@ -145,6 +159,7 @@ WeddingDetailsModal.propTypes = {
     location: PropTypes.string,
     address: PropTypes.string,
     description: PropTypes.string,
+    registryUrl: PropTypes.string,
     timeZone: PropTypes.string,
   }).isRequired,
   onSave: PropTypes.func.isRequired,
@@ -158,6 +173,7 @@ ViewDetailsModal.propTypes = {
     location: PropTypes.string,
     address: PropTypes.string,
     description: PropTypes.string,
+    registryUrl: PropTypes.string,
     timeZone: PropTypes.string,
   }).isRequired,
   onClose: PropTypes.func.isRequired,

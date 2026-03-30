@@ -1,15 +1,18 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { AuthProvider } from './AuthContext'
+import { AuthProvider } from './utils/AuthContext'
 import Navigation from './Navigation'
 import Home from './pages/Home'
 import Schedule from './pages/Schedule'
 import Contact from './pages/Contact'
 import RSVP from './pages/RSVP'
 import { DEFAULT_SETTINGS } from './utils/constants'
+import { fetchPublicSettings } from './utils/publicData'
+import { mergeSettings } from './utils/settings'
 import './App.css'
 
 const Admin = lazy(() => import('./pages/Admin'));
+const Gallery = lazy(() => import('./pages/Gallery'));
 
 function App() {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
@@ -18,14 +21,9 @@ function App() {
     let isActive = true;
 
     const fetchSettings = async () => {
-      try {
-        const res = await fetch('/api/public/settings');
-        const data = await res.json();
-        if (isActive && data && !data.error) {
-          setSettings(prev => ({ ...prev, ...data }));
-        }
-      } catch {
-        // Silently use defaults if unreachable
+      const data = await fetchPublicSettings();
+      if (isActive && data) {
+        setSettings(prev => mergeSettings(prev, data));
       }
     };
 
@@ -80,6 +78,14 @@ function App() {
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/rsvp" element={<RSVP />} />
+          <Route
+            path="/gallery"
+            element={(
+              <Suspense fallback={null}>
+                <Gallery />
+              </Suspense>
+            )}
+          />
           <Route
             path="/admin"
             element={(

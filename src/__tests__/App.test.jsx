@@ -11,7 +11,7 @@ vi.mock('../pages/RSVP', () => ({ default: () => <div data-testid="rsvp-page">RS
 vi.mock('../Navigation', () => ({
   default: ({ settings }) => <nav data-testid="navigation" data-theme={settings?.theme}>Nav</nav>,
 }));
-vi.mock('../AuthContext', () => ({
+vi.mock('../utils/AuthContext', () => ({
   AuthProvider: ({ children }) => <>{children}</>,
   useAuth: () => ({ isLoggedIn: false, logout: vi.fn(), adminName: null }),
 }));

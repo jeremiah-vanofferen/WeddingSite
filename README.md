@@ -23,9 +23,34 @@ A full-stack wedding website with a React frontend, Node.js/Express backend, and
   - Wedding details management
   - Guest list (add, edit, delete, bulk CSV import)
   - Schedule event management (add, edit, delete, reorder)
-  - Photo gallery management
+  - Photo gallery management (upload, edit, delete, feature/unfeature)
+  - Pending guest photo approval/rejection queue
   - Site settings (theme, colors, font, countdown toggle, RSVP toggle, welcome message, admin email)
+  - Admin password change
   - Contact message inbox with read/unread tracking
+
+## Contributing
+
+See `CONTRIBUTING.md` for setup, coding standards, testing/lint expectations, and pull request guidelines.
+
+## License
+
+This project is licensed under the Apache License 2.0. See `LICENSE` for details.
+
+## Frontend Utility Layers
+
+The frontend now uses shared utility helpers to reduce repeated request and settings code:
+
+- `src/utils/api.js` — central API base URL (`/api` by default)
+- `src/utils/http.js` — authenticated headers and strict JSON request helper (`requestJson`)
+- `src/utils/publicData.js` — public fetch helpers with safe fallbacks
+- `src/utils/settings.js` — shared settings/wedding-details merge and boolean coercion logic
+
+When adding frontend API calls:
+
+1. Use `requestJson` for admin/protected requests where non-2xx should throw.
+2. Use `publicData` helpers for public pages where graceful fallback is preferred.
+3. Reuse `mergeSettings` for settings normalization instead of duplicating boolean coercion.
 
 ## Quick Start
 
@@ -55,6 +80,9 @@ ADMIN_PASSWORD=your_secure_password
 GMAIL_USER=your@gmail.com
 GMAIL_PASS=your_gmail_app_password
 ADMIN_EMAIL=your@gmail.com
+
+# Optional: pre-seed wedding registry URL in settings
+REGISTERY_LINK=https://example.com/your-registry
 ```
 
 > **Gmail note:** Use an [App Password](https://support.google.com/accounts/answer/185833), not your regular Gmail password.
@@ -156,16 +184,22 @@ To use these as required status checks, go to **Settings → Branches → Branch
 └── src/
     ├── main.jsx            # React entry point
     ├── App.jsx             # Root component with routing and theme management
-    ├── AuthContext.jsx     # JWT authentication context
     ├── Navigation.jsx      # Site navigation bar
-    ├── LoginModal.jsx      # Admin login modal
     ├── components/
     │   ├── GuestManagementModal.jsx    # Guest CRUD + CSV import
+  │   ├── LoginModal.jsx              # Admin login modal
     │   ├── PhotoGalleryModal.jsx       # Photo gallery management
+  │   ├── GalleryApprovalModal.jsx    # Pending photo approvals
     │   ├── ScheduleModal.jsx           # Schedule event management
     │   ├── SettingsModal.jsx           # Site-wide settings
     │   └── WeddingDetailsModal.jsx     # Wedding details management
-    └── pages/
+  └── utils/
+    ├── api.js            # API base URL helper
+    ├── http.js           # Auth headers + strict request helper
+    ├── publicData.js     # Public fetch helpers with fallbacks
+    ├── settings.js       # Shared settings/detail merge helpers
+    └── AuthContext.jsx   # JWT authentication context
+  └── pages/
         ├── Home.jsx        # Landing page with countdown
         ├── Schedule.jsx    # Public event schedule
         ├── RSVP.jsx        # Guest RSVP form
@@ -201,6 +235,7 @@ To use these as required status checks, go to **Settings → Branches → Branch
 |---|---|---|
 | `POST` | `/api/auth/login` | Authenticate and get JWT |
 | `GET` | `/api/auth/verify` | Verify JWT token |
+| `POST` | `/api/auth/change-password` | Change admin password |
 | `GET` | `/api/guests` | List all guests |
 | `POST` | `/api/guests` | Add a guest |
 | `PUT` | `/api/guests/:id` | Update a guest |
@@ -209,7 +244,27 @@ To use these as required status checks, go to **Settings → Branches → Branch
 | `GET` | `/api/messages` | List contact messages |
 | `PUT` | `/api/messages/:id/read` | Mark message as read |
 | `GET` | `/api/settings` | Get all settings |
-| `POST` | `/api/settings` | Update settings |
+| `PUT` | `/api/settings` | Update settings |
+| `GET` | `/api/settings/admin-email` | Get admin notification email |
+| `PUT` | `/api/settings/admin-email` | Update admin notification email |
+| `POST` | `/api/schedule` | Add schedule event |
+| `PUT` | `/api/schedule` | Reorder schedule events |
+| `PUT` | `/api/schedule/:id` | Update schedule event |
+| `DELETE` | `/api/schedule/:id` | Delete schedule event |
+| `GET` | `/api/gallery/pending` | List pending photo submissions |
+| `PUT` | `/api/gallery/:id/status` | Approve/reject photo submission |
+| `PUT` | `/api/gallery/:id/featured` | Toggle featured flag |
+| `DELETE` | `/api/gallery/:id` | Delete gallery photo |
+| `POST` | `/api/gallery/upload-file-admin` | Upload and auto-approve photo |
+
+### Gallery Public Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/gallery` | List approved gallery photos |
+| `GET` | `/api/gallery/carousel/featured` | List featured photos for carousel |
+| `POST` | `/api/gallery/upload` | Submit URL-based photo for approval |
+| `POST` | `/api/gallery/upload-file` | Submit file upload for approval |
 
 ## Environment Variables
 
@@ -226,6 +281,7 @@ To use these as required status checks, go to **Settings → Branches → Branch
 | `GMAIL_USER` | No | Gmail address for sending notifications |
 | `GMAIL_PASS` | No | Gmail App Password |
 | `ADMIN_EMAIL` | No | Recipient address for email notifications |
+| `REGISTERY_LINK` | No | Seeds `settings.registryUrl` during first DB initialization |
 | `VITE_API_URL` | No | Backend API base URL (default: `/api` — same origin via Vite proxy) |
 
 > `ADMIN_USERNAME` and `ADMIN_PASSWORD` are consumed by the PostgreSQL container at database initialization. The password is hashed using bcrypt (`pgcrypto`) and stored in `admin_users` — the plaintext is never persisted.

@@ -11,7 +11,9 @@ const EMPTY_SETTINGS = {
   showCountdown: false,
   allowRsvp: false,
   welcomeMessage: '',
-  adminEmail: ''
+  adminEmail: '',
+  carouselSpeed: 6,
+  carouselTransition: 'fade'
 };
 
 export function SettingsModal({ settings, onSave, onClose }) {
@@ -45,7 +47,9 @@ export function SettingsModal({ settings, onSave, onClose }) {
       showCountdown: true,
       allowRsvp: true,
       welcomeMessage: 'Thank you for visiting our wedding website. We\'re thrilled to share the details of our celebration with you.',
-      adminEmail: 'your@email.com'
+      adminEmail: 'your@email.com',
+      carouselSpeed: 6,
+      carouselTransition: 'fade'
     };
     setFormData(defaults);
   };
@@ -197,6 +201,40 @@ export function SettingsModal({ settings, onSave, onClose }) {
               </div>
             </div>
           </div>
+            {/* Carousel Settings Section */}
+            <div className="settings-section">
+              <h3 className="section-title">Photo Carousel (Home Page)</h3>
+              <div className="setting-item">
+                <label htmlFor="carouselSpeed">Auto-rotate Speed (seconds)</label>
+                <select
+                  id="carouselSpeed"
+                  name="carouselSpeed"
+                  value={formData.carouselSpeed}
+                  onChange={handleChange}
+                  style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                >
+                  <option value={3}>3 seconds (fast)</option>
+                  <option value={4}>4 seconds</option>
+                  <option value={5}>5 seconds</option>
+                  <option value={6}>6 seconds (default)</option>
+                  <option value={8}>8 seconds</option>
+                  <option value={10}>10 seconds (slow)</option>
+                </select>
+              </div>
+              <div className="setting-item">
+                <label htmlFor="carouselTransition">Transition Style</label>
+                <select
+                  id="carouselTransition"
+                  name="carouselTransition"
+                  value={formData.carouselTransition}
+                  onChange={handleChange}
+                  style={{ width: '100%', padding: '0.5rem', border: '1px solid #ddd', borderRadius: '4px' }}
+                >
+                  <option value="fade">Fade</option>
+                  <option value="slide">Slide</option>
+                </select>
+              </div>
+            </div>
           <div className="settings-preview">
             <h4>Preview Theme & Colors</h4>
             <div
@@ -290,6 +328,8 @@ SettingsModal.propTypes = {
     fontFamily: PropTypes.string,
     showCountdown: PropTypes.bool,
     allowRsvp: PropTypes.bool,
+    carouselSpeed: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    carouselTransition: PropTypes.string,
     welcomeMessage: PropTypes.string,
     adminEmail: PropTypes.string,
   }).isRequired,

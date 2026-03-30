@@ -1,10 +1,28 @@
+# Dependencies
 node_modules
-npm-debug.log*
-coverage
+
+# Environment files
 .env
 .env.*
 !.env.example
-.git
-*.md
+
+# Test and coverage artifacts
+coverage
 __tests__
 jest.config.js
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# VCS/docs
+.git
+*.md
+
+# OS cruft
+.DS_Store
+Thumbs.db
+

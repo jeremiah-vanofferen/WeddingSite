@@ -3,15 +3,15 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Navigation from '../Navigation';
 
-vi.mock('../AuthContext', () => ({
+vi.mock('../utils/AuthContext', () => ({
   useAuth: vi.fn(),
 }));
 
-vi.mock('../LoginModal', () => ({
+vi.mock('../components/LoginModal', () => ({
   default: ({ isOpen }) => isOpen ? <div data-testid="login-modal" /> : null,
 }));
 
-import { useAuth } from '../AuthContext';
+import { useAuth } from '../utils/AuthContext';
 
 const defaultSettings = { websiteName: 'Test Wedding' };
 

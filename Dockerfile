@@ -10,8 +10,11 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy application files
-COPY . .
+# Copy only files required for the frontend build/runtime
+COPY index.html ./
+COPY vite.config.js ./
+COPY src ./src
+COPY public ./public
 
 # Build the application
 RUN npm run build

@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Papa from 'papaparse';
 import PropTypes from 'prop-types';
 import { API_BASE_URL } from '../utils/api';
+import { getAuthHeaders } from '../utils/http';
 
 export function GuestManagementModal({ onClose }) {
   const [guestList, setGuestList] = useState([]);
@@ -39,11 +40,8 @@ export function GuestManagementModal({ onClose }) {
 
   const fetchGuests = async () => {
     try {
-      const token = localStorage.getItem('authToken');
       const response = await fetch(`${API_BASE_URL}/guests`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: getAuthHeaders()
       });
 
       if (!response.ok) {
@@ -164,13 +162,9 @@ export function GuestManagementModal({ onClose }) {
     if (uploadedGuests.length === 0) return;
 
     try {
-      const token = localStorage.getItem('authToken');
       const response = await fetch(`${API_BASE_URL}/guests/bulk`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ guests: uploadedGuests, mode: uploadMode })
       });
 
@@ -199,13 +193,9 @@ export function GuestManagementModal({ onClose }) {
 
   const handleSaveEdit = async (updatedGuest) => {
     try {
-      const token = localStorage.getItem('authToken');
       const response = await fetch(`${API_BASE_URL}/guests/${updatedGuest.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(updatedGuest)
       });
 
@@ -228,12 +218,9 @@ export function GuestManagementModal({ onClose }) {
   const handleDelete = async (guestId) => {
     if (window.confirm('Are you sure you want to delete this guest?')) {
       try {
-        const token = localStorage.getItem('authToken');
         const response = await fetch(`${API_BASE_URL}/guests/${guestId}`, {
           method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          headers: getAuthHeaders()
         });
 
         if (!response.ok) {
@@ -254,13 +241,9 @@ export function GuestManagementModal({ onClose }) {
       const guest = guestList.find(g => g.id === guestId);
       if (!guest) return;
 
-      const token = localStorage.getItem('authToken');
       const response = await fetch(`${API_BASE_URL}/guests/${guestId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ ...guest, rsvp })
       });
 

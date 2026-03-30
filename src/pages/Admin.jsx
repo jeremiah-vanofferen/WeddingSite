@@ -1,15 +1,12 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
-import { useAuth } from '../AuthContext';
+﻿import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useAuth } from '../utils/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import '../pages/pages.css';
 import './Admin.css';
 import { DEFAULT_SETTINGS } from '../utils/constants';
 import { API_BASE_URL } from '../utils/api';
-
-const getAuthHeaders = (headers = {}) => ({
-  ...headers,
-  Authorization: `Bearer ${localStorage.getItem('authToken')}`
-});
+import { getAuthHeaders, requestJson } from '../utils/http';
+import { mergeSettings, mergeWeddingDetails } from '../utils/settings';
 
 const WeddingDetailsModal = lazy(() =>
   import('../components/WeddingDetailsModal').then(module => ({ default: module.WeddingDetailsModal }))
@@ -36,6 +33,8 @@ const AddPhotoModal = lazy(() =>
   import('../components/PhotoGalleryModal').then(module => ({ default: module.AddPhotoModal }))
 );
 const SettingsModal = lazy(() => import('../components/SettingsModal').then(module => ({ default: module.SettingsModal })));
+const GalleryApprovalModal = lazy(() => import('../components/GalleryApprovalModal'));
+const ChangePasswordModal = lazy(() => import('../components/ChangePasswordModal'));
 
 export default function Admin() {
   const { isLoggedIn, logout, adminName } = useAuth();
@@ -48,56 +47,54 @@ export default function Admin() {
     time: '',
     location: '',
     address: '',
-    description: ''
+    description: '',
+    registryUrl: ''
   });
 
   const [schedule, setSchedule] = useState([]);
 
-  const [photos, setPhotos] = useState([
-    { id: 1, url: '/placeholder-photo1.jpg', caption: 'Engagement photos', featured: true },
-    { id: 2, url: '/placeholder-photo2.jpg', caption: 'Venue setup', featured: false }
-  ]);
+  const [photos, setPhotos] = useState([]);
 
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
   // Load schedule from backend on mount
   useEffect(() => {
     fetch(`${API_BASE_URL}/schedule`)
-      .then(res => res.json())
+      .then(res => (res.ok ? res.json() : []))
       .then(data => Array.isArray(data) ? setSchedule(data) : setSchedule([]))
       .catch(() => {});
   }, []);
 
-  // Load all settings (includes wedding details) from backend on mount
-  const fetchSettings = () => {
-    fetch(`${API_BASE_URL}/settings`, {
-      headers: getAuthHeaders()
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data && !data.error) {
-          // Coerce boolean strings from DB back to actual booleans
-          const coerced = { ...data };
-          if ('showCountdown' in coerced) coerced.showCountdown = coerced.showCountdown === true || coerced.showCountdown === 'true';
-          if ('allowRsvp' in coerced) coerced.allowRsvp = coerced.allowRsvp === true || coerced.allowRsvp === 'true';
-          setSettings({ ...DEFAULT_SETTINGS, ...coerced });
-          // Extract wedding details from settings
-          setWeddingDetails(prev => ({
-            ...prev,
-            ...(coerced.weddingDate && { date: coerced.weddingDate }),
-            ...(coerced.weddingTime && { time: coerced.weddingTime }),
-            ...(coerced.weddingLocation && { location: coerced.weddingLocation }),
-            ...(coerced.weddingAddress && { address: coerced.weddingAddress }),
-            ...(coerced.weddingDescription && { description: coerced.weddingDescription }),
-          }));
-        }
-      })
+  const fetchPhotos = () => {
+    fetch(`${API_BASE_URL}/gallery`)
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setPhotos(Array.isArray(data) ? data : []))
       .catch(() => {});
   };
 
   useEffect(() => {
+    fetchPhotos();
+  }, []);
+
+  // Load all settings (includes wedding details) from backend on mount
+  const fetchSettings = useCallback(() => {
+    requestJson(
+      `${API_BASE_URL}/settings`,
+      { headers: getAuthHeaders() },
+      'Failed to load settings.'
+    )
+      .then(data => {
+        if (data && !data.error) {
+          setSettings(prev => mergeSettings(prev, data));
+          setWeddingDetails(prev => mergeWeddingDetails(prev, data));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (isLoggedIn) fetchSettings();
-  }, [isLoggedIn]);
+  }, [fetchSettings, isLoggedIn]);
 
   // Messages state
   const [messages, setMessages] = useState([]);
@@ -106,8 +103,19 @@ export default function Admin() {
       fetch(`${API_BASE_URL}/messages`, {
         headers: getAuthHeaders()
       })
-        .then(res => res.json())
+        .then(res => (res.ok ? res.json() : []))
         .then(data => Array.isArray(data) ? setMessages(data) : setMessages([]));
+    }
+  }, [isLoggedIn]);
+
+  // Pending photo submissions count
+  const [pendingPhotoCount, setPendingPhotoCount] = useState(0);
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetch(`${API_BASE_URL}/gallery/pending`, { headers: getAuthHeaders() })
+        .then(res => res.ok ? res.json() : [])
+        .then(data => setPendingPhotoCount(Array.isArray(data) ? data.length : 0))
+        .catch(() => {});
     }
   }, [isLoggedIn]);
 
@@ -119,29 +127,20 @@ export default function Admin() {
   // Mark message as read when modal opens
   useEffect(() => {
     if (selectedMessage && !selectedMessage.is_read) {
-      fetch(`${API_BASE_URL}/messages/${selectedMessage.id}/read`, {
-        method: 'PUT',
-        headers: getAuthHeaders()
-      })
-        .then(res => res.json())
+      requestJson(
+        `${API_BASE_URL}/messages/${selectedMessage.id}/read`,
+        {
+          method: 'PUT',
+          headers: getAuthHeaders()
+        },
+        'Failed to mark message as read.'
+      )
         .then(updated => {
           setMessages(msgs => msgs.map(m => m.id === updated.id ? { ...m, is_read: true } : m));
         })
         .catch(() => {});
     }
   }, [selectedMessage]);
-
-  // Load photos from localStorage on mount
-  useEffect(() => {
-    const savedPhotos = localStorage.getItem('weddingPhotos');
-    if (savedPhotos) setPhotos(JSON.parse(savedPhotos));
-    // Settings, schedule, and wedding details are loaded from the database
-  }, []);
-
-  // Save data to localStorage
-  const saveData = (key, data) => {
-    localStorage.setItem(key, JSON.stringify(data));
-  };
 
   if (!isLoggedIn) {
     return (
@@ -166,30 +165,18 @@ export default function Admin() {
     setEditingItem(null);
   };
 
-  const requestJson = async (url, options, fallbackError) => {
-    const response = await fetch(url, options);
-    let data = null;
-
-    try {
-      data = await response.json();
-    } catch {
-      data = null;
-    }
-
-    if (!response.ok) {
-      throw new Error((data && data.error) || fallbackError || `Request failed with status ${response.status}`);
-    }
-
-    return data;
-  };
-
   const handleSaveSettings = async (newSettings) => {
-    setSettings(newSettings);
-    await fetch(`${API_BASE_URL}/settings`, {
-      method: 'PUT',
-      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify(newSettings)
-    });
+    await requestJson(
+      `${API_BASE_URL}/settings`,
+      {
+        method: 'PUT',
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(newSettings)
+      },
+      'Failed to save settings.'
+    );
+
+    setSettings({ ...DEFAULT_SETTINGS, ...newSettings });
     window.dispatchEvent(new CustomEvent('settingsChanged', { detail: newSettings }));
   };
 
@@ -199,7 +186,7 @@ export default function Admin() {
         <h1>Admin Dashboard</h1>
         <p>Welcome, {adminName}!</p>
         {saveError && (
-          <p style={{ color: '#b42318', marginTop: 8 }}>{saveError}</p>
+          <p className="admin-error-message">{saveError}</p>
         )}
       </div>
 
@@ -236,8 +223,14 @@ export default function Admin() {
           <p>Upload and manage wedding photos and gallery ({photos.length} photos).</p>
           <div className="admin-actions">
             <button onClick={() => openModal('photos')}>Manage Photos</button>
-            <button onClick={() => openModal('add-photo')}>Add Photo</button>
+            <button onClick={() => openModal('add-photo')}>Upload Photo</button>
           </div>
+        </div>
+
+        <div className="demo-card">
+          <h3>Photo Approvals</h3>
+          <p>Review guest photo submissions ({pendingPhotoCount} pending).</p>
+          <button onClick={() => openModal('gallery-approvals')}>Review Submissions</button>
         </div>
 
         <div className="demo-card">
@@ -247,17 +240,24 @@ export default function Admin() {
         </div>
 
         <div className="demo-card">
+          <h3>Account Security</h3>
+          <p>Update your admin password.</p>
+          <button onClick={() => openModal('change-password')}>Change Password</button>
+        </div>
+
+        <div className="demo-card">
           <h3>Contact Messages</h3>
           <p>View messages submitted from the contact form.</p>
-          <div style={{ maxHeight: 300, overflowY: 'auto', background: '#fafbfc', border: '1px solid #eee', borderRadius: 6, padding: 8 }}>
+          <div className="admin-messages-panel">
             {messages.length === 0 ? (
-              <p style={{ color: '#888' }}>No messages yet.</p>
+              <p className="admin-messages-empty">No messages yet.</p>
             ) : (
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              <ul className="admin-messages-list">
                 {messages.map(msg => (
-                  <li key={msg.id} style={{ borderBottom: '1px solid #eee', marginBottom: 4, paddingBottom: 4, cursor: 'pointer' }}
+                  <li key={msg.id} className="admin-messages-item"
                     onClick={() => setSelectedMessage(msg)}>
-                    <span style={{ fontWeight: msg.is_read ? 'normal' : 'bold' }}>{msg.name}</span> <span style={{ color: '#999', fontSize: 12 }}>({new Date(msg.created_at).toLocaleDateString()})</span>
+                    <span className={`admin-messages-name${msg.is_read ? '' : ' admin-messages-name-unread'}`}>{msg.name}</span>
+                    <span className="admin-messages-date">({new Date(msg.created_at).toLocaleDateString()})</span>
                   </li>
                 ))}
               </ul>
@@ -286,7 +286,8 @@ export default function Admin() {
                       weddingTime: newDetails.time,
                       weddingLocation: newDetails.location,
                       weddingAddress: newDetails.address,
-                      weddingDescription: newDetails.description
+                      weddingDescription: newDetails.description,
+                      registryUrl: newDetails.registryUrl
                     })
                   },
                   'Failed to save wedding details.'
@@ -340,16 +341,23 @@ export default function Admin() {
         {activeModal === 'schedule' && (
           <ScheduleModal
             schedule={schedule}
-            onSave={(newSchedule) => {
+            onSave={async (newSchedule) => {
               // Persist new sort order / edits / deletes to DB then refresh
-              fetch(`${API_BASE_URL}/schedule`, {
-                method: 'PUT',
-                headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-                body: JSON.stringify({ events: newSchedule })
-              })
-                .then(res => res.json())
-                .then(data => Array.isArray(data) ? setSchedule(data) : setSchedule(newSchedule))
-                .catch(() => setSchedule(newSchedule));
+              setSaveError('');
+              try {
+                const data = await requestJson(
+                  `${API_BASE_URL}/schedule`,
+                  {
+                    method: 'PUT',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ events: newSchedule })
+                  },
+                  'Failed to save schedule.'
+                );
+                setSchedule(Array.isArray(data) ? data : newSchedule);
+              } catch (error) {
+                setSaveError(error.message || 'Failed to save schedule.');
+              }
             }}
             onClose={closeModal}
           />
@@ -384,7 +392,6 @@ export default function Admin() {
             photos={photos}
             onSave={(newPhotos) => {
               setPhotos(newPhotos);
-              saveData('weddingPhotos', newPhotos);
             }}
             onClose={closeModal}
           />
@@ -393,9 +400,8 @@ export default function Admin() {
         {activeModal === 'add-photo' && (
           <AddPhotoModal
             onSave={(newPhoto) => {
-              const updatedPhotos = [...photos, { ...newPhoto, id: Date.now() }];
+              const updatedPhotos = [newPhoto, ...photos];
               setPhotos(updatedPhotos);
-              saveData('weddingPhotos', updatedPhotos);
               closeModal();
             }}
             onClose={closeModal}
@@ -409,17 +415,54 @@ export default function Admin() {
             onClose={closeModal}
           />
         )}
+
+        {activeModal === 'gallery-approvals' && (
+          <GalleryApprovalModal
+            onClose={() => {
+              // Refresh pending count when modal closes
+              fetch(`${API_BASE_URL}/gallery/pending`, { headers: getAuthHeaders() })
+                .then(res => res.ok ? res.json() : [])
+                .then(data => setPendingPhotoCount(Array.isArray(data) ? data.length : 0))
+                .catch(() => {});
+              fetchPhotos();
+              closeModal();
+            }}
+          />
+        )}
+
+        {activeModal === 'change-password' && (
+          <ChangePasswordModal
+            onSave={async (payload) => {
+              setSaveError('');
+              try {
+                await requestJson(
+                  `${API_BASE_URL}/auth/change-password`,
+                  {
+                    method: 'POST',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify(payload)
+                  },
+                  'Failed to update password.'
+                );
+                closeModal();
+              } catch (error) {
+                setSaveError(error.message || 'Failed to update password.');
+              }
+            }}
+            onClose={closeModal}
+          />
+        )}
       </Suspense>
 
       {/* Message Details Modal */}
       {selectedMessage && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        <div className="admin-message-modal-overlay"
           onClick={() => setSelectedMessage(null)}>
-          <div style={{ background: '#fff', borderRadius: 8, padding: 24, minWidth: 320, maxWidth: 400, boxShadow: '0 4px 24px rgba(0,0,0,0.15)' }} onClick={e => e.stopPropagation()}>
-            <h2 style={{ marginTop: 0 }}>{selectedMessage.name}</h2>
-            <div style={{ color: '#888', fontSize: 14, marginBottom: 8 }}>{selectedMessage.email}</div>
-            <div style={{ color: '#999', fontSize: 13, marginBottom: 12 }}>{new Date(selectedMessage.created_at).toLocaleString()}</div>
-            <div style={{ marginBottom: 16 }}>{selectedMessage.message}</div>
+          <div className="admin-message-modal" onClick={e => e.stopPropagation()}>
+            <h2 className="admin-message-modal-title">{selectedMessage.name}</h2>
+            <div className="admin-message-modal-email">{selectedMessage.email}</div>
+            <div className="admin-message-modal-date">{new Date(selectedMessage.created_at).toLocaleString()}</div>
+            <div className="admin-message-modal-body">{selectedMessage.message}</div>
             <button onClick={() => setSelectedMessage(null)}>Close</button>
           </div>
         </div>

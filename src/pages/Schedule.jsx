@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
+import { fetchArray } from '../utils/publicData';
 import '../pages/pages.css';
 
 export default function Services() {
   const [schedule, setSchedule] = useState([]);
 
   useEffect(() => {
-    fetch('/api/schedule')
-      .then(res => res.json())
-      .then(data => Array.isArray(data) ? setSchedule(data) : setSchedule([]))
-      .catch(() => {});
+    fetchArray('/schedule').then(data => setSchedule(data));
   }, []);
 
   const formatTime = (time) =>

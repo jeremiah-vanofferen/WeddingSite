@@ -1,6 +1,7 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { API_BASE_URL } from './utils/api';
+import { API_BASE_URL } from './api';
+import { getAuthHeaders, requestJson } from './http';
 
 const AuthContext = createContext();
 
@@ -13,27 +14,25 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     if (token) {
-      // Verify token with backend
-      fetch(`${API_BASE_URL}/auth/verify`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.user) {
-          setIsLoggedIn(true);
-          setAdminName(data.user.username);
-        } else {
+      requestJson(
+        `${API_BASE_URL}/auth/verify`,
+        { headers: getAuthHeaders() },
+        'Session verification failed'
+      )
+        .then(data => {
+          if (data && data.user) {
+            setIsLoggedIn(true);
+            setAdminName(data.user.username);
+          } else {
+            localStorage.removeItem('authToken');
+          }
+        })
+        .catch(() => {
           localStorage.removeItem('authToken');
-        }
-      })
-      .catch(() => {
-        localStorage.removeItem('authToken');
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     } else {
       setLoading(false);
     }
@@ -49,16 +48,22 @@ export function AuthProvider({ children }) {
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await response.json();
+      let data = null;
 
-      if (response.ok) {
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+
+      if (response.ok && data && data.token && data.user && data.user.username) {
         localStorage.setItem('authToken', data.token);
         setIsLoggedIn(true);
         setAdminName(data.user.username);
         return true;
-      } else {
-        return false;
       }
+
+      return false;
     } catch (error) {
       console.error('Login error:', error);
       return false;

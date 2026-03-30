@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Admin from '../pages/Admin';
 
 // --- Mock dependencies ---
-vi.mock('../AuthContext', () => ({
+vi.mock('../utils/AuthContext', () => ({
   useAuth: vi.fn(),
 }));
 
@@ -35,7 +35,20 @@ vi.mock('../components/SettingsModal', () => ({
   SettingsModal: ({ onSave, onClose }) => <div data-testid="settings-modal"><button onClick={() => onSave({ theme: 'modern' })}>SaveSettings</button><button onClick={onClose}>CloseSettings</button></div>,
 }));
 
-import { useAuth } from '../AuthContext';
+vi.mock('../components/GalleryApprovalModal', () => ({
+  default: ({ onClose }) => <div data-testid="gallery-approval-modal"><button onClick={onClose}>CloseApprovals</button></div>,
+}));
+
+vi.mock('../components/ChangePasswordModal', () => ({
+  default: ({ onSave, onClose }) => (
+    <div data-testid="change-password-modal">
+      <button onClick={() => onSave({ currentPassword: 'oldpass123', newPassword: 'newpass123', confirmPassword: 'newpass123' })}>SaveChangePassword</button>
+      <button onClick={onClose}>CloseChangePassword</button>
+    </div>
+  ),
+}));
+
+import { useAuth } from '../utils/AuthContext';
 
 const loggedInAuth = {
   isLoggedIn: true,
@@ -63,6 +76,7 @@ beforeEach(() => {
     if (url.includes('/schedule')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockSchedule) });
     if (url.includes('/messages')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockMessages) });
     if (url.includes('/settings')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockSettings) });
+    if (url.includes('/gallery')) return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
     return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
   });
 });
@@ -85,7 +99,9 @@ describe('Admin – logged in', () => {
     expect(screen.getByText('Guest Management')).toBeInTheDocument();
     expect(screen.getByText('Schedule & Timeline')).toBeInTheDocument();
     expect(screen.getByText('Photo Gallery')).toBeInTheDocument();
+    expect(screen.getByText('Photo Approvals')).toBeInTheDocument();
     expect(screen.getByText('Website Settings')).toBeInTheDocument();
+    expect(screen.getByText('Account Security')).toBeInTheDocument();
     expect(screen.getByText('Contact Messages')).toBeInTheDocument();
   });
 
@@ -184,7 +200,7 @@ describe('Admin – logged in', () => {
 
   it('opens AddPhotoModal and saves a new photo', async () => {
     render(<Admin />);
-    fireEvent.click(screen.getByText('Add Photo'));
+    fireEvent.click(screen.getByText('Upload Photo'));
     expect(await screen.findByTestId('add-photo-modal')).toBeInTheDocument();
     fireEvent.click(screen.getByText('SavePhoto'));
     await waitFor(() => expect(screen.queryByTestId('add-photo-modal')).not.toBeInTheDocument());
@@ -203,6 +219,22 @@ describe('Admin – logged in', () => {
     );
   });
 
+  it('opens ChangePasswordModal and submits change password to API', async () => {
+    render(<Admin />);
+    fireEvent.click(screen.getByText('Change Password'));
+    expect(await screen.findByTestId('change-password-modal')).toBeInTheDocument();
+
+    global.fetch = vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) }));
+    fireEvent.click(screen.getByText('SaveChangePassword'));
+
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/auth/change-password'),
+        expect.objectContaining({ method: 'POST' })
+      )
+    );
+  });
+
   it('shows message detail modal when a message is clicked', async () => {
     render(<Admin />);
     await waitFor(() => screen.getByText('Eve'));
@@ -210,5 +242,13 @@ describe('Admin – logged in', () => {
     await waitFor(() => expect(screen.getByText('Hello!')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Close'));
     await waitFor(() => expect(screen.queryByText('Hello!')).not.toBeInTheDocument());
+  });
+
+  it('opens GalleryApprovalModal on Review Submissions click', async () => {
+    render(<Admin />);
+    fireEvent.click(screen.getByText('Review Submissions'));
+    expect(await screen.findByTestId('gallery-approval-modal')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('CloseApprovals'));
+    expect(screen.queryByTestId('gallery-approval-modal')).not.toBeInTheDocument();
   });
 });

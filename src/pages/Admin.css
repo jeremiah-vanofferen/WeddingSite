@@ -13,6 +13,11 @@
   font-size: 1.1rem;
 }
 
+.admin-error-message {
+  color: #b42318;
+  margin-top: 8px;
+}
+
 .admin-actions {
   display: flex;
   gap: 0.5rem;
@@ -33,6 +38,88 @@
 
 .admin-actions button:hover {
   background-color: var(--primary-color-hover, #1894dc);
+}
+
+.admin-messages-panel {
+  max-height: 300px;
+  overflow-y: auto;
+  background: #fafbfc;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.admin-messages-empty {
+  color: #888;
+}
+
+.admin-messages-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.admin-messages-item {
+  border-bottom: 1px solid #eee;
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  cursor: pointer;
+}
+
+.admin-messages-name {
+  font-weight: 400;
+}
+
+.admin-messages-name-unread {
+  font-weight: 700;
+}
+
+.admin-messages-date {
+  color: #999;
+  font-size: 12px;
+  margin-left: 0.25rem;
+}
+
+.admin-message-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-message-modal {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  min-width: 320px;
+  max-width: 400px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+}
+
+.admin-message-modal-title {
+  margin-top: 0;
+}
+
+.admin-message-modal-email {
+  color: #888;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.admin-message-modal-date {
+  color: #999;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.admin-message-modal-body {
+  margin-bottom: 16px;
 }
 
 /* Settings Styles */
@@ -704,9 +791,84 @@
   color: #333;
 }
 
+.photo-preview-frame {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+}
+
+.photo-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .photo-preview img {
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.gallery-approval-content {
+  max-width: 720px;
+}
+
+.gallery-approval-empty {
+  color: #888;
+}
+
+.gallery-approval-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.gallery-approval-item {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.gallery-approval-image {
+  width: 120px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.gallery-approval-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.gallery-approval-caption {
+  margin: 0 0 0.25rem;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.gallery-approval-no-caption {
+  color: #888;
+}
+
+.gallery-approval-submitter {
+  margin: 0 0 0.25rem;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.gallery-approval-date {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  color: #999;
+}
+
+.gallery-approval-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .settings-preview h4 {

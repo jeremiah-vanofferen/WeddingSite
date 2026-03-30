@@ -48,17 +48,66 @@ describe('GET /api/public/settings', () => {
     silenceExpectedConsole();
   });
 
-  it('returns public settings as a key/value map', async () => {
+  it('returns all public settings keys with correct values', async () => {
     pool.query.mockResolvedValueOnce({
       rows: [
         { key: 'websiteName', value: 'Test Wedding' },
         { key: 'theme', value: 'elegant' },
+        { key: 'primaryColor', value: '#0a20ca' },
+        { key: 'primaryColorHover', value: '#1894dc' },
+        { key: 'fontFamily', value: 'sans serif' },
+        { key: 'showCountdown', value: 'true' },
+        { key: 'allowRsvp', value: 'false' },
+        { key: 'welcomeMessage', value: 'Welcome to our wedding!' },
+        { key: 'weddingDate', value: '2026-08-08' },
+        { key: 'weddingTime', value: '16:00' },
+        { key: 'weddingLocation', value: 'Windpoint Lighthouse' },
+        { key: 'weddingAddress', value: '4725 Lighthouse Drive, Wind Point, WI 53402' },
+        { key: 'weddingDescription', value: 'A beautiful outdoor ceremony.' },
+        { key: 'carouselSpeed', value: '6' },
+        { key: 'carouselTransition', value: 'fade' },
       ],
     });
     const res = await request(app).get('/api/public/settings');
     expect(res.status).toBe(200);
+    // String fields
     expect(res.body.websiteName).toBe('Test Wedding');
     expect(res.body.theme).toBe('elegant');
+    expect(res.body.primaryColor).toBe('#0a20ca');
+    expect(res.body.primaryColorHover).toBe('#1894dc');
+    expect(res.body.fontFamily).toBe('sans serif');
+    expect(res.body.welcomeMessage).toBe('Welcome to our wedding!');
+    expect(res.body.weddingDate).toBe('2026-08-08');
+    expect(res.body.weddingTime).toBe('16:00');
+    expect(res.body.weddingLocation).toBe('Windpoint Lighthouse');
+    expect(res.body.weddingAddress).toBe('4725 Lighthouse Drive, Wind Point, WI 53402');
+    expect(res.body.weddingDescription).toBe('A beautiful outdoor ceremony.');
+    expect(res.body.carouselSpeed).toBe('6');
+    expect(res.body.carouselTransition).toBe('fade');
+    // Booleans are coerced from strings
+    expect(res.body.showCountdown).toBe(true);
+    expect(res.body.allowRsvp).toBe(false);
+  });
+
+  it('passes only the allowed public keys to the query', async () => {
+    pool.query.mockResolvedValueOnce({ rows: [] });
+    await request(app).get('/api/public/settings');
+    const queryArgs = pool.query.mock.calls[0];
+    const keysArg = queryArgs[1][0];
+    expect(keysArg).toEqual(expect.arrayContaining([
+      'websiteName', 'theme', 'primaryColor', 'primaryColorHover', 'fontFamily',
+      'showCountdown', 'allowRsvp', 'welcomeMessage',
+      'weddingDate', 'weddingTime', 'weddingLocation', 'weddingAddress', 'weddingDescription',
+      'carouselSpeed', 'carouselTransition', 'registryUrl',
+    ]));
+    expect(keysArg).toHaveLength(16);
+  });
+
+  it('returns 500 on database error', async () => {
+    pool.query.mockRejectedValueOnce(new Error('DB failure'));
+    const res = await request(app).get('/api/public/settings');
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBeDefined();
   });
 });
 

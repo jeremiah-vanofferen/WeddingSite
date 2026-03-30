@@ -9,6 +9,7 @@ services:
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-password123}
       WEBSITE_NAME: ${WEBSITE_NAME:-My Wedding}
+      REGISTRY_LINK: ${REGISTRY_LINK:-}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sh:/docker-entrypoint-initdb.d/init.sh
@@ -22,8 +23,8 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: Dockerfile.backend
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "5000:5000"
     environment:
@@ -52,15 +53,16 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
-      - VITE_API_URL=http://localhost:5000/api
+      # No VITE_API_URL — the SPA uses /api (same-origin) and the Vite proxy
+      # routes it to http://backend:5000, which works from any client.
     depends_on:
       - backend
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000 || exit 1"]
       interval: 30s
-      timeout: 5s
-      retries: 3
+      timeout: 10s
+      retries: 5
     volumes:
       - .:/app
       - /app/node_modules

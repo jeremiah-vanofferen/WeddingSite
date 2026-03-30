@@ -1,14 +1,10 @@
-node_modules
-npm-debug.log*
-.git
-.gitignore
-*.md
-.env
-.env.*
-!.env.example
-.nyc_output
-coverage
-.coverage
-.DS_Store
-*.log
-src/__tests__
+# Default deny: exclude everything from root build context
+**
+
+# Frontend build inputs needed by Dockerfile
+!package.json
+!package-lock.json
+!index.html
+!vite.config.js
+!src/**
+!public/**

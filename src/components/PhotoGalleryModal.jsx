@@ -1,10 +1,14 @@
 // PhotoGalleryModal.jsx
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import PropTypes from 'prop-types';
+import { API_BASE_URL } from '../utils/api';
+import { getAuthHeaders, requestJson } from '../utils/http';
 
 export function PhotoGalleryModal({ photos, onSave, onClose }) {
   const [photoList, setPhotoList] = useState(photos);
   const [editingPhoto, setEditingPhoto] = useState(null);
+  const [deleteError, setDeleteError] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
 
   const handleEdit = (photo) => {
     setEditingPhoto(photo);
@@ -19,20 +23,51 @@ export function PhotoGalleryModal({ photos, onSave, onClose }) {
     setEditingPhoto(null);
   };
 
-  const handleDelete = (photoId) => {
-    if (window.confirm('Are you sure you want to delete this photo?')) {
+  const handleDelete = async (photoId) => {
+    if (!window.confirm('Are you sure you want to delete this photo?')) return;
+    setDeleteError('');
+    setDeletingId(photoId);
+    try {
+      await requestJson(
+        `${API_BASE_URL}/gallery/${photoId}`,
+        {
+          method: 'DELETE',
+          headers: getAuthHeaders(),
+        },
+        'Delete failed'
+      );
       const updatedList = photoList.filter(photo => photo.id !== photoId);
       setPhotoList(updatedList);
       onSave(updatedList);
+    } catch (error) {
+      setDeleteError(error.message || 'Delete failed. Please try again.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
-  const toggleFeatured = (photoId) => {
-    const updatedList = photoList.map(photo =>
-      photo.id === photoId ? { ...photo, featured: !photo.featured } : photo
-    );
-    setPhotoList(updatedList);
-    onSave(updatedList);
+  const toggleFeatured = async (photoId) => {
+    const photo = photoList.find(p => p.id === photoId);
+    if (!photo) return;
+    
+    try {
+      const updatedPhoto = await requestJson(
+        `${API_BASE_URL}/gallery/${photoId}/featured`,
+        {
+          method: 'PUT',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ featured: !photo.featured }),
+        },
+        'Failed to update featured status'
+      );
+      const updatedList = photoList.map(p =>
+        p.id === photoId ? updatedPhoto : p
+      );
+      setPhotoList(updatedList);
+      onSave(updatedList);
+    } catch (error) {
+      setDeleteError(error.message || 'Failed to update featured status');
+    }
   };
 
   return (
@@ -43,6 +78,7 @@ export function PhotoGalleryModal({ photos, onSave, onClose }) {
           <button className="admin-modal-close" onClick={onClose}>&times;</button>
         </div>
         <div className="admin-modal-body">
+          {deleteError && <p className="form-error">{deleteError}</p>}
           <div className="photo-grid">
             {photoList.map(photo => (
               <div key={photo.id} className="photo-item">
@@ -72,8 +108,9 @@ export function PhotoGalleryModal({ photos, onSave, onClose }) {
                     <button
                       className="delete-btn"
                       onClick={() => handleDelete(photo.id)}
+                      disabled={deletingId === photo.id}
                     >
-                      Delete
+                      {deletingId === photo.id ? 'Deleting...' : 'Delete'}
                     </button>
                   </div>
                   <button
@@ -104,23 +141,55 @@ export function PhotoGalleryModal({ photos, onSave, onClose }) {
 }
 
 export function AddPhotoModal({ onSave, onClose }) {
-  const [formData, setFormData] = useState({
-    url: '',
-    caption: '',
-    featured: false
-  });
+  const [caption, setCaption] = useState('');
+  const [submitterName, setSubmitterName] = useState('');
+  const [uploadError, setUploadError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const fileInputRef = useRef(null);
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setPreviewUrl('');
+      return;
+    }
+    setPreviewUrl(window.URL.createObjectURL(file));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave(formData);
+    setUploadError('');
+    const file = fileInputRef.current?.files?.[0];
+
+    if (!file) {
+      setUploadError('Please select an image file.');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const formData = new window.FormData();
+      formData.append('photo', file);
+      if (caption) formData.append('caption', caption);
+      if (submitterName) formData.append('submitterName', submitterName);
+
+      const data = await requestJson(
+        `${API_BASE_URL}/gallery/upload-file-admin`,
+        {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: formData,
+        },
+        'Upload failed'
+      );
+
+      onSave(data.photo);
+    } catch (error) {
+      setUploadError(error.message || 'Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -131,15 +200,16 @@ export function AddPhotoModal({ onSave, onClose }) {
           <button className="admin-modal-close" onClick={onClose}>&times;</button>
         </div>
         <form className="admin-modal-body admin-form" onSubmit={handleSubmit}>
+          {uploadError && <p className="form-error">{uploadError}</p>}
           <div className="form-group">
-            <label htmlFor="url">Photo URL</label>
+            <label htmlFor="photo">Photo File</label>
             <input
-              id="url"
-              name="url"
-              type="url"
-              value={formData.url}
-              onChange={handleChange}
-              placeholder="https://example.com/photo.jpg"
+              id="photo"
+              name="photo"
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              onChange={handleFileChange}
+              ref={fileInputRef}
               required
             />
           </div>
@@ -149,30 +219,30 @@ export function AddPhotoModal({ onSave, onClose }) {
               id="caption"
               name="caption"
               type="text"
-              value={formData.caption}
-              onChange={handleChange}
+              value={caption}
+              onChange={e => setCaption(e.target.value)}
               placeholder="Describe the photo"
-              required
             />
           </div>
-          <div className="checkbox-group">
+          <div className="form-group">
+            <label htmlFor="submitterName">Submitter name</label>
             <input
-              id="featured"
-              name="featured"
-              type="checkbox"
-              checked={formData.featured}
-              onChange={handleChange}
+              id="submitterName"
+              name="submitterName"
+              type="text"
+              value={submitterName}
+              onChange={e => setSubmitterName(e.target.value)}
+              placeholder="Optional"
             />
-            <label htmlFor="featured">Feature this photo</label>
           </div>
-          {formData.url && (
+          {previewUrl && (
             <div className="photo-preview">
               <h4>Preview:</h4>
-              <div className="photo-image-container" style={{ width: '200px', height: '200px', margin: '0 auto' }}>
+              <div className="photo-image-container photo-preview-frame">
                 <img
-                  src={formData.url}
+                  src={previewUrl}
                   alt="Preview"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  className="photo-preview-image"
                   onError={(e) => {
                     e.target.style.display = 'none';
                     e.target.parentNode.querySelector('.photo-placeholder').style.display = 'flex';
@@ -187,7 +257,9 @@ export function AddPhotoModal({ onSave, onClose }) {
         </form>
         <div className="admin-modal-footer">
           <button type="button" className="cancel-btn" onClick={onClose}>Cancel</button>
-          <button type="submit" className="save-btn" onClick={handleSubmit}>Add Photo</button>
+          <button type="submit" className="save-btn" onClick={handleSubmit} disabled={uploading}>
+            {uploading ? 'Uploading...' : 'Add Photo'}
+          </button>
         </div>
       </div>
     </div>
@@ -196,6 +268,8 @@ export function AddPhotoModal({ onSave, onClose }) {
 
 function EditPhotoModal({ photo, onSave, onClose }) {
   const [formData, setFormData] = useState(photo);
+  const [saveError, setSaveError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -205,9 +279,32 @@ function EditPhotoModal({ photo, onSave, onClose }) {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave(formData);
+    setSaveError('');
+    setSaving(true);
+
+    try {
+      const updatedPhoto = await requestJson(
+        `${API_BASE_URL}/gallery/${photo.id}`,
+        {
+          method: 'PUT',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            url: formData.url,
+            caption: formData.caption,
+            featured: Boolean(formData.featured),
+          }),
+        },
+        'Failed to save photo changes'
+      );
+
+      onSave(updatedPhoto);
+    } catch (error) {
+      setSaveError(error.message || 'Failed to save photo changes.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -218,6 +315,7 @@ function EditPhotoModal({ photo, onSave, onClose }) {
           <button className="admin-modal-close" onClick={onClose}>&times;</button>
         </div>
         <form className="admin-modal-body admin-form" onSubmit={handleSubmit}>
+          {saveError && <p className="form-error">{saveError}</p>}
           <div className="form-group">
             <label htmlFor="edit-url">Photo URL</label>
             <input
@@ -253,11 +351,11 @@ function EditPhotoModal({ photo, onSave, onClose }) {
           {formData.url && (
             <div className="photo-preview">
               <h4>Preview:</h4>
-              <div className="photo-image-container" style={{ width: '200px', height: '200px', margin: '0 auto' }}>
+              <div className="photo-image-container photo-preview-frame">
                 <img
                   src={formData.url}
                   alt="Preview"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  className="photo-preview-image"
                   onError={(e) => {
                     e.target.style.display = 'none';
                     e.target.parentNode.querySelector('.photo-placeholder').style.display = 'flex';
@@ -272,7 +370,9 @@ function EditPhotoModal({ photo, onSave, onClose }) {
         </form>
         <div className="admin-modal-footer">
           <button type="button" className="cancel-btn" onClick={onClose}>Cancel</button>
-          <button type="submit" className="save-btn" onClick={handleSubmit}>Save Changes</button>
+          <button type="submit" className="save-btn" onClick={handleSubmit} disabled={saving}>
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
         </div>
       </div>
     </div>

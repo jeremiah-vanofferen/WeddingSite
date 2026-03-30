@@ -32,6 +32,27 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
+.home-hero-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.home-welcome {
+  padding: 1.5rem;
+}
+
+.home-welcome h3 {
+  color: #333;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.home-welcome p {
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+
 .demo-card h3 {
   color: #333;
   margin-top: 0;
