@@ -194,13 +194,13 @@ To use these as required status checks, go to **Settings → Branches → Branch
     │   ├── ScheduleModal.jsx           # Schedule event management
     │   ├── SettingsModal.jsx           # Site-wide settings
     │   └── WeddingDetailsModal.jsx     # Wedding details management
-  └── utils/
-    ├── api.js            # API base URL helper
-    ├── http.js           # Auth headers + strict request helper
-    ├── publicData.js     # Public fetch helpers with fallbacks
-    ├── settings.js       # Shared settings/detail merge helpers
-    └── AuthContext.jsx   # JWT authentication context
-  └── pages/
+    ├── utils/
+    │   ├── api.js            # API base URL helper
+    │   ├── http.js           # Auth headers + strict request helper
+    │   ├── publicData.js     # Public fetch helpers with fallbacks
+    │   ├── settings.js       # Shared settings/detail merge helpers
+    │   └── AuthContext.jsx   # JWT authentication context
+    └── pages/
         ├── Home.jsx        # Landing page with countdown
         ├── Schedule.jsx    # Public event schedule
         ├── RSVP.jsx        # Guest RSVP form
