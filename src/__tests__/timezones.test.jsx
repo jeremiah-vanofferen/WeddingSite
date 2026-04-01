@@ -39,4 +39,16 @@ describe('timezones utilities', () => {
   it('falls back to the default timezone when no location can be inferred', () => {
     expect(timezoneFromAddress('Somewhere over the rainbow')).toBe('America/Chicago');
   });
+
+  it('does not misidentify "Maui" as Australia (false-positive "au" substring)', () => {
+    expect(timezoneFromAddress('100 Hana Hwy, Maui, HI 96732, USA')).toBe('Pacific/Honolulu');
+  });
+
+  it('does not misidentify "Austin" as Australia (false-positive "au" substring)', () => {
+    expect(timezoneFromAddress('1 Congress Ave, Austin, TX 78701, USA')).toBe('America/Chicago');
+  });
+
+  it('does not misidentify a US address with CA state code as Canada when "USA" is present', () => {
+    expect(timezoneFromAddress('100 Main St, Los Angeles, CA 90001, USA')).toBe('America/Los_Angeles');
+  });
 });

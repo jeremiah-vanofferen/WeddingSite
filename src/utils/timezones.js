@@ -284,15 +284,22 @@ function splitAddress(address) {
 }
 
 function detectCountryContext(segments) {
-  // Check if address contains Australia, Canada, or US indicators
+  // Check if address contains Australia, Canada, or US indicators.
+  // Use word-boundary matching for short country codes to avoid false positives
+  // (e.g., "au" in "Maui"/"Austin", "us" in "campus").
   const fullAddress = segments.join(' ').toLowerCase();
-  if (fullAddress.includes('australia') || fullAddress.includes('au')) {
+  if (fullAddress.includes('australia') || /\bau\b/.test(fullAddress)) {
     return 'AU';
   }
-  if (fullAddress.includes('canada') || fullAddress.includes('ca ')) {
+  // Check unambiguous US identifiers before the short "ca" code so that
+  // addresses like "Los Angeles, CA, USA" are not misidentified as Canada.
+  if (fullAddress.includes('united states') || /\busa\b/.test(fullAddress)) {
+    return 'US';
+  }
+  if (fullAddress.includes('canada') || /\bca\b/.test(fullAddress)) {
     return 'CA';
   }
-  if (fullAddress.includes('united states') || fullAddress.includes('usa') || fullAddress.includes('us ')) {
+  if (/\bus\b/.test(fullAddress)) {
     return 'US';
   }
   return null;
