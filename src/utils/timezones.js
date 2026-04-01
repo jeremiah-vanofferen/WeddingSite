@@ -291,16 +291,13 @@ function detectCountryContext(segments) {
   if (fullAddress.includes('australia') || /\bau\b/.test(fullAddress)) {
     return 'AU';
   }
-  // Check unambiguous US identifiers before the short "ca" code so that
-  // addresses like "Los Angeles, CA, USA" are not misidentified as Canada.
-  if (fullAddress.includes('united states') || /\busa\b/.test(fullAddress)) {
+  // Check US before the short "ca" code so that addresses like
+  // "Los Angeles, CA, USA" are not misidentified as Canada.
+  if (fullAddress.includes('united states') || /\busa\b/.test(fullAddress) || /\bus\b/.test(fullAddress)) {
     return 'US';
   }
   if (fullAddress.includes('canada') || /\bca\b/.test(fullAddress)) {
     return 'CA';
-  }
-  if (/\bus\b/.test(fullAddress)) {
-    return 'US';
   }
   return null;
 }
