@@ -87,8 +87,10 @@ export default function Home() {
     <div className="page">
       <div className="demo-card home-hero-card">
         <PhotoCarousel />
+        <div className="home-welcome">
           <h3>Welcome</h3>
           <p>{settings.welcomeMessage}</p>
+        </div>
       </div>
 
       {settings.showCountdown && (
