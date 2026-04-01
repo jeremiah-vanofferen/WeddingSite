@@ -92,11 +92,19 @@ export function SettingsModal({ settings, onSave, onClose }) {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    shouldPersistPreviewRef.current = true;
-    onSave(formData);
-    onClose();
+
+    try {
+      await onSave(formData);
+      shouldPersistPreviewRef.current = true;
+      onClose();
+    } catch (err) {
+      // Keep the modal open and do not persist the preview if save fails.
+      // Error can be surfaced by the caller or logged here if needed.
+      // eslint-disable-next-line no-console
+      console.error(err);
+    }
   };
 
   const toRgb = (hexColor) => {
