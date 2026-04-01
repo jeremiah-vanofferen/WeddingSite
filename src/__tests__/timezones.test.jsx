@@ -7,6 +7,11 @@ describe('timezones utilities', () => {
     expect(extractStateFromAddress('4725 Lighthouse Drive, Wind Point, WI 53402')).toBe('WI');
   });
 
+  it('derives timezone from a US address with WA state code', () => {
+    expect(timezoneFromAddress('123 Pike St, Seattle, WA 98101, USA')).toBe('America/Los_Angeles');
+    expect(extractStateFromAddress('123 Pike St, Seattle, WA 98101, USA')).toBe('WA');
+  });
+
   it('derives timezone from a Canadian address with province code', () => {
     expect(timezoneFromAddress('100 Queen St W, Toronto, ON M5H 2N2, Canada')).toBe('America/Toronto');
     expect(extractStateFromAddress('100 Queen St W, Toronto, ON M5H 2N2, Canada')).toBe('ON');
@@ -19,6 +24,16 @@ describe('timezones utilities', () => {
   it('derives timezone from an Australian address with state abbreviation', () => {
     expect(timezoneFromAddress('1 Macquarie St, Sydney NSW 2000, Australia')).toBe('Australia/Sydney');
     expect(extractStateFromAddress('1 Macquarie St, Sydney NSW 2000, Australia')).toBe('NSW');
+  });
+
+  it('derives timezone from an Australian NT address', () => {
+    expect(timezoneFromAddress('Smith Street, Darwin NT 0800, Australia')).toBe('Australia/Darwin');
+    expect(extractStateFromAddress('Smith Street, Darwin NT 0800, Australia')).toBe('NT');
+  });
+
+  it('derives timezone from an Australian WA address', () => {
+    expect(timezoneFromAddress('Mill Street, Perth WA 6000, Australia')).toBe('Australia/Perth');
+    expect(extractStateFromAddress('Mill Street, Perth WA 6000, Australia')).toBe('WA');
   });
 
   it('falls back to the default timezone when no location can be inferred', () => {

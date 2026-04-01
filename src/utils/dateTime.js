@@ -114,3 +114,49 @@ export function getTimeZoneLabel(timeZone, locale = undefined, dateString = unde
   const part = formatter.formatToParts(referenceDate).find(piece => piece.type === 'timeZoneName');
   return part?.value || safeTimeZone;
 }
+
+export function dateTimeToUTC(dateString, timeString, timeZone) {
+  // Parse date (YYYY-MM-DD format)
+  if (typeof dateString !== 'string' || !dateString.includes('-')) {
+    return null;
+  }
+
+  const [y, m, d] = dateString.split('-').map(part => Number.parseInt(part, 10));
+  if (!y || !m || !d) {
+    return null;
+  }
+
+  // Parse time (HH:MM format)
+  if (typeof timeString !== 'string' || !timeString.includes(':')) {
+    return null;
+  }
+
+  const [h, min] = timeString.split(':').map(part => Number.parseInt(part, 10));
+  if (!Number.isInteger(h) || !Number.isInteger(min)) {
+    return null;
+  }
+
+  const resolvedTz = resolveTimeZone(timeZone);
+
+  // Create a UTC guess for the intended local time
+  const utcGuess = Date.UTC(y, m - 1, d, h, min, 0);
+
+  // Get what local time this UTC guess corresponds to in the target timezone
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: resolvedTz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  });
+
+  const parts = formatter.formatToParts(new Date(utcGuess));
+  const get = type => Number(parts.find(p => p.type === type)?.value ?? 0);
+  const localInTzAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
+
+  // Calculate the actual UTC time by accounting for the timezone offset
+  return utcGuess + (utcGuess - localInTzAsUtc);
+}

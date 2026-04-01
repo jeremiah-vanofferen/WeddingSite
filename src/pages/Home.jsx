@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { PhotoCarousel } from '../components/PhotoCarousel';
 import { DEFAULT_SETTINGS, DEFAULT_WEDDING_TIME_ZONE } from '../utils/constants';
-import { formatWeddingDate, formatTimeOfDay, getTimeZoneLabel, resolveTimeZone } from '../utils/dateTime';
+import { formatWeddingDate, formatTimeOfDay, getTimeZoneLabel, resolveTimeZone, dateTimeToUTC } from '../utils/dateTime';
 import { fetchPublicSettings } from '../utils/publicData';
 import { mergeSettings, mergeWeddingDetails } from '../utils/settings';
 import '../pages/pages.css';
@@ -36,40 +36,29 @@ export default function Home() {
     if (!settings.showCountdown) return;
 
     const computeCountdown = () => {
-      try {
-        const [y, m, d] = date.split('-').map(Number);
-        const [h, min] = time.split(':').map(Number);
-        const tz = resolveTimeZone(timeZone);
+      // Convert wedding date/time/timezone to UTC milliseconds
+      const weddingUTC = dateTimeToUTC(date, time, timeZone);
 
-        // Find the UTC epoch for the wedding date+time in the target timezone.
-        // Step 1: treat the desired local time as if it were UTC.
-        const utcGuess = Date.UTC(y, m - 1, d, h, min, 0);
-        // Step 2: find what local clock time that UTC corresponds to in the target TZ.
-        const parts = new Intl.DateTimeFormat('en-US', {
-          timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
-          hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
-        }).formatToParts(new Date(utcGuess));
-        const get = type => Number(parts.find(p => p.type === type)?.value ?? 0);
-        const localInTzAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
-        // Step 3: the true target UTC = utcGuess + offset difference.
-        const target = utcGuess + (utcGuess - localInTzAsUtc);
-
-        const diff = target - Date.now();
-        if (diff <= 0) {
-          setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: true });
-          return;
-        }
-
-        setCountdown({
-          days: Math.floor(diff / 86400000),
-          hours: Math.floor((diff % 86400000) / 3600000),
-          minutes: Math.floor((diff % 3600000) / 60000),
-          seconds: Math.floor((diff % 60000) / 1000),
-          expired: false,
-        });
-      } catch {
-        // Ignore calculation errors silently
+      // If parsing failed, mark as expired
+      if (weddingUTC === null) {
+        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: true });
+        return;
       }
+
+      // Compare with current time
+      const diff = weddingUTC - Date.now();
+      if (diff <= 0) {
+        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: true });
+        return;
+      }
+
+      setCountdown({
+        days: Math.floor(diff / 86400000),
+        hours: Math.floor((diff % 86400000) / 3600000),
+        minutes: Math.floor((diff % 3600000) / 60000),
+        seconds: Math.floor((diff % 60000) / 1000),
+        expired: false,
+      });
     };
 
     computeCountdown();

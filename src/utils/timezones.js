@@ -148,6 +148,33 @@ const REGION_NAME_TIMEZONES = {
   'yukon': 'America/Whitehorse',
 };
 
+const COUNTRY_CODES = {
+  US: DEFAULT_WEDDING_TIME_ZONE,
+  CA: 'America/Toronto',
+  GB: 'Europe/London',
+  AU: 'Australia/Sydney',
+  DE: 'Europe/Berlin',
+  FR: 'Europe/Paris',
+  IT: 'Europe/Rome',
+  ES: 'Europe/Madrid',
+  NL: 'Europe/Amsterdam',
+  CH: 'Europe/Zurich',
+  AT: 'Europe/Vienna',
+  BE: 'Europe/Brussels',
+  PT: 'Europe/Lisbon',
+  IE: 'Europe/Dublin',
+  SG: 'Asia/Singapore',
+  JP: 'Asia/Tokyo',
+  CN: 'Asia/Shanghai',
+  IN: 'Asia/Kolkata',
+  TH: 'Asia/Bangkok',
+  AE: 'Asia/Dubai',
+  BR: 'America/Sao_Paulo',
+  MX: 'America/Mexico_City',
+  AR: 'America/Buenos_Aires',
+  NZ: 'Pacific/Auckland',
+};
+
 const COUNTRY_TIMEZONES = {
   'argentina': 'America/Buenos_Aires',
   'australia': 'Australia/Sydney',
@@ -178,6 +205,37 @@ const COUNTRY_TIMEZONES = {
   'united states': DEFAULT_WEDDING_TIME_ZONE,
   'usa': DEFAULT_WEDDING_TIME_ZONE,
 };
+
+// Build a map from region names to region codes by matching timezones
+function buildNameToCodeMap() {
+  const map = {};
+  for (const [name, timezone] of Object.entries(REGION_NAME_TIMEZONES)) {
+    for (const [code, codeTimezone] of Object.entries(REGION_CODE_TIMEZONES)) {
+      if (codeTimezone === timezone) {
+        map[name] = code;
+        break;
+      }
+    }
+  }
+  return map;
+}
+
+// Build a map from country names to country codes by matching timezones
+function buildCountryNameToCodeMap() {
+  const map = {};
+  for (const [name, timezone] of Object.entries(COUNTRY_TIMEZONES)) {
+    for (const [code, codeTimezone] of Object.entries(COUNTRY_CODES)) {
+      if (codeTimezone === timezone) {
+        map[name] = code;
+        break;
+      }
+    }
+  }
+  return map;
+}
+
+const REGION_NAME_TO_CODE = buildNameToCodeMap();
+const COUNTRY_NAME_TO_CODE = buildCountryNameToCodeMap();
 
 export const COMMON_TIMEZONES = [
   'America/New_York',
@@ -225,9 +283,47 @@ function splitAddress(address) {
     .filter(Boolean);
 }
 
-function findRegionCode(segment) {
+function detectCountryContext(segments) {
+  // Check if address contains Australia, Canada, or US indicators
+  const fullAddress = segments.join(' ').toLowerCase();
+  if (fullAddress.includes('australia') || fullAddress.includes('au')) {
+    return 'AU';
+  }
+  if (fullAddress.includes('canada') || fullAddress.includes('ca ')) {
+    return 'CA';
+  }
+  if (fullAddress.includes('united states') || fullAddress.includes('usa') || fullAddress.includes('us ')) {
+    return 'US';
+  }
+  return null;
+}
+
+const AUSTRALIAN_STATE_CODES = {
+  NSW: 'Australia/Sydney',
+  VIC: 'Australia/Melbourne',
+  QLD: 'Australia/Brisbane',
+  WA: 'Australia/Perth',
+  SA: 'Australia/Adelaide',
+  TAS: 'Australia/Hobart',
+  ACT: 'Australia/Sydney',
+  NT: 'Australia/Darwin',
+};
+
+function findRegionCode(segment, countryContext = null) {
   const upperSegment = segment.toUpperCase();
 
+  // If we have Australia context, check Australian codes first
+  if (countryContext === 'AU') {
+    for (const [code, timeZone] of Object.entries(AUSTRALIAN_STATE_CODES)) {
+      if (new RegExp(`\\b${code}\\b`).test(upperSegment)) {
+        return { code, timeZone };
+      }
+    }
+    // Don't fall through to global REGION_CODE_TIMEZONES for Australian context
+    return null;
+  }
+
+  // Standard global region code lookup
   for (const [code, timeZone] of Object.entries(REGION_CODE_TIMEZONES)) {
     if (new RegExp(`\\b${code}\\b`).test(upperSegment)) {
       return { code, timeZone };
@@ -249,13 +345,24 @@ function findRegionName(segment) {
   return null;
 }
 
-function findCountryTimeZone(segments) {
-  for (const segment of [...segments].reverse()) {
-    const normalizedSegment = normalizeSegment(segment);
-    for (const [country, timeZone] of Object.entries(COUNTRY_TIMEZONES)) {
-      if (normalizedSegment.includes(country)) {
-        return timeZone;
-      }
+function findCountryCode(segment) {
+  const upperSegment = segment.toUpperCase();
+
+  for (const [code, timeZone] of Object.entries(COUNTRY_CODES)) {
+    if (new RegExp(`\\b${code}\\b`).test(upperSegment)) {
+      return { code, timeZone };
+    }
+  }
+
+  return null;
+}
+
+function findCountryName(segment) {
+  const normalizedSegment = normalizeSegment(segment);
+
+  for (const [name, timeZone] of Object.entries(COUNTRY_TIMEZONES)) {
+    if (normalizedSegment.includes(name)) {
+      return { name, timeZone };
     }
   }
 
@@ -268,17 +375,38 @@ export function extractStateFromAddress(address) {
   }
 
   const segments = splitAddress(address);
+  const countryContext = detectCountryContext(segments);
   const candidates = segments.length > 0 ? [...segments].reverse() : [address];
 
+  // First pass: prioritize region codes and names
   for (const candidate of candidates) {
-    const codeMatch = findRegionCode(candidate);
+    const codeMatch = findRegionCode(candidate, countryContext);
     if (codeMatch) {
       return codeMatch.code;
     }
 
     const nameMatch = findRegionName(candidate);
     if (nameMatch) {
-      return nameMatch.name;
+      const code = REGION_NAME_TO_CODE[nameMatch.name];
+      if (code) {
+        return code;
+      }
+    }
+  }
+
+  // Second pass: look for country codes and names only if no region found
+  for (const candidate of candidates) {
+    const countryCodeMatch = findCountryCode(candidate);
+    if (countryCodeMatch) {
+      return countryCodeMatch.code;
+    }
+
+    const countryNameMatch = findCountryName(candidate);
+    if (countryNameMatch) {
+      const code = COUNTRY_NAME_TO_CODE[countryNameMatch.name];
+      if (code) {
+        return code;
+      }
     }
   }
 
@@ -291,10 +419,12 @@ export function timezoneFromAddress(address, defaultTimezone = DEFAULT_WEDDING_T
   }
 
   const segments = splitAddress(address);
+  const countryContext = detectCountryContext(segments);
   const candidates = segments.length > 0 ? [...segments].reverse() : [address];
 
+  // First pass: prioritize region codes and names
   for (const candidate of candidates) {
-    const codeMatch = findRegionCode(candidate);
+    const codeMatch = findRegionCode(candidate, countryContext);
     if (codeMatch) {
       return codeMatch.timeZone;
     }
@@ -305,5 +435,18 @@ export function timezoneFromAddress(address, defaultTimezone = DEFAULT_WEDDING_T
     }
   }
 
-  return findCountryTimeZone(segments.length > 0 ? segments : [address]) || defaultTimezone;
+  // Second pass: look for country codes and names only if no region found
+  for (const candidate of candidates) {
+    const countryCodeMatch = findCountryCode(candidate);
+    if (countryCodeMatch) {
+      return countryCodeMatch.timeZone;
+    }
+
+    const countryNameMatch = findCountryName(candidate);
+    if (countryNameMatch) {
+      return countryNameMatch.timeZone;
+    }
+  }
+
+  return defaultTimezone;
 }
