@@ -1,5 +1,5 @@
 // SettingsModal.jsx
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
 const EMPTY_SETTINGS = {
@@ -18,8 +18,7 @@ const EMPTY_SETTINGS = {
 
 export function SettingsModal({ settings, onSave, onClose }) {
   const [formData, setFormData] = useState({ ...EMPTY_SETTINGS, ...settings });
-  const shouldPersistPreviewRef = useRef(false);
-  const previousUiRef = useRef(null);
+  const [saveError, setSaveError] = useState('');
 
   const previewFontFamily = formData.fontFamily === 'serif'
     ? '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
@@ -33,57 +32,6 @@ export function SettingsModal({ settings, onSave, onClose }) {
     setFormData({ ...EMPTY_SETTINGS, ...settings });
   }, [settings]);
 
-  useEffect(() => {
-    const root = document.documentElement;
-    const body = document.body;
-    const previousThemeClass = Array.from(body.classList).find(className => className.startsWith('theme-')) || null;
-
-    previousUiRef.current = {
-      primaryColor: root.style.getPropertyValue('--primary-color'),
-      primaryColorHover: root.style.getPropertyValue('--primary-color-hover'),
-      fontFamily: root.style.getPropertyValue('--font-family'),
-      bodyFontFamily: body.style.fontFamily,
-      themeClass: previousThemeClass,
-    };
-
-    return () => {
-      if (shouldPersistPreviewRef.current || !previousUiRef.current) {
-        return;
-      }
-
-      const previousUi = previousUiRef.current;
-      root.style.setProperty('--primary-color', previousUi.primaryColor);
-      root.style.setProperty('--primary-color-hover', previousUi.primaryColorHover);
-      root.style.setProperty('--font-family', previousUi.fontFamily);
-      body.style.fontFamily = previousUi.bodyFontFamily;
-
-      body.classList.remove('theme-elegant', 'theme-modern', 'theme-rustic', 'theme-vintage');
-      if (previousUi.themeClass) {
-        body.classList.add(previousUi.themeClass);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const body = document.body;
-
-    const fontMap = {
-      serif: '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
-      'sans-serif': '"Aptos", "Segoe UI Variable", "Segoe UI", "Helvetica Neue", Arial, sans-serif',
-      script: '"Baskerville Old Face", "Palatino Linotype", Georgia, serif',
-      monospace: '"Cascadia Mono", "Consolas", "Courier New", monospace'
-    };
-
-    root.style.setProperty('--primary-color', formData.primaryColor || '#0a20ca');
-    root.style.setProperty('--primary-color-hover', formData.primaryColorHover || '#1894dc');
-    root.style.setProperty('--font-family', fontMap[formData.fontFamily] || fontMap.serif);
-    body.style.fontFamily = fontMap[formData.fontFamily] || fontMap.serif;
-
-    body.classList.remove('theme-elegant', 'theme-modern', 'theme-rustic', 'theme-vintage');
-    body.classList.add(`theme-${formData.theme || 'elegant'}`);
-  }, [formData.primaryColor, formData.primaryColorHover, formData.fontFamily, formData.theme]);
-
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -94,16 +42,12 @@ export function SettingsModal({ settings, onSave, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    setSaveError('');
     try {
       await onSave(formData);
-      shouldPersistPreviewRef.current = true;
       onClose();
     } catch (err) {
-      // Keep the modal open and do not persist the preview if save fails.
-      // Error can be surfaced by the caller or logged here if needed.
-      // eslint-disable-next-line no-console
-      console.error(err);
+      setSaveError(err.message || 'Failed to save settings.');
     }
   };
 
@@ -272,7 +216,7 @@ export function SettingsModal({ settings, onSave, onClose }) {
 
             <div className="settings-preview">
               <h4>Live Preview</h4>
-              <p className="setting-help">Theme, colors, and button styles update here and across the page before you save.</p>
+              <p className="setting-help">Theme, colors, and button styles update in this preview before you save.</p>
               <div
                 className={`preview-card theme-${formData.theme}`}
                 style={{
@@ -402,6 +346,7 @@ export function SettingsModal({ settings, onSave, onClose }) {
             </div>
         </form>
         <div className="admin-modal-footer">
+          {saveError && <p className="admin-error-message">{saveError}</p>}
           <button type="button" className="reset-btn" onClick={resetToDefaults}>
             Reset to Defaults
           </button>
