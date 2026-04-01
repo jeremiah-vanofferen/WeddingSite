@@ -72,7 +72,7 @@ describe('ScheduleModal', () => {
   });
 
     it('does not delete when user cancels the confirmation', () => {
-      vi.spyOn(window, 'confirm').mockReturnValueOnce(false);
+      window.confirm.mockReturnValueOnce(false);
       render(<ScheduleModal schedule={sampleSchedule} onSave={onSave} onClose={onClose} />);
       const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
       fireEvent.click(deleteButtons[0]);
