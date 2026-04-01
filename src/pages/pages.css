@@ -424,7 +424,21 @@
   color: var(--text-secondary);
 }
 
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.form-row .form-group {
+  min-width: 0;
+}
+
 @media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
   .page {
     padding: 1.5rem 0.9rem 2.5rem;
   }
