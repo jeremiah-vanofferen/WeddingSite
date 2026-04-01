@@ -39,7 +39,7 @@ describe('Navigation (logged out)', () => {
     expect(screen.getByText('Test Wedding')).toBeInTheDocument();
   });
 
-  it('shows an "Login" button when not authenticated', () => {
+  it('shows a "Login" button when not authenticated', () => {
     renderNav();
     expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
   });
