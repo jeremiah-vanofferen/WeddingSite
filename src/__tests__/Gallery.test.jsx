@@ -1,6 +1,9 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Gallery from '../pages/Gallery';
+
+const originalConsoleError = console.error;
+let consoleErrorSpy;
 
 vi.mock('../components/PublicPhotoUploadModal', () => ({
   PublicPhotoUploadModal: ({ onSuccess, onClose }) => (
@@ -18,9 +21,21 @@ const approvedPhotos = [
 
 beforeEach(() => {
   vi.clearAllMocks();
+  consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation((...args) => {
+    const message = String(args[0] || '');
+    if (message.includes('not wrapped in act')) {
+      return;
+    }
+    originalConsoleError(...args);
+  });
+
   global.fetch = vi.fn(() =>
     Promise.resolve({ ok: true, json: () => Promise.resolve(approvedPhotos) })
   );
+});
+
+afterEach(() => {
+  consoleErrorSpy?.mockRestore();
 });
 
 describe('Gallery page', () => {

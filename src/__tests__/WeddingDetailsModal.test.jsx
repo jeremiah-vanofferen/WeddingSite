@@ -5,6 +5,7 @@ import { WeddingDetailsModal, ViewDetailsModal } from '../components/WeddingDeta
 const sampleDetails = {
   date: '2026-08-08',
   time: '16:00',
+  timeZone: 'America/Chicago',
   location: 'Windpoint Lighthouse',
   address: '4725 Lighthouse Drive, Wind Point, WI 53402',
   description: 'A beautiful outdoor ceremony.',
@@ -22,7 +23,8 @@ describe('WeddingDetailsModal', () => {
   it('renders all form fields with the provided details', () => {
     render(<WeddingDetailsModal details={sampleDetails} onSave={onSave} onClose={onClose} />);
     expect(screen.getByLabelText(/wedding date/i)).toHaveValue('2026-08-08');
-    expect(screen.getByLabelText(/wedding time/i)).toHaveValue('16:00');
+    expect(screen.getByLabelText(/^wedding time$/i)).toHaveValue('16:00');
+    expect(screen.getByLabelText(/wedding time zone/i)).toHaveValue('America/Chicago');
     expect(screen.getByLabelText(/venue name/i)).toHaveValue('Windpoint Lighthouse');
     expect(screen.getByLabelText(/venue address/i)).toHaveValue('4725 Lighthouse Drive, Wind Point, WI 53402');
     expect(screen.getByLabelText(/description/i)).toHaveValue('A beautiful outdoor ceremony.');
@@ -45,6 +47,24 @@ describe('WeddingDetailsModal', () => {
     render(<WeddingDetailsModal details={sampleDetails} onSave={onSave} onClose={onClose} />);
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('auto-fills the timezone from the address when it is blank', async () => {
+    render(
+      <WeddingDetailsModal
+        details={{
+          ...sampleDetails,
+          timeZone: '',
+          address: '100 Queen St W, Toronto, ON M5H 2N2, Canada',
+        }}
+        onSave={onSave}
+        onClose={onClose}
+      />
+    );
+
+    await waitFor(() =>
+      expect(screen.getByLabelText(/wedding time zone/i)).toHaveValue('America/Toronto')
+    );
   });
 });
 

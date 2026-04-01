@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from './utils/AuthContext';
 import LoginModal from './components/LoginModal';
@@ -8,6 +8,12 @@ import './Navigation.css';
 export default function Navigation({ settings }) {
   const [loginOpen, setLoginOpen] = useState(false);
   const { isLoggedIn, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLoginSuccess = () => {
+    setLoginOpen(false);
+    navigate('/admin');
+  };
 
   return (
     <>
@@ -19,7 +25,7 @@ export default function Navigation({ settings }) {
             <li><Link to="/schedule">Schedule</Link></li>
             <li><Link to="/gallery">Gallery</Link></li>
             <li><Link to="/contact">Contact</Link></li>
-            <li><Link to="/rsvp">RSVP</Link></li>
+            {settings?.allowRsvp && <li><Link to="/rsvp">RSVP</Link></li>}
             {isLoggedIn && <li><Link to="/admin">Admin</Link></li>}
           </ul>
           <div className="nav-auth">
@@ -31,7 +37,7 @@ export default function Navigation({ settings }) {
           </div>
         </div>
       </nav>
-      <LoginModal isOpen={loginOpen} onClose={() => setLoginOpen(false)} />
+      <LoginModal isOpen={loginOpen} onClose={() => setLoginOpen(false)} onLoginSuccess={handleLoginSuccess} />
     </>
   );
 }
@@ -39,5 +45,6 @@ export default function Navigation({ settings }) {
 Navigation.propTypes = {
   settings: PropTypes.shape({
     websiteName: PropTypes.string,
+    allowRsvp: PropTypes.bool,
   }),
 };

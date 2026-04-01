@@ -4,16 +4,37 @@ import Schedule from '../pages/Schedule';
 
 describe('Schedule Page', () => {
   beforeEach(() => {
-    global.fetch = vi.fn();
+    global.fetch = vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/public/settings')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            weddingDate: '2026-08-08',
+            weddingTimeZone: 'America/Chicago',
+          }),
+        });
+      }
+
+      return Promise.resolve({ ok: true, json: async () => [] });
+    });
   });
 
   it('fetches and renders schedule events', async () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => [
-        { id: 1, time: '14:00', event: 'Ceremony', description: 'Outdoor ceremony' },
-        { id: 2, time: '16:00', event: 'Reception', description: null },
-      ],
+    global.fetch = vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/schedule')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [
+            { id: 1, time: '14:00', event: 'Ceremony', description: 'Outdoor ceremony' },
+            { id: 2, time: '16:00', event: 'Reception', description: null },
+          ],
+        });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ weddingDate: '2026-08-08', weddingTimeZone: 'America/Chicago' }),
+      });
     });
 
     render(<Schedule />);
@@ -24,7 +45,16 @@ describe('Schedule Page', () => {
   });
 
   it('renders an empty list when the API returns no events', async () => {
-    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
+    global.fetch = vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/schedule')) {
+        return Promise.resolve({ ok: true, json: async () => [] });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ weddingDate: '2026-08-08', weddingTimeZone: 'America/Chicago' }),
+      });
+    });
 
     render(<Schedule />);
 
@@ -33,7 +63,16 @@ describe('Schedule Page', () => {
   });
 
   it('renders nothing extra when the API returns non-array data', async () => {
-    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ error: 'server error' }) });
+    global.fetch = vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/schedule')) {
+        return Promise.resolve({ ok: true, json: async () => ({ error: 'server error' }) });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ weddingDate: '2026-08-08', weddingTimeZone: 'America/Chicago' }),
+      });
+    });
 
     render(<Schedule />);
 
@@ -42,9 +81,18 @@ describe('Schedule Page', () => {
   });
 
   it('formats event times into 12-hour format', async () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => [{ id: 1, time: '14:00', event: 'Ceremony', description: null }],
+    global.fetch = vi.fn((url) => {
+      if (typeof url === 'string' && url.includes('/schedule')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [{ id: 1, time: '14:00', event: 'Ceremony', description: null }],
+        });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ weddingDate: '2026-08-08', weddingTimeZone: 'America/Chicago' }),
+      });
     });
 
     render(<Schedule />);

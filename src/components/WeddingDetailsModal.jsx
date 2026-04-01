@@ -1,9 +1,25 @@
 // WeddingDetailsModal.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { formatWeddingDate, formatTimeOfDay, getTimeZoneLabel, resolveTimeZone } from '../utils/dateTime';
+import { COMMON_TIMEZONES, timezoneFromAddress } from '../utils/timezones';
 
 export function WeddingDetailsModal({ details, onSave, onClose }) {
   const [formData, setFormData] = useState(details);
+
+  // Auto-derive timezone from address if timezone is not explicitly set
+  useEffect(() => {
+    if (!formData.timeZone) {
+      const derivedTz = timezoneFromAddress(formData.address);
+      setFormData(prev => ({
+        ...prev,
+        timeZone: derivedTz
+      }));
+    }
+  }, [formData.address, formData.timeZone]);
+
+  const displayTimeZone = resolveTimeZone(formData.timeZone);
+  const displayTimeZoneLabel = getTimeZoneLabel(displayTimeZone, undefined, formData.date);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -75,6 +91,22 @@ export function WeddingDetailsModal({ details, onSave, onClose }) {
             />
           </div>
           <div className="form-group">
+            <label htmlFor="timeZone">Wedding Time Zone</label>
+            <select
+              id="timeZone"
+              name="timeZone"
+              value={formData.timeZone || ''}
+              onChange={handleChange}
+              required
+            >
+              <option value="">-- Select Timezone --</option>
+              {COMMON_TIMEZONES.map(tz => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
+            </select>
+            <p><strong>Current Time Zone:</strong> {displayTimeZone} ({displayTimeZoneLabel})</p>
+          </div>
+          <div className="form-group">
             <label htmlFor="description">Description</label>
             <textarea
               id="description"
@@ -107,6 +139,9 @@ export function WeddingDetailsModal({ details, onSave, onClose }) {
 }
 
 export function ViewDetailsModal({ details, onClose }) {
+  const timeZone = resolveTimeZone(details.timeZone);
+  const timeZoneLabel = getTimeZoneLabel(timeZone, undefined, details.date);
+
   return (
     <div className="admin-modal">
       <div className="admin-modal-content">
@@ -117,18 +152,9 @@ export function ViewDetailsModal({ details, onClose }) {
         <div className="admin-modal-body">
           <div className="demo-card">
             <h3>Wedding Information</h3>
-            <p><strong>Date:</strong> {new Date(details.date + 'T' + details.time).toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              timeZone: details.timeZone
-            })}</p>
-            <p><strong>Time:</strong> {new Date(details.date + 'T' + details.time).toLocaleTimeString('en-US', {
-              hour: 'numeric',
-              minute: '2-digit',
-              timeZone: details.timeZone
-            })}</p>
+            <p><strong>Date:</strong> {formatWeddingDate(details.date)}</p>
+            <p><strong>Time:</strong> {formatTimeOfDay(details.time)} ({timeZoneLabel})</p>
+            <p><strong>Time Zone:</strong> {timeZone} ({timeZoneLabel})</p>
             <p><strong>Venue:</strong> {details.location}</p>
             <p><strong>Address:</strong> {details.address}</p>
             <p><strong>Description:</strong> {details.description}</p>
@@ -140,10 +166,7 @@ export function ViewDetailsModal({ details, onClose }) {
         <div className="admin-modal-footer">
           <button
             type="button"
-            className="save-btn"
-            style={{ backgroundColor: 'var(--primary-color, #0a20ca)' }}
-            onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--primary-color-hover, #1894dc)'}
-            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'var(--primary-color, #0a20ca)'}
+            className="cancel-btn"
             onClick={onClose}
           >Close</button>
         </div>

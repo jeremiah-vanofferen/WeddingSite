@@ -1,6 +1,9 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Admin from '../pages/Admin';
+
+const originalConsoleError = console.error;
+let consoleErrorSpy;
 
 // --- Mock dependencies ---
 vi.mock('../utils/AuthContext', () => ({
@@ -72,6 +75,14 @@ beforeEach(() => {
   vi.clearAllMocks();
   useAuth.mockReturnValue(loggedInAuth);
 
+  consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation((...args) => {
+    const message = String(args[0] || '');
+    if (message.includes('not wrapped in act')) {
+      return;
+    }
+    originalConsoleError(...args);
+  });
+
   global.fetch = vi.fn((url) => {
     if (url.includes('/schedule')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockSchedule) });
     if (url.includes('/messages')) return Promise.resolve({ ok: true, json: () => Promise.resolve(mockMessages) });
@@ -79,6 +90,10 @@ beforeEach(() => {
     if (url.includes('/gallery')) return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
     return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
   });
+});
+
+afterEach(() => {
+  consoleErrorSpy?.mockRestore();
 });
 
 describe('Admin – not logged in', () => {

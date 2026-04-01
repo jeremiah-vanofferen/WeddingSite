@@ -207,17 +207,21 @@
 }
 
 .gallery-modal-close {
-  background: none;
-  border: none;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
   font-size: 1.5rem;
-  color: #888;
+  color: #6b7280;
   cursor: pointer;
   padding: 0;
   line-height: 1;
+  width: 36px;
+  height: 36px;
 }
 
 .gallery-modal-close:hover {
-  color: #333;
+  background-color: #e5e7eb;
+  color: #374151;
 }
 
 .gallery-modal-body {
@@ -274,18 +278,19 @@
 }
 
 .cancel-btn {
-  background: #f0f0f0;
-  color: #333;
-  border: none;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
   border-radius: 4px;
   padding: 0.6rem 1.2rem;
   font-size: 1rem;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .cancel-btn:hover:not(:disabled) {
-  background: #e0e0e0;
+  background: #e5e7eb;
+  color: #1f2937;
 }
 
 .cancel-btn:disabled {

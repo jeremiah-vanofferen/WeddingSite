@@ -1,8 +1,13 @@
 // ScheduleModal.jsx
 import { useState } from 'react';
 import PropTypes from 'prop-types';
+import { formatTimeOfDay } from '../utils/dateTime';
 
-export function ScheduleModal({ schedule, onSave, onClose }) {
+export function ScheduleModal({
+  schedule,
+  onSave,
+  onClose,
+}) {
   const [scheduleList, setScheduleList] = useState(schedule);
   const [editingEvent, setEditingEvent] = useState(null);
 
@@ -60,11 +65,7 @@ export function ScheduleModal({ schedule, onSave, onClose }) {
                     <div className="event-header">
                       <h4>
                         <span className="event-time-badge">
-                          {new Date(`2026-08-08T${event.time}`).toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true
-                          })}
+                          {formatTimeOfDay(event.time)}
                         </span>
                         {event.event}
                       </h4>

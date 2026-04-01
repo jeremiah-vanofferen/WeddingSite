@@ -1,3 +1,5 @@
+export const DEFAULT_WEDDING_TIME_ZONE = 'America/Chicago';
+
 export const DEFAULT_SETTINGS = {
   websiteName: 'My Wedding',
   theme: 'elegant',

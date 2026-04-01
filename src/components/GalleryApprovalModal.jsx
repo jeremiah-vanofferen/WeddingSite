@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { API_BASE_URL } from '../utils/api';
 import { getAuthHeaders, requestJson } from '../utils/http';
+import { formatIsoDateTime } from '../utils/dateTime';
 
 export function GalleryApprovalModal({ onClose }) {
   const [pending, setPending] = useState([]);
@@ -75,7 +76,7 @@ export function GalleryApprovalModal({ onClose }) {
                       </p>
                     )}
                     <p className="gallery-approval-date">
-                      {new Date(photo.uploaded_at).toLocaleString()}
+                      {formatIsoDateTime(photo.uploaded_at, Intl.DateTimeFormat().resolvedOptions().timeZone)}
                     </p>
                     <div className="gallery-approval-actions">
                       <button

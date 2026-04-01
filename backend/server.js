@@ -487,7 +487,7 @@ app.get('/api/public/settings', async (req, res) => {
   try {
     const PUBLIC_KEYS = ['websiteName', 'theme', 'primaryColor', 'primaryColorHover', 'fontFamily',
       'showCountdown', 'allowRsvp', 'welcomeMessage',
-      'weddingDate', 'weddingTime', 'weddingLocation', 'weddingAddress', 'weddingDescription',
+      'weddingDate', 'weddingTime', 'weddingTimeZone', 'weddingLocation', 'weddingAddress', 'weddingDescription',
       'carouselSpeed', 'carouselTransition', 'registryUrl'];
     const result = await pool.query(
       'SELECT key, value FROM settings WHERE key = ANY($1)',

@@ -122,6 +122,22 @@
   margin-bottom: 16px;
 }
 
+.admin-message-modal-close {
+  padding: 0.75rem 1.5rem;
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.admin-message-modal-close:hover {
+  background-color: #e5e7eb;
+  color: #1f2937;
+}
+
 /* Settings Styles */
 .settings-grid {
   display: grid;
@@ -297,22 +313,24 @@
 }
 
 .admin-modal-close {
-  background: none;
-  border: none;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
   font-size: 2rem;
   cursor: pointer;
-  color: #666;
+  color: #6b7280;
   padding: 0;
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .admin-modal-close:hover {
-  color: #333;
+  background-color: #e5e7eb;
+  color: #374151;
 }
 
 .admin-modal-body {
@@ -337,12 +355,14 @@
 }
 
 .admin-modal-footer .cancel-btn {
-  background-color: #f5f5f5;
-  color: #333;
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
 }
 
 .admin-modal-footer .cancel-btn:hover {
-  background-color: #e0e0e0;
+  background-color: #e5e7eb;
+  color: #1f2937;
 }
 
 .admin-modal-footer .save-btn {
@@ -1009,17 +1029,18 @@
 
 .cancel-upload-btn {
   padding: 0.75rem 1.5rem;
-  background-color: var(--primary-color, #0a20ca);
-  color: #333;
-  border: 1px solid #ddd;
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
   border-radius: 4px;
   font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .cancel-upload-btn:hover {
-  background-color: var(--primary-color-hover, #1894dc);
+  background-color: #e5e7eb;
+  color: #1f2937;
 }
 
 .preview-table-container {

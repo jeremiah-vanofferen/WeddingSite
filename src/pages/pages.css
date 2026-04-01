@@ -37,9 +37,37 @@
   overflow: hidden;
 }
 
-.home-welcome {
-  padding: 1.5rem;
+/* ── Home Countdown Timer ── */
+.countdown-timer {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
 }
+
+.countdown-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 4.5rem;
+}
+
+.countdown-number {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--primary-color, #0a20ca);
+  line-height: 1;
+}
+
+.countdown-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin-top: 0.3rem;
+}
+
 
 .home-welcome h3 {
   color: #333;

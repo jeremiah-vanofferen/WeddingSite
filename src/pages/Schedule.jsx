@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchArray } from '../utils/publicData';
+import { formatTimeOfDay } from '../utils/dateTime';
 import '../pages/pages.css';
 
 export default function Services() {
@@ -9,12 +10,7 @@ export default function Services() {
     fetchArray('/schedule').then(data => setSchedule(data));
   }, []);
 
-  const formatTime = (time) =>
-    new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
+  const formatTime = (time) => formatTimeOfDay(time);
 
   return (
     <div className="page">

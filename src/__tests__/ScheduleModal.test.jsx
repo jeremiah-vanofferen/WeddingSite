@@ -17,14 +17,26 @@ describe('ScheduleModal', () => {
   });
 
   it('renders all schedule events', () => {
-    render(<ScheduleModal schedule={sampleSchedule} onSave={onSave} onClose={onClose} />);
+    render(
+      <ScheduleModal
+        schedule={sampleSchedule}
+        onSave={onSave}
+        onClose={onClose}
+      />
+    );
     expect(screen.getByText('Ceremony')).toBeInTheDocument();
     expect(screen.getByText('Reception')).toBeInTheDocument();
     expect(screen.getByText('Outdoor ceremony')).toBeInTheDocument();
   });
 
   it('calls onSave with updated list when an event is deleted', () => {
-    render(<ScheduleModal schedule={sampleSchedule} onSave={onSave} onClose={onClose} />);
+    render(
+      <ScheduleModal
+        schedule={sampleSchedule}
+        onSave={onSave}
+        onClose={onClose}
+      />
+    );
     const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
     fireEvent.click(deleteButtons[0]);
     expect(onSave).toHaveBeenCalledWith(
@@ -34,13 +46,25 @@ describe('ScheduleModal', () => {
   });
 
   it('calls onClose when Close button is clicked', () => {
-    render(<ScheduleModal schedule={sampleSchedule} onSave={onSave} onClose={onClose} />);
+    render(
+      <ScheduleModal
+        schedule={sampleSchedule}
+        onSave={onSave}
+        onClose={onClose}
+      />
+    );
     fireEvent.click(screen.getByRole('button', { name: /close/i }));
     expect(onClose).toHaveBeenCalled();
   });
 
   it('opens the edit form when Edit is clicked', () => {
-    render(<ScheduleModal schedule={sampleSchedule} onSave={onSave} onClose={onClose} />);
+    render(
+      <ScheduleModal
+        schedule={sampleSchedule}
+        onSave={onSave}
+        onClose={onClose}
+      />
+    );
     const editButtons = screen.getAllByRole('button', { name: /edit/i });
     fireEvent.click(editButtons[0]);
     // EditEventModal renders an "Edit Event" heading

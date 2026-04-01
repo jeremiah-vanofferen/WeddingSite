@@ -82,4 +82,48 @@ describe('Home Page', () => {
       expect(screen.getByRole('link', { name: /view our registry/i })).toBeInTheDocument()
     );
   });
+
+  it('shows the countdown section when showCountdown is true', async () => {
+    global.fetch = mockFetchForHome({
+      showCountdown: 'true',
+      weddingDate: '2099-01-01',
+      weddingTime: '12:00',
+    });
+
+    render(<Home />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId('countdown-section')).toBeInTheDocument()
+    );
+    expect(screen.getByRole('heading', { name: /counting down/i })).toBeInTheDocument();
+    expect(screen.getByText('Days')).toBeInTheDocument();
+    expect(screen.getByText('Hours')).toBeInTheDocument();
+    expect(screen.getByText('Minutes')).toBeInTheDocument();
+    expect(screen.getByText('Seconds')).toBeInTheDocument();
+  });
+
+  it('hides the countdown section when showCountdown is false', async () => {
+    global.fetch = mockFetchForHome({ showCountdown: 'false' });
+
+    render(<Home />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Welcome' })).toBeInTheDocument()
+    );
+    expect(screen.queryByTestId('countdown-section')).not.toBeInTheDocument();
+  });
+
+  it('shows arrival message when wedding date has passed', async () => {
+    global.fetch = mockFetchForHome({
+      showCountdown: 'true',
+      weddingDate: '2000-01-01',
+      weddingTime: '12:00',
+    });
+
+    render(<Home />);
+
+    await waitFor(() =>
+      expect(screen.getByText(/the wedding day has arrived/i)).toBeInTheDocument()
+    );
+  });
 });

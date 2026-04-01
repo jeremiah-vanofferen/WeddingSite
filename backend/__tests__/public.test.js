@@ -61,6 +61,7 @@ describe('GET /api/public/settings', () => {
         { key: 'welcomeMessage', value: 'Welcome to our wedding!' },
         { key: 'weddingDate', value: '2026-08-08' },
         { key: 'weddingTime', value: '16:00' },
+        { key: 'weddingTimeZone', value: 'America/Chicago' },
         { key: 'weddingLocation', value: 'Windpoint Lighthouse' },
         { key: 'weddingAddress', value: '4725 Lighthouse Drive, Wind Point, WI 53402' },
         { key: 'weddingDescription', value: 'A beautiful outdoor ceremony.' },
@@ -79,6 +80,7 @@ describe('GET /api/public/settings', () => {
     expect(res.body.welcomeMessage).toBe('Welcome to our wedding!');
     expect(res.body.weddingDate).toBe('2026-08-08');
     expect(res.body.weddingTime).toBe('16:00');
+    expect(res.body.weddingTimeZone).toBe('America/Chicago');
     expect(res.body.weddingLocation).toBe('Windpoint Lighthouse');
     expect(res.body.weddingAddress).toBe('4725 Lighthouse Drive, Wind Point, WI 53402');
     expect(res.body.weddingDescription).toBe('A beautiful outdoor ceremony.');
@@ -97,10 +99,10 @@ describe('GET /api/public/settings', () => {
     expect(keysArg).toEqual(expect.arrayContaining([
       'websiteName', 'theme', 'primaryColor', 'primaryColorHover', 'fontFamily',
       'showCountdown', 'allowRsvp', 'welcomeMessage',
-      'weddingDate', 'weddingTime', 'weddingLocation', 'weddingAddress', 'weddingDescription',
+      'weddingDate', 'weddingTime', 'weddingTimeZone', 'weddingLocation', 'weddingAddress', 'weddingDescription',
       'carouselSpeed', 'carouselTransition', 'registryUrl',
     ]));
-    expect(keysArg).toHaveLength(16);
+    expect(keysArg).toHaveLength(17);
   });
 
   it('returns 500 on database error', async () => {

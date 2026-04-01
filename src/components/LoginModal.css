@@ -47,22 +47,24 @@
 }
 
 .modal-close {
-  background: none;
-  border: none;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
   font-size: 2rem;
   cursor: pointer;
-  color: #666;
+  color: #6b7280;
   padding: 0;
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .modal-close:hover {
-  color: #333;
+  background-color: #e5e7eb;
+  color: #374151;
 }
 
 .login-form {
