@@ -10,7 +10,7 @@ The backend is a **single-file Express app** (`backend/server.js`) using **Commo
 
 - CommonJS only — use `require()` and `module.exports`. Do not use `import`/`export`.
 - Use `async`/`await` throughout; avoid raw Promise chains.
-- Every route handler must be wrapped in `try/catch`; the catch block logs with `console.error` and returns `res.status(500).json({ error: 'Internal server error' })`.
+- Every async route handler should be wrapped in `try/catch`; on failure either return `res.status(500).json({ error: 'Internal server error' })` or use the shared `sendInternalError(res, context, error)` helper.
 - Unused parameter names must be prefixed with `_` (ESLint rule).
 
 ## Database
@@ -43,7 +43,8 @@ The backend is a **single-file Express app** (`backend/server.js`) using **Commo
 ## Rate Limiting
 
 - General API: `limiter` (100 req / 15 min) is applied to all `/api/` routes.
-- Sensitive endpoints also use `strictLimiter` (20 req / 15 min): `/api/auth/login`, `/api/rsvp`, `/api/messages`.
+- Sensitive endpoints also use `strictLimiter`: `/api/auth/login`, `/api/auth/change-password`, `/api/rsvp`, `/api/messages`, `/api/gallery/upload`, `/api/gallery/upload-file`.
+- In `test` and `development`, strict limiter max is relaxed; production max remains 20 req / 15 min.
 - When adding new public submission endpoints, apply `strictLimiter` inline: `app.post('/api/new-endpoint', strictLimiter, handler)`.
 
 ## Input Validation Pattern

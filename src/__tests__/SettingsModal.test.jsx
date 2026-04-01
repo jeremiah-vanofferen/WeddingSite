@@ -18,7 +18,7 @@ describe('SettingsModal', () => {
   let onSave, onClose;
 
   beforeEach(() => {
-    onSave = vi.fn();
+    onSave = vi.fn().mockResolvedValue(undefined);
     onClose = vi.fn();
   });
 
@@ -50,6 +50,18 @@ describe('SettingsModal', () => {
     await waitFor(() => expect(onSave).toHaveBeenCalled());
     expect(onSave.mock.calls[0][0].websiteName).toBe('Our Wedding');
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('shows error and keeps modal open when save fails', async () => {
+    onSave = vi.fn().mockRejectedValue(new Error('Network error'));
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    render(<SettingsModal settings={defaultSettings} onSave={onSave} onClose={onClose} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /save settings/i }));
+
+    await waitFor(() => expect(screen.getByText('Network error')).toBeInTheDocument());
+    expect(onClose).not.toHaveBeenCalled();
+    consoleSpy.mockRestore();
   });
 
   it('calls onClose when Cancel is clicked', () => {

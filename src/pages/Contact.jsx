@@ -46,7 +46,7 @@ export default function Contact() {
 
   if (submitted) {
     return (
-      <div className="page">
+      <div className="page page-contact">
         <h1>Message Sent</h1>
         <p>Thank you for reaching out! We&apos;ll get back to you soon.</p>
       </div>
@@ -54,27 +54,47 @@ export default function Contact() {
   }
 
   return (
-    <div className="page">
-      <h1>Contact Us</h1>
-      <p>Get in touch with us for any inquiries.</p>
-      <div className="demo-card">
-        <form className="contact-form" onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="contact-name">Name</label>
-            <input id="contact-name" name="name" type="text" value={form.name} onChange={handleChange} required />
-          </div>
-          <div className="form-group">
-            <label htmlFor="contact-email">Email</label>
-            <input id="contact-email" name="email" type="email" value={form.email} onChange={handleChange} required />
-          </div>
-          <div className="form-group">
-            <label htmlFor="contact-message">Message</label>
-            <textarea id="contact-message" name="message" value={form.message} onChange={handleChange} rows="5" required></textarea>
-          </div>
-          {error && <p className="form-error" role="alert">{error}</p>}
-          <button type="submit" disabled={submitting}>{submitting ? 'Sending…' : 'Send Message'}</button>
-        </form>
-      </div>
+    <div className="page page-contact">
+      <section className="page-hero">
+        <div className="page-hero-copy narrow-copy">
+          <p className="page-eyebrow">Questions and updates</p>
+          <h1>Contact Us</h1>
+          <p className="page-lede">Get in touch with us for any inquiries.</p>
+        </div>
+      </section>
+
+      <section className="page-section page-split-layout">
+        <div className="demo-card info-card">
+          <p className="section-kicker">Before you send</p>
+          <h3>What this form is best for</h3>
+          <ul className="feature-list">
+            <li>Travel and schedule questions.</li>
+            <li>Accessibility or logistics notes.</li>
+            <li>Anything that does not fit inside RSVP.</li>
+          </ul>
+          <p className="supporting-copy">If you are sharing attendance details, use the RSVP page so we can track your response correctly.</p>
+        </div>
+
+        <div className="demo-card form-card">
+          <p className="section-kicker">Send a note</p>
+          <form className="contact-form" onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="contact-name">Name</label>
+              <input id="contact-name" name="name" type="text" value={form.name} onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <label htmlFor="contact-email">Email</label>
+              <input id="contact-email" name="email" type="email" value={form.email} onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <label htmlFor="contact-message">Message</label>
+              <textarea id="contact-message" name="message" value={form.message} onChange={handleChange} rows="6" required></textarea>
+            </div>
+            {error && <p className="form-error" role="alert">{error}</p>}
+            <button type="submit" disabled={submitting}>{submitting ? 'Sending…' : 'Send Message'}</button>
+          </form>
+        </div>
+      </section>
     </div>
   );
 }

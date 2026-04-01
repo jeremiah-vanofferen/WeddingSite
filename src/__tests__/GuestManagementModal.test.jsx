@@ -248,6 +248,163 @@ describe('GuestManagementModal', () => {
       expect.objectContaining({ method: 'PUT' })
     );
   });
+
+    it('shows error when guest edit API fails', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      global.fetch = vi.fn((url, opts) => {
+        if (opts?.method === 'PUT') return Promise.resolve({ ok: false });
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockGuests) });
+      });
+
+      render(<GuestManagementModal onClose={vi.fn()} />);
+      await waitFor(() => screen.getByText('Alice Smith'));
+
+      fireEvent.click(screen.getAllByRole('button', { name: /edit/i })[0]);
+      fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+
+      await waitFor(() =>
+        expect(screen.getByRole('alert')).toHaveTextContent(/Failed to update guest/i)
+      );
+      consoleSpy.mockRestore();
+    });
+
+    it('shows error when guest delete API fails', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      global.fetch = vi.fn((url, opts) => {
+        if (opts?.method === 'DELETE') return Promise.resolve({ ok: false });
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockGuests) });
+      });
+
+      render(<GuestManagementModal onClose={vi.fn()} />);
+      await waitFor(() => screen.getByText('Alice Smith'));
+
+      fireEvent.click(screen.getAllByRole('button', { name: /delete/i })[0]);
+
+      await waitFor(() =>
+        expect(screen.getByRole('alert')).toHaveTextContent(/Failed to delete guest/i)
+      );
+      consoleSpy.mockRestore();
+    });
+
+    it('shows error when RSVP update API fails', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      global.fetch = vi.fn((url, opts) => {
+        if (opts?.method === 'PUT') return Promise.resolve({ ok: false });
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockGuests) });
+      });
+
+      render(<GuestManagementModal onClose={vi.fn()} />);
+      await waitFor(() => screen.getByText('Alice Smith'));
+
+      const rsvpSelects = screen.getAllByRole('combobox');
+      fireEvent.change(rsvpSelects[0], { target: { value: 'No' } });
+
+      await waitFor(() =>
+        expect(screen.getByRole('alert')).toHaveTextContent(/Failed to update RSVP/i)
+      );
+      consoleSpy.mockRestore();
+    });
+
+    it('shows upload error when bulk import API fails', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      Papa.parse.mockImplementation((_file, opts) => {
+        opts.complete({ data: [{ Name: 'Test User', Email: 'test@example.com' }] });
+      });
+      global.fetch = vi.fn((url) => {
+        if (url.includes('/bulk')) return Promise.resolve({ ok: false });
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(mockGuests) });
+      });
+
+      render(<GuestManagementModal onClose={vi.fn()} />);
+      await waitFor(() => screen.getByText('Alice Smith'));
+
+      const fileInput = document.querySelector('#csv-file');
+      fireEvent.change(fileInput, { target: { files: [new File(['Name,Email\nTest User,test@example.com'], 'guests.csv', { type: 'text/csv' })] } });
+      await waitFor(() => screen.getByText('Import Guests'));
+      fireEvent.click(screen.getByText('Import Guests'));
+
+      await waitFor(() =>
+        expect(screen.getByText(/Failed to import guests/i)).toBeInTheDocument()
+      );
+      consoleSpy.mockRestore();
+    });
+
+    it('shows error when CSV data is not a valid array', async () => {
+      Papa.parse.mockImplementation((_file, opts) => {
+        opts.complete({ data: null });
+      });
+
+      render(<GuestManagementModal onClose={vi.fn()} />);
+      await waitFor(() => screen.getByText('Alice Smith'));
+
+      const fileInput = document.querySelector('#csv-file');
+      fireEvent.change(fileInput, { target: { files: [new File(['bad'], 'guests.csv', { type: 'text/csv' })] } });
+
+      await waitFor(() =>
+        expect(screen.getByText(/No valid guest data found/i)).toBeInTheDocument()
+      );
+    });
+
+    it('shows validation error count when some rows have invalid email', async () => {
+      Papa.parse.mockImplementation((_file, opts) => {
+        opts.complete({
+          data: [
+            { Name: 'Good Person', Email: 'good@example.com' },
+            { Name: 'Bad Person', Email: 'not-an-email' },
+          ],
+        });
+      });
+
+      render(<GuestManagementModal onClose={vi.fn()} />);
+      await waitFor(() => screen.getByText('Alice Smith'));
+
+      const fileInput = document.querySelector('#csv-file');
+      fireEvent.change(fileInput, { target: { files: [new File(['Name,Email'], 'guests.csv', { type: 'text/csv' })] } });
+
+      await waitFor(() => expect(screen.getByText('Good Person')).toBeInTheDocument());
+      expect(screen.getByText(/1 validation error/i)).toBeInTheDocument();
+    });
+
+    it('parses RSVP "Attending" as Yes and Plus One "Yes" as true', async () => {
+      Papa.parse.mockImplementation((_file, opts) => {
+        opts.complete({
+          data: [{ Name: 'Tom Guest', Email: 'tom@example.com', RSVP: 'Attending', 'Plus One': 'Yes' }],
+        });
+      });
+
+      render(<GuestManagementModal onClose={vi.fn()} />);
+      await waitFor(() => screen.getByText('Alice Smith'));
+
+      const fileInput = document.querySelector('#csv-file');
+      fireEvent.change(fileInput, { target: { files: [new File([''], 'guests.csv', { type: 'text/csv' })] } });
+
+      await waitFor(() => screen.getByText('Tom Guest'));
+      expect(screen.getByText('tom@example.com')).toBeInTheDocument();
+      // plusOne=true renders as 'Yes' in the preview table
+      const rows = screen.getAllByRole('row');
+      const guestRow = rows.find(row => row.textContent.includes('Tom Guest'));
+      expect(guestRow.textContent).toContain('Yes');
+    });
+
+    it('shows "and X more guests" row when CSV preview exceeds 5 rows', async () => {
+      const lotsOfData = Array.from({ length: 6 }, (_, i) => ({
+        Name: `Guest ${i + 1}`,
+        Email: `guest${i + 1}@example.com`,
+      }));
+      Papa.parse.mockImplementation((_file, opts) => {
+        opts.complete({ data: lotsOfData });
+      });
+
+      render(<GuestManagementModal onClose={vi.fn()} />);
+      await waitFor(() => screen.getByText('Alice Smith'));
+
+      const fileInput = document.querySelector('#csv-file');
+      fireEvent.change(fileInput, { target: { files: [new File(['Name,Email'], 'guests.csv', { type: 'text/csv' })] } });
+
+      await waitFor(() => screen.getByText('Guest 1'));
+      expect(screen.getByText(/1 more guest/i)).toBeInTheDocument();
+    });
 });
 
 describe('AddGuestModal', () => {

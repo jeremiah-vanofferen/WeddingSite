@@ -49,10 +49,10 @@ function App() {
       root.style.setProperty('--primary-color-hover', settings.primaryColorHover);
       // Apply font family
       const fontMap = {
-        serif: '"Times New Roman", serif',
-        'sans-serif': '"Helvetica Neue", Arial, sans-serif',
-        script: '"Brush Script MT", cursive',
-        monospace: '"Courier New", monospace'
+        serif: '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
+        'sans-serif': '"Aptos", "Segoe UI Variable", "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+        script: '"Baskerville Old Face", "Palatino Linotype", Georgia, serif',
+        monospace: '"Cascadia Mono", "Consolas", "Courier New", monospace'
       };
       root.style.setProperty('--font-family', fontMap[settings.fontFamily] || fontMap.serif);
       document.body.style.fontFamily = fontMap[settings.fontFamily] || fontMap.serif;

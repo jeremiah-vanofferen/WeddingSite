@@ -31,16 +31,35 @@ export default function Gallery() {
   const closeLightbox = () => setLightbox(null);
 
   return (
-    <div className="page">
-      <div className="gallery-header">
-        <div>
-          <h1>Photo Gallery</h1>
-          <p>Browse photos from our celebration.</p>
+    <div className="page page-gallery">
+      <section className="gallery-hero-shell">
+        <div className="gallery-header gallery-header-card">
+          <div>
+            <p className="page-eyebrow">Shared memories</p>
+            <h1>Photo Gallery</h1>
+            <p>Browse photos from our celebration.</p>
+          </div>
+          <button className="form-btn gallery-share-button" onClick={() => setUploadModalOpen(true)}>
+            + Share Photo
+          </button>
         </div>
-        <button className="form-btn gallery-share-button" onClick={() => setUploadModalOpen(true)}>
-          + Share Photo
-        </button>
-      </div>
+
+        <div className="demo-card gallery-info-card">
+          <p className="section-kicker">Guest uploads welcome</p>
+          <h3>Help us collect the full story</h3>
+          <p>Share your favorite moments from the day. New uploads are reviewed before they appear in the gallery.</p>
+          <div className="gallery-stat-row">
+            <div className="gallery-stat-pill">
+              <span className="gallery-stat-label">Approved</span>
+              <strong>{photos.length}</strong>
+            </div>
+            <div className="gallery-stat-pill">
+              <span className="gallery-stat-label">Status</span>
+              <strong>{loading ? 'Loading' : 'Live'}</strong>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {uploadSuccess && (
         <div className="gallery-success-message">
