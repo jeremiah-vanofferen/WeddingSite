@@ -76,7 +76,7 @@ export function GalleryApprovalModal({ onClose }) {
                       </p>
                     )}
                     <p className="gallery-approval-date">
-                      {formatIsoDateTime(photo.uploaded_at)}
+                      {formatIsoDateTime(photo.uploaded_at, Intl.DateTimeFormat().resolvedOptions().timeZone)}
                     </p>
                     <div className="gallery-approval-actions">
                       <button
