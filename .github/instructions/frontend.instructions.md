@@ -13,33 +13,61 @@ The frontend is a **React 18 SPA** built with **Vite**, using **ES modules** (`i
   import { API_BASE_URL } from '../utils/api';
   ```
 - Never hardcode `/api/...` or `http://backend:5000/api/...` strings directly.
-- **Always** check `response.ok` before calling `.json()`:
+- **For public/read endpoints**: check `response.ok` before calling `.json()`:
   ```js
   const res = await fetch(`${API_BASE_URL}/endpoint`, options);
   if (!res.ok) throw new Error('...');
   const data = await res.json();
   ```
-- For admin save operations, use the `requestJson(url, options, fallbackError)` helper in `Admin.jsx` as the model — it checks status, parses JSON, and throws on non-2xx.
+- **For admin/write operations**: ALWAYS use `requestJson(url, options, fallbackError)` from `src/utils/http.js` — never hand-roll fetch error handling for mutations, modal saves, or any authenticated operation.
 
 ## Admin Modal Pattern
 
-- Show save errors in a `saveError` state; display them in the UI without closing the modal.
-- Only call `closeModal()` after a successful `await` of the API call.
-- Clear `saveError` in `openModal()` and `closeModal()`.
+**Every modal that writes data must follow this pattern exactly:**
+- Initialize a `saveError` state to hold error messages.
+- Clear `saveError` when opening the modal (`openModal()`) and when closing it (`closeModal()`).
+- In the save handler:
+  1. Clear `saveError` at the start.
+  2. Call `requestJson()` with `await` — do not use raw `fetch`.
+  3. On success, call `closeModal()` immediately after the `await` resolves.
+  4. On error, catch the exception and set `saveError` — do NOT close the modal.
+- Always display `saveError` in the UI if it is set (render above the form or as an alert).
 
 ```js
 const [saveError, setSaveError] = useState('');
 
+const openModal = (modalType, item = null) => {
+  setSaveError('');
+  setActiveModal(modalType);
+  setEditingItem(item);
+};
+
+const closeModal = () => {
+  setSaveError('');
+  setActiveModal(null);
+  setEditingItem(null);
+};
+
 const handleSave = async (data) => {
   setSaveError('');
   try {
-    await requestJson(`${API_BASE_URL}/...`, { method: 'POST', ... }, 'Save failed.');
-    closeModal();
+    await requestJson(`${API_BASE_URL}/entity`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(data)
+    }, 'Save failed.');
+    closeModal(); // Only called on success
   } catch (err) {
-    setSaveError(err.message || 'Save failed.');
+    setSaveError(err.message || 'Save failed.'); // Modal stays open
   }
 };
 ```
+
+**Do NOT:**
+- Use raw `fetch()` for any admin/mutation operation — use `requestJson()` instead.
+- Call `closeModal()` before the API call completes or on error.
+- Ignore `saveError` — always render it in the modal UI.
+- Attempt to parse response.json() yourself in a modal save — `requestJson()` handles it.
 
 ## Settings
 
@@ -54,9 +82,9 @@ const handleSave = async (data) => {
 
 ## Auth
 
-- `useAuth()` from `src/AuthContext.jsx` returns `{ isLoggedIn, login, logout, adminName, loading }`.
+- `useAuth()` from `src/utils/AuthContext.jsx` returns `{ isLoggedIn, login, logout, adminName, loading }`.
 - The auth token is stored in `localStorage` as `authToken`.
-- Use `getAuthHeaders()` in `Admin.jsx` to build `Authorization: Bearer <token>` headers.
+- Use `getAuthHeaders()` from `src/utils/http.js` to build `Authorization: Bearer <token>` headers.
 
 ## Theming
 

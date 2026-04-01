@@ -73,56 +73,82 @@ export default function Home() {
   );
 
   return (
-    <div className="page">
-      <div className="demo-card home-hero-card">
-        <PhotoCarousel />
-        <div className="home-welcome">
-          <h3>Welcome</h3>
-          <p>{settings.welcomeMessage}</p>
-        </div>
-      </div>
-
-      {settings.showCountdown && (
-        <div className="demo-card" data-testid="countdown-section">
-          <h3>Counting Down to the Big Day</h3>
-          {countdown.expired ? (
-            <p>The wedding day has arrived!</p>
-          ) : (
-            <div className="countdown-timer">
-              <div className="countdown-unit">
-                <span className="countdown-number">{countdown.days}</span>
-                <span className="countdown-label">Days</span>
-              </div>
-              <div className="countdown-unit">
-                <span className="countdown-number">{String(countdown.hours).padStart(2, '0')}</span>
-                <span className="countdown-label">Hours</span>
-              </div>
-              <div className="countdown-unit">
-                <span className="countdown-number">{String(countdown.minutes).padStart(2, '0')}</span>
-                <span className="countdown-label">Minutes</span>
-              </div>
-              <div className="countdown-unit">
-                <span className="countdown-number">{String(countdown.seconds).padStart(2, '0')}</span>
-                <span className="countdown-label">Seconds</span>
-              </div>
+    <div className="page page-home">
+      <section className="page-hero page-hero-home">
+        <div className="page-hero-copy">
+          <p className="page-eyebrow">Celebration weekend</p>
+          <div className="home-welcome home-welcome-inline">
+            <h3>Welcome</h3>
+            <p>{settings.welcomeMessage}</p>
+          </div>
+          <div className="hero-detail-grid">
+            <div className="hero-detail-pill">
+              <span className="hero-detail-label">Date</span>
+              <strong>{formatWeddingDate(date)}</strong>
             </div>
-          )}
+            <div className="hero-detail-pill">
+              <span className="hero-detail-label">Time</span>
+              <strong>{formatTimeOfDay(time)}</strong>
+            </div>
+            <div className="hero-detail-pill">
+              <span className="hero-detail-label">Time zone</span>
+              <strong>{timeZoneLabel}</strong>
+            </div>
+          </div>
         </div>
-      )}
 
-      <div className="demo-card">
-        <h3>Wedding Details</h3>
-        <p><strong>Date:</strong> {formatWeddingDate(date)}</p>
-        <p><strong>Time:</strong> {formatTimeOfDay(time)} ({timeZoneLabel})</p>
-        <p><strong>Venue:</strong> {weddingDetails.location}</p>
-        <p><strong>Address:</strong> {weddingDetails.address}</p>
-        {weddingDetails.description && (
-          <p><strong>Description:</strong> {weddingDetails.description}</p>
+        <div className="demo-card home-hero-card home-hero-media">
+          <PhotoCarousel />
+        </div>
+      </section>
+
+      <section className="page-section page-section-grid page-section-grid-home">
+        {settings.showCountdown && (
+          <div className="demo-card" data-testid="countdown-section">
+            <p className="section-kicker">Stay on schedule</p>
+            <h3>Counting Down to the Big Day</h3>
+            {countdown.expired ? (
+              <p>The wedding day has arrived!</p>
+            ) : (
+              <div className="countdown-timer">
+                <div className="countdown-unit">
+                  <span className="countdown-number">{countdown.days}</span>
+                  <span className="countdown-label">Days</span>
+                </div>
+                <div className="countdown-unit">
+                  <span className="countdown-number">{String(countdown.hours).padStart(2, '0')}</span>
+                  <span className="countdown-label">Hours</span>
+                </div>
+                <div className="countdown-unit">
+                  <span className="countdown-number">{String(countdown.minutes).padStart(2, '0')}</span>
+                  <span className="countdown-label">Minutes</span>
+                </div>
+                <div className="countdown-unit">
+                  <span className="countdown-number">{String(countdown.seconds).padStart(2, '0')}</span>
+                  <span className="countdown-label">Seconds</span>
+                </div>
+              </div>
+            )}
+          </div>
         )}
-        {weddingDetails.registryUrl && (
-          <p><strong>Registry:</strong> <a href={weddingDetails.registryUrl} target="_blank" rel="noopener noreferrer">View Our Registry</a></p>
-        )}
-      </div>
+
+        <div className="demo-card detail-card">
+          <p className="section-kicker">Need the essentials?</p>
+          <h3>Wedding Details</h3>
+          <div className="detail-list">
+            <p><strong>Date:</strong> {formatWeddingDate(date)}</p>
+            <p><strong>Time:</strong> {formatTimeOfDay(time)} ({timeZoneLabel})</p>
+            <p><strong>Venue:</strong> {weddingDetails.location}</p>
+            <p><strong>Address:</strong> {weddingDetails.address}</p>
+            {weddingDetails.description && (
+              <p><strong>Description:</strong> {weddingDetails.description}</p>
+            )}
+            {weddingDetails.registryUrl && (
+              <p><strong>Registry:</strong> <a href={weddingDetails.registryUrl} target="_blank" rel="noopener noreferrer">View Our Registry</a></p>
+            )}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

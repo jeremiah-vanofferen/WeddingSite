@@ -1,34 +1,44 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: var(--font-family, 'Aptos', 'Segoe UI Variable', 'Segoe UI', sans-serif);
   line-height: 1.5;
   font-weight: 400;
-
   color-scheme: light;
-  color: #213547;
-  background-color: #ffffff;
-
+  color: #173042;
+  background-color: #f3f5f8;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --heading-font-family: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  --mono-font-family: 'Cascadia Mono', 'Consolas', 'Courier New', monospace;
+  --page-max-width: 1200px;
+  --radius-xs: 12px;
+  --radius-sm: 18px;
+  --radius-md: 24px;
+  --radius-lg: 32px;
+  --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 6px 18px rgba(16, 24, 40, 0.04);
+  --shadow-2: 0 16px 40px rgba(15, 23, 42, 0.1), 0 4px 12px rgba(15, 23, 42, 0.06);
+  --shadow-3: 0 24px 60px rgba(15, 23, 42, 0.16), 0 12px 28px rgba(15, 23, 42, 0.1);
+  --outline-color: rgba(24, 66, 96, 0.14);
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface-strong: rgba(255, 255, 255, 0.94);
+  --surface-muted: rgba(246, 248, 251, 0.9);
+  --text-primary: #173042;
+  --text-secondary: #5d7283;
+  --text-muted: #7d8d9a;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
-  padding: 0;
   min-width: 320px;
   min-height: 100vh;
 }
 
 #root {
   width: 100%;
-  margin: 0 auto;
-  text-align: center;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
+  min-height: 100vh;
 }

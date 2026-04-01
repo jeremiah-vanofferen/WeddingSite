@@ -32,7 +32,7 @@ export default function Navigation({ settings }) {
             {isLoggedIn ? (
               <button className="logout-nav-btn" onClick={logout}>Logout</button>
             ) : (
-              <button className="login-nav-btn" onClick={() => setLoginOpen(true)}>Admin Login</button>
+              <button className="login-nav-btn" onClick={() => setLoginOpen(true)}>Login</button>
             )}
           </div>
         </div>

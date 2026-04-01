@@ -125,6 +125,7 @@ export default function Admin() {
   const [activeModal, setActiveModal] = useState(null);
   const [_editingItem, setEditingItem] = useState(null);
   const [selectedMessage, setSelectedMessage] = useState(null);
+  const unreadMessageCount = messages.filter(message => !message.is_read).length;
 
   // Mark message as read when modal opens
   useEffect(() => {
@@ -185,73 +186,129 @@ export default function Admin() {
 
 
   return (
-    <div className="page">
-      <div className="admin-header">
-        <h1>Admin Dashboard</h1>
-        <p>Welcome, {adminName}!</p>
+    <div className="page page-admin">
+      <div className="admin-header surface-panel">
+        <p className="page-eyebrow">Control center</p>
+        <div className="admin-header-top">
+          <div>
+            <h1>Admin Dashboard</h1>
+            <p>Welcome, {adminName}!</p>
+          </div>
+          <button className="logout-btn secondary-button" onClick={logout}>Logout</button>
+        </div>
         {saveError && (
           <p className="admin-error-message">{saveError}</p>
         )}
+
+        <div className="admin-overview-grid">
+          <div className="metric-card">
+            <span className="metric-label">Timeline</span>
+            <span className="metric-value">{schedule.length}</span>
+            <span className="metric-meta">Scheduled events</span>
+          </div>
+          <div className="metric-card">
+            <span className="metric-label">Gallery</span>
+            <span className="metric-value">{photos.length}</span>
+            <span className="metric-meta">Approved photos</span>
+          </div>
+          <div className="metric-card">
+            <span className="metric-label">Approvals</span>
+            <span className="metric-value">{pendingPhotoCount}</span>
+            <span className="metric-meta">Pending submissions</span>
+          </div>
+          <div className="metric-card">
+            <span className="metric-label">Messages</span>
+            <span className="metric-value">{unreadMessageCount}</span>
+            <span className="metric-meta">Unread contact notes</span>
+          </div>
+        </div>
       </div>
 
-      <div className="admin-section">
-        <div className="demo-card">
-          <h3>Wedding Details</h3>
-          <p>Manage wedding date, location, and other important details here.</p>
-          <div className="admin-actions">
-            <button onClick={() => openModal('details')}>Edit Details</button>
-            <button onClick={() => openModal('view-details')}>View Details</button>
+      <div className="admin-layout">
+        <div className="admin-section admin-console-grid">
+          <div className="demo-card admin-console-card">
+            <p className="section-kicker">Presentation</p>
+            <h3>Website Settings</h3>
+            <p>Configure website colors, fonts, and other preferences.</p>
+            <div className="admin-card-meta">Theme and content defaults</div>
+            <button onClick={() => openModal('settings')}>Edit Settings</button>
+          </div>
+
+          <div className="demo-card admin-console-card">
+            <p className="section-kicker">Content</p>
+            <h3>Wedding Details</h3>
+            <p>Manage wedding date, location, and other important details here.</p>
+            <div className="admin-card-meta">Public-facing information</div>
+            <div className="admin-actions">
+              <button onClick={() => openModal('details')}>Edit Details</button>
+              <button className="tonal-button" onClick={() => openModal('view-details')}>View Details</button>
+            </div>
+          </div>
+
+          <div className="demo-card admin-console-card">
+            <p className="section-kicker">Guests</p>
+            <h3>Guest Management</h3>
+            <p>View RSVPs and manage your guest list.</p>
+            <div className="admin-card-meta">Attendance and manual edits</div>
+            <div className="admin-actions">
+              <button onClick={() => openModal('guests')}>Manage Guests</button>
+              <button className="tonal-button" onClick={() => openModal('add-guest')}>Add Guest</button>
+            </div>
+          </div>
+
+          <div className="demo-card admin-console-card">
+            <p className="section-kicker">Timeline</p>
+            <h3>Schedule & Timeline</h3>
+            <p>Update the wedding day schedule and timeline ({schedule.length} events).</p>
+            <div className="admin-card-meta">Event ordering and descriptions</div>
+            <div className="admin-actions">
+              <button onClick={() => openModal('schedule')}>Edit Schedule</button>
+              <button className="tonal-button" onClick={() => openModal('add-event')}>Add Event</button>
+            </div>
+          </div>
+
+          <div className="demo-card admin-console-card">
+            <p className="section-kicker">Media</p>
+            <h3>Photo Gallery</h3>
+            <p>Upload and manage wedding photos and gallery ({photos.length} photos).</p>
+            <div className="admin-card-meta">Curated content library</div>
+            <div className="admin-actions">
+              <button onClick={() => openModal('photos')}>Manage Photos</button>
+              <button className="tonal-button" onClick={() => openModal('add-photo')}>Upload Photo</button>
+            </div>
+          </div>
+
+          <div className="demo-card admin-console-card admin-console-card-accent">
+            <p className="section-kicker">Queue</p>
+            <h3>Photo Approvals</h3>
+            <p>Review guest photo submissions ({pendingPhotoCount} pending).</p>
+            <div className="admin-card-meta">Moderation workflow</div>
+            <button onClick={() => openModal('gallery-approvals')}>Review Submissions</button>
+          </div>
+
+          <div className="demo-card admin-console-card">
+            <p className="section-kicker">Security</p>
+            <h3>Account Security</h3>
+            <p>Update your admin password.</p>
+            <div className="admin-card-meta">Admin authentication</div>
+            <button onClick={() => openModal('change-password')}>Change Password</button>
           </div>
         </div>
 
-        <div className="demo-card">
-          <h3>Guest Management</h3>
-          <p>View RSVPs and manage your guest list.</p>
-          <div className="admin-actions">
-            <button onClick={() => openModal('guests')}>Manage Guests</button>
-            <button onClick={() => openModal('add-guest')}>Add Guest</button>
+        <aside className="demo-card admin-console-card admin-messages-card">
+          <div className="admin-messages-header">
+            <div>
+              <p className="section-kicker">Inbox</p>
+              <h3>Contact Messages</h3>
+            </div>
+            <span className="admin-message-badge">{messages.length}</span>
           </div>
-        </div>
-
-        <div className="demo-card">
-          <h3>Schedule & Timeline</h3>
-          <p>Update the wedding day schedule and timeline ({schedule.length} events).</p>
-          <div className="admin-actions">
-            <button onClick={() => openModal('schedule')}>Edit Schedule</button>
-            <button onClick={() => openModal('add-event')}>Add Event</button>
-          </div>
-        </div>
-
-        <div className="demo-card">
-          <h3>Photo Gallery</h3>
-          <p>Upload and manage wedding photos and gallery ({photos.length} photos).</p>
-          <div className="admin-actions">
-            <button onClick={() => openModal('photos')}>Manage Photos</button>
-            <button onClick={() => openModal('add-photo')}>Upload Photo</button>
-          </div>
-        </div>
-
-        <div className="demo-card">
-          <h3>Photo Approvals</h3>
-          <p>Review guest photo submissions ({pendingPhotoCount} pending).</p>
-          <button onClick={() => openModal('gallery-approvals')}>Review Submissions</button>
-        </div>
-
-        <div className="demo-card">
-          <h3>Website Settings</h3>
-          <p>Configure website colors, fonts, and other preferences.</p>
-          <button onClick={() => openModal('settings')}>Edit Settings</button>
-        </div>
-
-        <div className="demo-card">
-          <h3>Account Security</h3>
-          <p>Update your admin password.</p>
-          <button onClick={() => openModal('change-password')}>Change Password</button>
-        </div>
-
-        <div className="demo-card">
-          <h3>Contact Messages</h3>
           <p>View messages submitted from the contact form.</p>
+          <div className="admin-messages-actions">
+            <button className="tonal-button" type="button" onClick={() => setSelectedMessage(messages[0] || null)} disabled={messages.length === 0}>
+              Open Latest
+            </button>
+          </div>
           <div className="admin-messages-panel">
             {messages.length === 0 ? (
               <p className="admin-messages-empty">No messages yet.</p>
@@ -267,10 +324,8 @@ export default function Admin() {
               </ul>
             )}
           </div>
-        </div>
+        </aside>
       </div>
-
-      <button className="logout-btn" onClick={logout}>Logout</button>
 
       {/* Modals */}
       <Suspense fallback={null}>

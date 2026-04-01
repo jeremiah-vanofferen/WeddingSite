@@ -93,6 +93,7 @@ export function WeddingDetailsModal({ details, onSave, onClose }) {
           <div className="form-group">
             <label htmlFor="timeZone">Wedding Time Zone</label>
             <select
+              className="select-roomy"
               id="timeZone"
               name="timeZone"
               value={formData.timeZone || ''}

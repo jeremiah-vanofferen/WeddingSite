@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Navigation from '../Navigation';
 
@@ -8,7 +8,13 @@ vi.mock('../utils/AuthContext', () => ({
 }));
 
 vi.mock('../components/LoginModal', () => ({
-  default: ({ isOpen }) => isOpen ? <div data-testid="login-modal" /> : null,
+  default: ({ isOpen, onClose, onLoginSuccess }) =>
+    isOpen ? (
+      <div data-testid="login-modal">
+        <button onClick={onClose}>Close Modal</button>
+        <button onClick={onLoginSuccess}>Login Success</button>
+      </div>
+    ) : null,
 }));
 
 import { useAuth } from '../utils/AuthContext';
@@ -33,9 +39,9 @@ describe('Navigation (logged out)', () => {
     expect(screen.getByText('Test Wedding')).toBeInTheDocument();
   });
 
-  it('shows an "Admin Login" button when not authenticated', () => {
+  it('shows an "Login" button when not authenticated', () => {
     renderNav();
-    expect(screen.getByRole('button', { name: /admin login/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
   });
 
   it('does not show the Admin nav link when not authenticated', () => {
@@ -77,8 +83,37 @@ describe('Navigation (logged in)', () => {
     expect(screen.getByRole('link', { name: /admin/i })).toBeInTheDocument();
   });
 
-  it('does not show the "Admin Login" button when authenticated', () => {
+  it('does not show the "Login" button when authenticated', () => {
     renderNav();
-    expect(screen.queryByRole('button', { name: /admin login/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^login$/i })).not.toBeInTheDocument();
   });
 });
+
+  describe('Navigation (login modal)', () => {
+    beforeEach(() => {
+      useAuth.mockReturnValue({ isLoggedIn: false, logout: vi.fn() });
+    });
+
+    it('shows the login modal when the Login button is clicked', () => {
+      renderNav();
+      expect(screen.queryByTestId('login-modal')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /^login$/i }));
+      expect(screen.getByTestId('login-modal')).toBeInTheDocument();
+    });
+
+    it('closes the modal when the modal onClose callback fires', () => {
+      renderNav();
+      fireEvent.click(screen.getByRole('button', { name: /^login$/i }));
+      expect(screen.getByTestId('login-modal')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /close modal/i }));
+      expect(screen.queryByTestId('login-modal')).not.toBeInTheDocument();
+    });
+
+    it('closes the modal when login succeeds', () => {
+      renderNav();
+      fireEvent.click(screen.getByRole('button', { name: /^login$/i }));
+      expect(screen.getByTestId('login-modal')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /login success/i }));
+      expect(screen.queryByTestId('login-modal')).not.toBeInTheDocument();
+    });
+  });

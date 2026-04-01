@@ -26,7 +26,8 @@ Browser
 | `backend/server.js` | Single-file Express app — all routes, middleware, DB queries |
 | `src/utils/api.js` | `API_BASE_URL` constant — always import this for fetch URLs |
 | `src/utils/constants.js` | `DEFAULT_SETTINGS` — source of truth for settings defaults |
-| `src/AuthContext.jsx` | JWT auth context — `useAuth()` returns `{ isLoggedIn, login, logout, adminName, loading }` |
+| `src/utils/AuthContext.jsx` | JWT auth context — `useAuth()` returns `{ isLoggedIn, login, logout, adminName, loading }` |
+| `src/utils/http.js` | Shared HTTP helpers — `requestJson()` and `getAuthHeaders()` |
 | `src/App.jsx` | Root router, settings fetch, CSS variable injection, theme class on `<body>` |
 | `src/pages/Admin.jsx` | Admin dashboard — lazy-loads all modals; uses `requestJson()` helper for saves |
 | `init.sh` | Postgres init script — runs **once** on first volume creation; seeds admin user and default settings |
@@ -38,7 +39,7 @@ Browser
 
 - **PostgreSQL 16** accessed via the `pg` npm package (`Pool`).
 - All queries use **parameterized statements** (`$1, $2, …`). Never interpolate user input into SQL strings.
-- Tables: `guests`, `admin_users`, `messages`, `settings`, `schedule`.
+- Tables: `guests`, `admin_users`, `messages`, `settings`, `schedule`, `photo_uploads`.
 - `settings` is a key/value store (`key TEXT PRIMARY KEY, value TEXT`). Boolean settings are stored as the strings `'true'`/`'false'` and must be coerced when reading.
 - `init.sh` seeds the DB once on first start. To re-seed: `docker-compose down -v && docker-compose up --build`.
 
@@ -58,7 +59,7 @@ showCountdown: data.showCountdown === true || data.showCountdown === 'true'
 
 - Admin login: `POST /api/auth/login` → returns a **JWT** (24 h expiry, signed with `JWT_SECRET`).
 - Token stored in `localStorage` as `authToken`.
-- Protected routes require `Authorization: Bearer <token>` header — use the `getAuthHeaders()` helper in `Admin.jsx`.
+- Protected routes require `Authorization: Bearer <token>` header — use the `getAuthHeaders()` helper in `src/utils/http.js`.
 - Backend middleware: `authenticateToken` — returns 401 (no token) or 403 (invalid/expired).
 - `JWT_SECRET` is **required** at startup; the process exits if missing.
 
@@ -69,9 +70,10 @@ showCountdown: data.showCountdown === true || data.showCountdown === 'true'
 - All routes prefixed `/api/`.
 - Success responses: `2xx` with JSON body.
 - Error responses: `{ error: "Human-readable message" }` with appropriate status code.
-- Public endpoints (no auth): `GET /api/public/settings`, `GET /api/schedule`, `POST /api/rsvp`, `POST /api/messages`, `GET /api/health`.
+- Public endpoints (no auth): `GET /api/public/settings`, `GET /api/schedule`, `GET /api/gallery`, `GET /api/gallery/carousel/featured`, `POST /api/rsvp`, `POST /api/messages`, `POST /api/gallery/upload`, `POST /api/gallery/upload-file`, `GET /api/health`.
 - Admin endpoints: everything else — all require `authenticateToken` middleware.
-- Rate limiting: general API at 100 req/15 min; stricter (20 req/15 min) on `/api/auth/login`, `/api/rsvp`, `/api/messages`.
+- Rate limiting: general API at 100 req/15 min; stricter limiter is applied to `/api/auth/login`, `/api/auth/change-password`, `/api/rsvp`, `/api/messages`, `/api/gallery/upload`, and `/api/gallery/upload-file`.
+- In `test` and `development`, strict limiter max is relaxed; production max remains 20 req/15 min.
 
 ### RSVP guest-count rules
 - `rsvp: 'yes'` → `guests` must be ≥ 1.
@@ -82,9 +84,10 @@ showCountdown: data.showCountdown === true || data.showCountdown === 'true'
 
 ## Frontend Conventions
 
-- **Always** import `API_BASE_URL` from `src/utils/api.js` for fetch URLs — never hardcode `/api/...` strings directly.
-- **Always** check `response.ok` before calling `.json()`. Use the `requestJson(url, options, fallbackError)` helper in `Admin.jsx` as a model for save operations.
-- Admin modal saves: show error in `saveError` state and keep modal open on failure; close only on success.
+- **Always** import `API_BASE_URL` from `src/utils/api.js` for all fetch URLs — never hardcode `/api/...` strings directly.
+- **For public/read endpoints**: check `response.ok` before calling `.json()` and handle errors explicitly.
+- **For admin/write operations**: ALWAYS use `requestJson(url, options, fallbackError)` from `src/utils/http.js` — never hand-roll fetch error handling for any authenticated or mutation operation.
+- **Admin modal saves**: MUST follow the strict pattern: clear error state on open, use `requestJson()` in handler, call `closeModal()` only on success, set `saveError` on catch and keep modal open. Display `saveError` in UI. Never bypass `requestJson()` or close modal before `await` completes.
 - Components use functional React with hooks only — no class components.
 - CSS is scoped per component/page (e.g., `Admin.css`, `LoginModal.css`, `pages.css`).
 - Theme and CSS variables are applied to `document.documentElement` and a class on `document.body` in `App.jsx`; do not set them elsewhere.
@@ -159,7 +162,7 @@ docker exec weddingsite-wedding-app-1 npm run lint
 | Service | Image / Build | Port | Notes |
 |---|---|---|---|
 | `postgres` | `postgres:16` | 5432 | Healthcheck via `pg_isready`; `init.sh` runs on first volume creation |
-| `backend` | `Dockerfile.backend` | 5000 | Waits for postgres healthcheck; restarts unless stopped |
+| `backend` | `backend/Dockerfile` | 5000 | Waits for postgres healthcheck; restarts unless stopped |
 | `wedding-app` | `Dockerfile` | 3000 | Vite dev server; proxies `/api` to backend |
 
 ---
@@ -170,6 +173,8 @@ docker exec weddingsite-wedding-app-1 npm run lint
 - **Do not** read settings boolean values as strings without coercion — they come from Postgres as `'true'`/`'false'`.
 - **Do not** call `response.json()` without first checking `response.ok` — error responses also return JSON and will appear as success.
 - **Do not** close admin modals on save before the `await` resolves successfully — modals must stay open on API failure.
+- **Do not** use raw `fetch()` for any admin operation — ALWAYS use `requestJson()` from `src/utils/http.js`.
+- **Do not** render a modal save without a `saveError` state and UI display — errors must be visible.
 - **Do not** add SQL-interpolated user input — always use parameterized queries.
 - **Do not** modify `init.sh` data without re-initializing the volume (`docker-compose down -v`).
 - Backend tests must mock all external modules before `require('../server')` — order matters in Jest.

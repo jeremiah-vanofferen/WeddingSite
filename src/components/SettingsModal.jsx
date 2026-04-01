@@ -1,5 +1,5 @@
 // SettingsModal.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 
 const EMPTY_SETTINGS = {
@@ -18,10 +18,71 @@ const EMPTY_SETTINGS = {
 
 export function SettingsModal({ settings, onSave, onClose }) {
   const [formData, setFormData] = useState({ ...EMPTY_SETTINGS, ...settings });
+  const shouldPersistPreviewRef = useRef(false);
+  const previousUiRef = useRef(null);
+
+  const previewFontFamily = formData.fontFamily === 'serif'
+    ? '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif'
+    : formData.fontFamily === 'sans-serif'
+      ? '"Aptos", "Segoe UI Variable", "Segoe UI", "Helvetica Neue", Arial, sans-serif'
+      : formData.fontFamily === 'script'
+        ? '"Baskerville Old Face", "Palatino Linotype", Georgia, serif'
+        : '"Cascadia Mono", "Consolas", "Courier New", monospace';
 
   useEffect(() => {
     setFormData({ ...EMPTY_SETTINGS, ...settings });
   }, [settings]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    const previousThemeClass = Array.from(body.classList).find(className => className.startsWith('theme-')) || null;
+
+    previousUiRef.current = {
+      primaryColor: root.style.getPropertyValue('--primary-color'),
+      primaryColorHover: root.style.getPropertyValue('--primary-color-hover'),
+      fontFamily: root.style.getPropertyValue('--font-family'),
+      bodyFontFamily: body.style.fontFamily,
+      themeClass: previousThemeClass,
+    };
+
+    return () => {
+      if (shouldPersistPreviewRef.current || !previousUiRef.current) {
+        return;
+      }
+
+      const previousUi = previousUiRef.current;
+      root.style.setProperty('--primary-color', previousUi.primaryColor);
+      root.style.setProperty('--primary-color-hover', previousUi.primaryColorHover);
+      root.style.setProperty('--font-family', previousUi.fontFamily);
+      body.style.fontFamily = previousUi.bodyFontFamily;
+
+      body.classList.remove('theme-elegant', 'theme-modern', 'theme-rustic', 'theme-vintage');
+      if (previousUi.themeClass) {
+        body.classList.add(previousUi.themeClass);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const body = document.body;
+
+    const fontMap = {
+      serif: '"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
+      'sans-serif': '"Aptos", "Segoe UI Variable", "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+      script: '"Baskerville Old Face", "Palatino Linotype", Georgia, serif',
+      monospace: '"Cascadia Mono", "Consolas", "Courier New", monospace'
+    };
+
+    root.style.setProperty('--primary-color', formData.primaryColor || '#0a20ca');
+    root.style.setProperty('--primary-color-hover', formData.primaryColorHover || '#1894dc');
+    root.style.setProperty('--font-family', fontMap[formData.fontFamily] || fontMap.serif);
+    body.style.fontFamily = fontMap[formData.fontFamily] || fontMap.serif;
+
+    body.classList.remove('theme-elegant', 'theme-modern', 'theme-rustic', 'theme-vintage');
+    body.classList.add(`theme-${formData.theme || 'elegant'}`);
+  }, [formData.primaryColor, formData.primaryColorHover, formData.fontFamily, formData.theme]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -33,9 +94,35 @@ export function SettingsModal({ settings, onSave, onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    shouldPersistPreviewRef.current = true;
     onSave(formData);
     onClose();
   };
+
+  const toRgb = (hexColor) => {
+    const hex = (hexColor || '').replace('#', '');
+    if (!/^[0-9A-Fa-f]{6}$/.test(hex)) {
+      return null;
+    }
+
+    return {
+      r: Number.parseInt(hex.slice(0, 2), 16),
+      g: Number.parseInt(hex.slice(2, 4), 16),
+      b: Number.parseInt(hex.slice(4, 6), 16),
+    };
+  };
+
+  const getContrastTextColor = (hexColor) => {
+    const rgb = toRgb(hexColor);
+    if (!rgb) {
+      return '#ffffff';
+    }
+
+    const luminance = ((rgb.r * 299) + (rgb.g * 587) + (rgb.b * 114)) / 1000;
+    return luminance > 150 ? '#173042' : '#ffffff';
+  };
+
+  const hoverTextColor = getContrastTextColor(formData.primaryColorHover);
 
   const resetToDefaults = () => {
     const defaults = {
@@ -116,6 +203,7 @@ export function SettingsModal({ settings, onSave, onClose }) {
               <div className="setting-item">
                 <label htmlFor="theme">Theme</label>
                 <select
+                  className="select-roomy"
                   id="theme"
                   name="theme"
                   value={formData.theme}
@@ -130,6 +218,7 @@ export function SettingsModal({ settings, onSave, onClose }) {
               <div className="setting-item">
                 <label htmlFor="fontFamily">Font Family</label>
                 <select
+                  className="select-roomy"
                   id="fontFamily"
                   name="fontFamily"
                   value={formData.fontFamily}
@@ -144,7 +233,7 @@ export function SettingsModal({ settings, onSave, onClose }) {
             </div>
             <div className="settings-grid">
               <div className="setting-item">
-                <label htmlFor="primaryColor">Button Color</label>
+                <label htmlFor="primaryColor">Primary Action Color</label>
                 <div className="color-picker">
                   <input
                     id="primaryColor"
@@ -155,9 +244,10 @@ export function SettingsModal({ settings, onSave, onClose }) {
                   />
                   <span>{formData.primaryColor}</span>
                 </div>
+                <p className="setting-help">Used for default call-to-action buttons like Save, Submit RSVP, and Login.</p>
               </div>
               <div className="setting-item">
-                <label htmlFor="primaryColorHover">Button Color (Hover)</label>
+                <label htmlFor="primaryColorHover">Primary Hover/Active Color</label>
                 <div className="color-picker">
                   <input
                     id="primaryColorHover"
@@ -167,6 +257,73 @@ export function SettingsModal({ settings, onSave, onClose }) {
                     onChange={handleChange}
                   />
                   <span>{formData.primaryColorHover}</span>
+                </div>
+                <p className="setting-help">Shown when users hover or focus interactive primary buttons and navigation actions.</p>
+              </div>
+            </div>
+
+            <div className="settings-preview">
+              <h4>Live Preview</h4>
+              <p className="setting-help">Theme, colors, and button styles update here and across the page before you save.</p>
+              <div
+                className={`preview-card theme-${formData.theme}`}
+                style={{
+                  fontFamily: previewFontFamily,
+                  padding: '1rem',
+                  borderRadius: '8px',
+                  marginTop: '1rem',
+                  minHeight: '80px'
+                }}
+              >
+                <div className="preview-theme-content">
+                  <h5 style={{ margin: '0 0 0.5rem 0' }}>Sample {formData.theme} Theme</h5>
+                  <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                    This is how your website will look with the current settings.
+                  </p>
+                </div>
+                <div className="button-preview-grid">
+                  <button
+                    type="button"
+                    className="preview-button preview-button-primary"
+                    style={{
+                      background: `linear-gradient(135deg, ${formData.primaryColor} 0%, ${formData.primaryColorHover} 100%)`,
+                      fontFamily: previewFontFamily,
+                    }}
+                  >
+                    Primary Button
+                  </button>
+                  <button
+                    type="button"
+                    className="preview-button preview-button-hover"
+                    style={{
+                      background: formData.primaryColorHover,
+                      color: hoverTextColor,
+                      fontFamily: previewFontFamily,
+                    }}
+                  >
+                    Hover State
+                  </button>
+                  <button
+                    type="button"
+                    className="preview-button preview-button-tonal"
+                    style={{
+                      color: formData.primaryColor,
+                      borderColor: `${formData.primaryColor}33`,
+                      background: `${formData.primaryColor}1a`,
+                      fontFamily: previewFontFamily,
+                    }}
+                  >
+                    Tonal Utility
+                  </button>
+                  <button
+                    type="button"
+                    className="preview-button preview-button-secondary"
+                    style={{
+                      fontFamily: previewFontFamily,
+                    }}
+                  >
+                    Secondary Button
+                  </button>
                 </div>
               </div>
             </div>
@@ -235,72 +392,6 @@ export function SettingsModal({ settings, onSave, onClose }) {
                 </select>
               </div>
             </div>
-          <div className="settings-preview">
-            <h4>Preview Theme & Colors</h4>
-            <div
-              className={`preview-card theme-${formData.theme}`}
-              style={{
-                backgroundColor: formData.primaryColor,
-                fontFamily: formData.fontFamily === 'serif' ? '"Times New Roman", serif' :
-                           formData.fontFamily === 'sans-serif' ? '"Helvetica Neue", Arial, sans-serif' :
-                           formData.fontFamily === 'script' ? '"Brush Script MT", cursive' :
-                           '"Courier New", monospace',
-                color: 'white',
-                padding: '1rem',
-                borderRadius: '8px',
-                marginTop: '1rem',
-                minHeight: '80px'
-              }}
-            >
-              <h5 style={{ margin: '0 0 0.5rem 0' }}>Sample {formData.theme} Theme</h5>
-              <p style={{ margin: 0, fontSize: '0.9rem' }}>
-                This is how your website will look with the current settings.
-              </p>
-            </div>
-          </div>
-          <div className="settings-preview">
-            <h4>Preview Buttons</h4>
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                style={{
-                  backgroundColor: formData.primaryColor,
-                  color: 'white',
-                  padding: '0.75rem 1.5rem',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontFamily: formData.fontFamily === 'serif' ? '"Times New Roman", serif' :
-                             formData.fontFamily === 'sans-serif' ? '"Helvetica Neue", Arial, sans-serif' :
-                             formData.fontFamily === 'script' ? '"Brush Script MT", cursive' :
-                             '"Courier New", monospace',
-                  fontSize: '1rem',
-                  fontWeight: 'bold'
-                }}
-              >
-                Normal Button
-              </button>
-              <button
-                type="button"
-                style={{
-                  backgroundColor: formData.primaryColorHover,
-                  color: 'white',
-                  padding: '0.75rem 1.5rem',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontFamily: formData.fontFamily === 'serif' ? '"Times New Roman", serif' :
-                             formData.fontFamily === 'sans-serif' ? '"Helvetica Neue", Arial, sans-serif' :
-                             formData.fontFamily === 'script' ? '"Brush Script MT", cursive' :
-                             '"Courier New", monospace',
-                  fontSize: '1rem',
-                  fontWeight: 'bold'
-                }}
-              >
-                Hover Button
-              </button>
-            </div>
-          </div>
         </form>
         <div className="admin-modal-footer">
           <button type="button" className="reset-btn" onClick={resetToDefaults}>

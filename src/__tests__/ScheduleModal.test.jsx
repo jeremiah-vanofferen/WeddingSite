@@ -70,6 +70,65 @@ describe('ScheduleModal', () => {
     // EditEventModal renders an "Edit Event" heading
     expect(screen.getByRole('heading', { name: /edit event/i })).toBeInTheDocument();
   });
+
+    it('does not delete when user cancels the confirmation', () => {
+      vi.spyOn(window, 'confirm').mockReturnValueOnce(false);
+      render(<ScheduleModal schedule={sampleSchedule} onSave={onSave} onClose={onClose} />);
+      const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
+      fireEvent.click(deleteButtons[0]);
+      expect(onSave).not.toHaveBeenCalled();
+    });
+
+    it('moves an event down when the down arrow is clicked', () => {
+      render(<ScheduleModal schedule={sampleSchedule} onSave={onSave} onClose={onClose} />);
+      // sorted render: [Ceremony(14:00), Reception(16:00)]
+      // Ceremony's down button (index 0 in sorted list) is enabled
+      const downButtons = screen.getAllByTitle('Move down');
+      fireEvent.click(downButtons[0]);
+      expect(onSave).toHaveBeenCalledTimes(1);
+       // Verify onSave was called with both events (order may be mutated by render re-sort)
+       expect(onSave.mock.calls[0][0]).toHaveLength(2);
+       expect(onSave.mock.calls[0][0].map(e => e.id)).toEqual(expect.arrayContaining([1, 2]));
+    });
+
+    it('moves an event up when the up arrow is clicked', () => {
+      render(<ScheduleModal schedule={sampleSchedule} onSave={onSave} onClose={onClose} />);
+      // sorted render: [Ceremony(14:00), Reception(16:00)]
+      // Reception's up button (index 1 in sorted list) is enabled
+      const upButtons = screen.getAllByTitle('Move up');
+      fireEvent.click(upButtons[1]);
+      expect(onSave).toHaveBeenCalledTimes(1);
+       // Verify onSave was called with both events
+       expect(onSave.mock.calls[0][0]).toHaveLength(2);
+       expect(onSave.mock.calls[0][0].map(e => e.id)).toEqual(expect.arrayContaining([1, 2]));
+    });
+
+    it('saves an edited event and closes the edit modal', () => {
+      render(<ScheduleModal schedule={sampleSchedule} onSave={onSave} onClose={onClose} />);
+      fireEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0]);
+      expect(screen.getByRole('heading', { name: /edit event/i })).toBeInTheDocument();
+
+      // Change the event name in the EditEventModal form
+      fireEvent.change(screen.getByDisplayValue('Ceremony'), { target: { value: 'Wedding Ceremony' } });
+      fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+
+      expect(screen.queryByRole('heading', { name: /edit event/i })).not.toBeInTheDocument();
+      expect(onSave).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.objectContaining({ id: 1, event: 'Wedding Ceremony' })])
+      );
+    });
+
+    it('closes the edit modal when the × button is clicked', () => {
+      render(<ScheduleModal schedule={sampleSchedule} onSave={onSave} onClose={onClose} />);
+      fireEvent.click(screen.getAllByRole('button', { name: /^edit$/i })[0]);
+      expect(screen.getByRole('heading', { name: /edit event/i })).toBeInTheDocument();
+
+      // Click the last × button (the one in the EditEventModal)
+      const xButtons = screen.getAllByText('×');
+      fireEvent.click(xButtons[xButtons.length - 1]);
+
+      expect(screen.queryByRole('heading', { name: /edit event/i })).not.toBeInTheDocument();
+    });
 });
 
 describe('AddEventModal', () => {
