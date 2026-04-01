@@ -9,7 +9,7 @@ vi.mock('../utils/AuthContext', () => ({
 }));
 
 function renderModal(props = {}) {
-  return render(<LoginModal isOpen={true} onClose={vi.fn()} {...props} />);
+  return render(<LoginModal isOpen={true} onClose={vi.fn()} onLoginSuccess={vi.fn()} {...props} />);
 }
 
 describe('LoginModal', () => {
@@ -39,8 +39,8 @@ describe('LoginModal', () => {
 
   it('calls login with the entered credentials', async () => {
     mockLogin.mockResolvedValueOnce(true);
-    const onClose = vi.fn();
-    renderModal({ onClose });
+    const onLoginSuccess = vi.fn();
+    renderModal({ onLoginSuccess });
 
     fireEvent.change(screen.getByLabelText(/username/i), {
       target: { value: 'admin' },
@@ -52,7 +52,7 @@ describe('LoginModal', () => {
 
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith('admin', 'secret');
-      expect(onClose).toHaveBeenCalled();
+      expect(onLoginSuccess).toHaveBeenCalled();
     });
   });
 

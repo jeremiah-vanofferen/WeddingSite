@@ -3,7 +3,7 @@ import { useAuth } from '../utils/AuthContext';
 import PropTypes from 'prop-types';
 import './LoginModal.css';
 
-export default function LoginModal({ isOpen, onClose }) {
+export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,7 +22,7 @@ export default function LoginModal({ isOpen, onClose }) {
     if (success) {
       setUsername('');
       setPassword('');
-      onClose();
+      onLoginSuccess();
     } else {
       setError('Invalid credentials');
     }
@@ -69,4 +69,5 @@ export default function LoginModal({ isOpen, onClose }) {
 LoginModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
+  onLoginSuccess: PropTypes.func.isRequired,
 };

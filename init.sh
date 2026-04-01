@@ -76,6 +76,7 @@ INSERT INTO settings (key, value) VALUES ('welcomeMessage', 'Thank you for visit
 -- Wedding details
 INSERT INTO settings (key, value) VALUES ('weddingDate', '2026-08-08') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('weddingTime', '14:00') ON CONFLICT (key) DO NOTHING;
+INSERT INTO settings (key, value) VALUES ('weddingTimeZone', 'America/Chicago') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('weddingLocation', 'Windpoint Lighthouse') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('weddingAddress', '4725 Lighthouse Drive, Wind Point, WI 53402') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('weddingDescription', 'Join us for a beautiful outdoor ceremony followed by an elegant reception.') ON CONFLICT (key) DO NOTHING;

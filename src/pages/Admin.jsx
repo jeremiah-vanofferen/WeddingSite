@@ -3,9 +3,10 @@ import { useAuth } from '../utils/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import '../pages/pages.css';
 import './Admin.css';
-import { DEFAULT_SETTINGS } from '../utils/constants';
+import { DEFAULT_SETTINGS, DEFAULT_WEDDING_TIME_ZONE } from '../utils/constants';
 import { API_BASE_URL } from '../utils/api';
 import { getAuthHeaders, requestJson } from '../utils/http';
+import { formatIsoDate, formatIsoDateTime, resolveTimeZone } from '../utils/dateTime';
 import { mergeSettings, mergeWeddingDetails } from '../utils/settings';
 
 const WeddingDetailsModal = lazy(() =>
@@ -45,6 +46,7 @@ export default function Admin() {
   const [weddingDetails, setWeddingDetails] = useState({
     date: '',
     time: '',
+    timeZone: DEFAULT_WEDDING_TIME_ZONE,
     location: '',
     address: '',
     description: '',
@@ -180,6 +182,8 @@ export default function Admin() {
     window.dispatchEvent(new CustomEvent('settingsChanged', { detail: newSettings }));
   };
 
+
+
   return (
     <div className="page">
       <div className="admin-header">
@@ -257,7 +261,7 @@ export default function Admin() {
                   <li key={msg.id} className="admin-messages-item"
                     onClick={() => setSelectedMessage(msg)}>
                     <span className={`admin-messages-name${msg.is_read ? '' : ' admin-messages-name-unread'}`}>{msg.name}</span>
-                    <span className="admin-messages-date">({new Date(msg.created_at).toLocaleDateString()})</span>
+                    <span className="admin-messages-date">({formatIsoDate(msg.created_at, undefined, resolveTimeZone(weddingDetails.timeZone))})</span>
                   </li>
                 ))}
               </ul>
@@ -284,6 +288,7 @@ export default function Admin() {
                     body: JSON.stringify({
                       weddingDate: newDetails.date,
                       weddingTime: newDetails.time,
+                      weddingTimeZone: resolveTimeZone(newDetails.timeZone),
                       weddingLocation: newDetails.location,
                       weddingAddress: newDetails.address,
                       weddingDescription: newDetails.description,
@@ -461,9 +466,11 @@ export default function Admin() {
           <div className="admin-message-modal" onClick={e => e.stopPropagation()}>
             <h2 className="admin-message-modal-title">{selectedMessage.name}</h2>
             <div className="admin-message-modal-email">{selectedMessage.email}</div>
-            <div className="admin-message-modal-date">{new Date(selectedMessage.created_at).toLocaleString()}</div>
+            <div className="admin-message-modal-date">
+              {formatIsoDateTime(selectedMessage.created_at, undefined, resolveTimeZone(weddingDetails.timeZone))}
+            </div>
             <div className="admin-message-modal-body">{selectedMessage.message}</div>
-            <button onClick={() => setSelectedMessage(null)}>Close</button>
+            <button className="admin-message-modal-close" onClick={() => setSelectedMessage(null)}>Close</button>
           </div>
         </div>
       )}

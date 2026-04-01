@@ -13,7 +13,7 @@ vi.mock('../components/LoginModal', () => ({
 
 import { useAuth } from '../utils/AuthContext';
 
-const defaultSettings = { websiteName: 'Test Wedding' };
+const defaultSettings = { websiteName: 'Test Wedding', allowRsvp: true };
 
 function renderNav(settings = defaultSettings) {
   return render(
@@ -49,6 +49,16 @@ describe('Navigation (logged out)', () => {
     expect(screen.getByRole('link', { name: /schedule/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /contact/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /rsvp/i })).toBeInTheDocument();
+  });
+
+  it('shows the RSVP link when allowRsvp is true', () => {
+    renderNav({ ...defaultSettings, allowRsvp: true });
+    expect(screen.getByRole('link', { name: /rsvp/i })).toBeInTheDocument();
+  });
+
+  it('hides the RSVP link when allowRsvp is false', () => {
+    renderNav({ ...defaultSettings, allowRsvp: false });
+    expect(screen.queryByRole('link', { name: /rsvp/i })).not.toBeInTheDocument();
   });
 });
 

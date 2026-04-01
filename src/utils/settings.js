@@ -18,6 +18,7 @@ export function mergeWeddingDetails(currentDetails, incomingSettings) {
     ...currentDetails,
     ...(incomingSettings.weddingDate && { date: incomingSettings.weddingDate }),
     ...(incomingSettings.weddingTime && { time: incomingSettings.weddingTime }),
+    ...(incomingSettings.weddingTimeZone && { timeZone: incomingSettings.weddingTimeZone }),
     ...(incomingSettings.weddingLocation && { location: incomingSettings.weddingLocation }),
     ...(incomingSettings.weddingAddress && { address: incomingSettings.weddingAddress }),
     ...(incomingSettings.weddingDescription && { description: incomingSettings.weddingDescription }),
