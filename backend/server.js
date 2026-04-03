@@ -1149,26 +1149,64 @@ async function ensureGuestCountColumn() {
     return;
   }
 
-  await pool.query(
-    'ALTER TABLE guests ADD COLUMN IF NOT EXISTS guest_count INTEGER DEFAULT 1 CHECK (guest_count >= 0)'
-  );
-  const plusOneColumnResult = await pool.query(
-    `SELECT 1
-     FROM information_schema.columns
-     WHERE table_name = 'guests' AND column_name = 'plus_one'
-     LIMIT 1`
-  );
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
 
-  if (plusOneColumnResult.rowCount > 0) {
-    await pool.query(
-      'UPDATE guests SET guest_count = CASE WHEN plus_one THEN 2 ELSE 1 END WHERE guest_count IS NULL'
+    const guestCountColumnResult = await client.query(
+      `SELECT 1
+       FROM information_schema.columns
+       WHERE table_name = 'guests' AND column_name = 'guest_count'
+       LIMIT 1`
     );
-    await pool.query('ALTER TABLE guests DROP COLUMN IF EXISTS plus_one');
-  } else {
-    await pool.query('UPDATE guests SET guest_count = 1 WHERE guest_count IS NULL');
-  }
 
-  guestCountColumnReady = true;
+    if (guestCountColumnResult.rowCount === 0) {
+      await client.query('ALTER TABLE guests ADD COLUMN guest_count INTEGER');
+    }
+
+    const plusOneColumnResult = await client.query(
+      `SELECT 1
+       FROM information_schema.columns
+       WHERE table_name = 'guests' AND column_name = 'plus_one'
+       LIMIT 1`
+    );
+
+    if (plusOneColumnResult.rowCount > 0) {
+      await client.query(
+        'UPDATE guests SET guest_count = CASE WHEN plus_one THEN 2 ELSE 1 END WHERE guest_count IS NULL'
+      );
+      await client.query('ALTER TABLE guests DROP COLUMN IF EXISTS plus_one');
+    }
+
+    await client.query('UPDATE guests SET guest_count = 1 WHERE guest_count IS NULL');
+    await client.query('ALTER TABLE guests ALTER COLUMN guest_count SET DEFAULT 1');
+
+    const guestCountConstraintResult = await client.query(
+      `SELECT 1
+       FROM pg_constraint
+       WHERE conname = 'guests_guest_count_non_negative'
+       LIMIT 1`
+    );
+
+    if (guestCountConstraintResult.rowCount === 0) {
+      await client.query(
+        `ALTER TABLE guests
+         ADD CONSTRAINT guests_guest_count_non_negative
+         CHECK (guest_count >= 0) NOT VALID`
+      );
+      await client.query(
+        'ALTER TABLE guests VALIDATE CONSTRAINT guests_guest_count_non_negative'
+      );
+    }
+
+    await client.query('COMMIT');
+    guestCountColumnReady = true;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 function normalizeGuestCount(guestCount, plusOne) {
