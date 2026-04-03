@@ -55,7 +55,7 @@ When adding frontend API calls:
 1. Use `requestJson` for admin/protected requests where non-2xx should throw.
 2. Use `publicData` helpers for public pages where graceful fallback is preferred.
 3. For direct public `fetch` calls, include anonymous public auth headers via `getPublicAuthHeaders()` from `src/utils/http.js`.
-3. Reuse `mergeSettings` for settings normalization instead of duplicating boolean coercion.
+4. Reuse `mergeSettings` for settings normalization instead of duplicating boolean coercion.
 
 ## Quick Start
 
