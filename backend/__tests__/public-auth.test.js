@@ -33,6 +33,10 @@ const silenceExpectedConsole = () => {
   jest.spyOn(console, 'log').mockImplementation(() => {});
 };
 
+afterAll(() => {
+  process.env.NODE_ENV = 'test';
+});
+
 describe('Public anonymous token auth', () => {
   beforeEach(() => {
     jest.resetAllMocks();

@@ -784,6 +784,12 @@ app.put('/api/schedule', authenticateToken, async (req, res) => {
     if (!Array.isArray(events)) {
       return sendBadRequest(res, 'events must be an array');
     }
+    for (let i = 0; i < events.length; i++) {
+      const e = events[i];
+      if (!e.id || !e.time || !e.event) {
+        return sendBadRequest(res, `events[${i}] must have id, time, and event`);
+      }
+    }
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
