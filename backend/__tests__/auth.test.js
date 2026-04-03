@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 // Mock external modules before any require()
 jest.mock('dotenv', () => ({ config: jest.fn() }));
 

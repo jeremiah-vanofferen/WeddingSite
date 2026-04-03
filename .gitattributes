@@ -1,0 +1,35 @@
+# Normalize text files in the repo and keep LF by default.
+* text=auto eol=lf
+
+# Shell/scripts used in Linux containers must stay LF.
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Docker and CI config should stay LF.
+Dockerfile text eol=lf
+Dockerfile.* text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Source/config files in this project should stay LF.
+*.js text eol=lf
+*.jsx text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.sql text eol=lf
+
+# Windows-native scripts can remain CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.zip binary
+*.pdf binary

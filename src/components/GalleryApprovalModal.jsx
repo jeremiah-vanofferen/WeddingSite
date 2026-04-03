@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 // GalleryApprovalModal.jsx
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';

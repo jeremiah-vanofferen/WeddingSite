@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 jest.mock('dotenv', () => ({ config: jest.fn() }));
 
 jest.mock('nodemailer', () => ({
@@ -74,16 +75,20 @@ describe('POST /api/guests', () => {
       .set('Authorization', AUTH)
       .send({ email: 'test@example.com' });
     expect(res.status).toBe(400);
-    expect(res.body.error).toBe('Name and email are required');
+    expect(res.body.error).toBe('Name is required');
   });
 
-  it('returns 400 when email is missing', async () => {
+  it('creates a guest without email when email is missing', async () => {
+    const guest = { id: 1, name: 'John Doe', email: null, rsvp: 'Pending', plus_one: false };
+    pool.query.mockResolvedValueOnce({ rows: [guest] });
+
     const res = await request(app)
       .post('/api/guests')
       .set('Authorization', AUTH)
       .send({ name: 'John Doe' });
-    expect(res.status).toBe(400);
-    expect(res.body.error).toBe('Name and email are required');
+    expect(res.status).toBe(201);
+    expect(res.body.name).toBe('John Doe');
+    expect(res.body.email).toBeNull();
   });
 
   it('creates a guest and returns 201', async () => {

@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 // ScheduleModal.jsx
 import { useState } from 'react';
 import PropTypes from 'prop-types';

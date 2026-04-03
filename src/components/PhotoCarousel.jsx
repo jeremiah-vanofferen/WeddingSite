@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchArray, fetchJsonOrFallback } from '../utils/publicData';
 import './PhotoCarousel.css';
@@ -99,8 +100,20 @@ export function PhotoCarousel() {
     };
   }, []);
 
-  if (loading || photos.length === 0) {
+  if (loading) {
     return null;
+  }
+
+  if (photos.length === 0) {
+    return (
+      <div className="photo-carousel" role="status" aria-live="polite">
+        <div className="carousel-container carousel-empty-state">
+          <span className="carousel-empty-icon" aria-hidden="true">&#128247;</span>
+          <p className="carousel-empty-title">No Photos Yet</p>
+          <p className="carousel-empty-text">Photos will appear here once they are uploaded.</p>
+        </div>
+      </div>
+    );
   }
 
   const currentPhoto = photos[currentIndex];

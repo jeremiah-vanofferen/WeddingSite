@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Admin from '../pages/Admin';
@@ -67,7 +68,7 @@ const loggedOutAuth = {
 
 const mockSchedule = [{ id: 1, title: 'Ceremony', time: '14:00', description: 'Main event', sort_order: 1 }];
 const mockMessages = [
-  { id: 1, name: 'Eve', email: 'eve@test.com', message: 'Hello!', created_at: '2026-01-01T10:00:00Z', is_read: false },
+  { id: 1, name: 'TestUser', email: 'test.user@test.local', message: 'Hello!', created_at: '2026-01-01T10:00:00Z', is_read: false },
 ];
 const mockSettings = { theme: 'elegant', primaryColor: '#0a20ca', showCountdown: 'true', allowRsvp: 'true' };
 
@@ -128,7 +129,7 @@ describe('Admin – logged in', () => {
 
   it('loads and displays messages from API', async () => {
     render(<Admin />);
-    await waitFor(() => expect(screen.getByText('Eve')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('TestUser')).toBeInTheDocument());
   });
 
   it('shows "No messages yet." when messages array is empty', async () => {
@@ -252,8 +253,8 @@ describe('Admin – logged in', () => {
 
   it('shows message detail modal when a message is clicked', async () => {
     render(<Admin />);
-    await waitFor(() => screen.getByText('Eve'));
-    fireEvent.click(screen.getByText('Eve'));
+    await waitFor(() => screen.getByText('TestUser'));
+    fireEvent.click(screen.getByText('TestUser'));
     await waitFor(() => expect(screen.getByText('Hello!')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Close'));
     await waitFor(() => expect(screen.queryByText('Hello!')).not.toBeInTheDocument());

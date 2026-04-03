@@ -1,9 +1,10 @@
+// Copyright 2026 Jeremiah Van Offeren
 // GuestManagementModal.jsx
 import { useState, useEffect, useMemo } from 'react';
 import Papa from 'papaparse';
 import PropTypes from 'prop-types';
 import { API_BASE_URL } from '../utils/api';
-import { getAuthHeaders } from '../utils/http';
+import { getAuthHeaders, requestJson } from '../utils/http';
 
 export function GuestManagementModal({ onClose }) {
   const [guestList, setGuestList] = useState([]);
@@ -13,10 +14,15 @@ export function GuestManagementModal({ onClose }) {
   const [uploadError, setUploadError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
+  const [lookupField, setLookupField] = useState('name');
+  const [lookupSaving, setLookupSaving] = useState(false);
+  const [lookupMessage, setLookupMessage] = useState('');
+  const [lookupError, setLookupError] = useState('');
 
   // Fetch guests on component mount
   useEffect(() => {
     fetchGuests();
+    fetchLookupSettings();
   }, []);
 
   const stats = useMemo(() => {
@@ -58,6 +64,24 @@ export function GuestManagementModal({ onClose }) {
     }
   };
 
+  const fetchLookupSettings = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/settings`, {
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const settings = await response.json();
+      const value = settings?.guestLookupField;
+      setLookupField(value === 'email' ? 'email' : 'name');
+    } catch {
+      // Keep default lookup field when settings cannot be loaded.
+    }
+  };
+
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -95,6 +119,25 @@ export function GuestManagementModal({ onClose }) {
     const validGuests = [];
     const errors = [];
 
+    const getValue = (row, keys) => {
+      for (const key of keys) {
+        const value = row[key];
+        if (value !== undefined && value !== null && String(value).trim() !== '') {
+          return String(value).trim();
+        }
+      }
+      return '';
+    };
+
+    const normalizeName = (row) => {
+      const directName = getValue(row, ['Name', 'name', 'NAME', 'Guest Name', 'guestName']);
+      if (directName) return directName;
+
+      const firstName = getValue(row, ['First name', 'First Name', 'firstName', 'first_name']);
+      const lastName = getValue(row, ['Last Name', 'Last name', 'lastName', 'last_name', 'Surname']);
+      return `${firstName} ${lastName}`.trim();
+    };
+
     if (!Array.isArray(data)) {
       setUploadError('Invalid data format');
       return [];
@@ -106,24 +149,27 @@ export function GuestManagementModal({ onClose }) {
         return;
       }
 
-      // Check for required fields (case insensitive)
-      const name = row.Name || row.name || row.NAME;
-      const email = row.Email || row.email || row.EMAIL || row.EmailAddress || row.emailAddress;
-
-      if (!name || !email) {
-        errors.push(`Row ${index + 1}: Missing name or email`);
+      const name = normalizeName(row);
+      if (!name) {
+        errors.push(`Row ${index + 1}: Missing guest name`);
         return;
       }
 
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        errors.push(`Row ${index + 1}: Invalid email format`);
-        return;
+      const rawEmail = getValue(row, ['Email', 'email', 'EMAIL', 'EmailAddress', 'emailAddress']);
+      const isEmptyEmail = rawEmail === '' || rawEmail === '-' || rawEmail.toLowerCase() === 'n/a';
+      const email = isEmptyEmail ? null : rawEmail.toLowerCase();
+
+      // Only validate email format if one was actually provided (not empty/placeholder).
+      if (email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          errors.push(`Row ${index + 1}: Invalid email format`);
+          return;
+        }
       }
 
       // Parse RSVP status
-      const rsvpRaw = String(row.RSVP || row.rsvp || row.Status || row.status || 'Pending').toLowerCase();
+      const rsvpRaw = String(getValue(row, ['RSVP', 'rsvp', 'Status', 'status']) || 'Pending').toLowerCase();
       let rsvp = 'Pending';
       if (rsvpRaw.includes('yes') || rsvpRaw.includes('attending')) {
         rsvp = 'Yes';
@@ -131,20 +177,39 @@ export function GuestManagementModal({ onClose }) {
         rsvp = 'No';
       }
 
-      // Parse plus one
-      const plusOneRaw = row['Plus One'] || row.plusOne || row.PlusOne || row['+1'] || 'No';
+      // Parse plus one (legacy CSV support)
+      const plusOneRaw = getValue(row, ['Plus One', 'plusOne', 'PlusOne', '+1', 'Dependants', 'dependants']) || 'No';
       const plusOneValue = String(plusOneRaw).toLowerCase();
-      const plusOne = plusOneValue.includes('yes') || plusOneValue.includes('true') || plusOneValue === '1';
+      const plusOne =
+        plusOneValue.includes('yes') ||
+        plusOneValue.includes('true') ||
+        plusOneValue === '1' ||
+        (plusOneValue !== '' && plusOneValue !== 'no' && plusOneValue !== 'none' && plusOneValue !== '-');
 
-      // Parse address and phone (optional fields)
-      const address = row.Address || row.address || row.ADDRESS || '';
-      const phone = row.Phone || row.phone || row.PHONE || row['Phone Number'] || row.phoneNumber || '';
+      const guestCountRaw = getValue(row, ['Guest Count', 'guestCount', 'guest_count', 'Guests', 'guests', 'Party Size', 'partySize']);
+      let guestCount = Number.parseInt(guestCountRaw, 10);
+      if (!Number.isInteger(guestCount) || guestCount < 0) {
+        guestCount = plusOne ? 2 : 1;
+      }
+
+      // Parse address and phone (optional fields) including address-book export headers.
+      const legacyAddress = getValue(row, ['Address', 'address', 'ADDRESS']);
+      const street = getValue(row, ['Street address', 'street address', 'Street Address', 'streetAddress']);
+      const line2 = getValue(row, ['Address Line 2', 'Addtess Line 2', 'address line 2', 'line2']);
+      const city = getValue(row, ['City', 'city']);
+      const state = getValue(row, ['State', 'state']);
+      const zip = getValue(row, ['Zip', 'ZIP', 'zip', 'Postal Code', 'postalCode']);
+
+      const composedAddressParts = [street, line2, city, `${state} ${zip}`.trim()].filter(Boolean);
+      const address = composedAddressParts.length > 0 ? composedAddressParts.join(', ') : legacyAddress;
+      const phone = getValue(row, ['Phone', 'phone', 'PHONE', 'Phone Number', 'phoneNumber']);
 
       validGuests.push({
         id: Date.now() + index, // Temporary ID, will be replaced when saving
         name: name.trim(),
-        email: email.trim().toLowerCase(),
+        email,
         rsvp,
+        guestCount,
         plusOne,
         address: address.trim(),
         phone: phone.trim()
@@ -185,6 +250,75 @@ export function GuestManagementModal({ onClose }) {
   const clearUpload = () => {
     setUploadedGuests([]);
     setUploadError('');
+  };
+
+  const handleExportGuests = () => {
+    if (guestList.length === 0) {
+      return;
+    }
+
+    const rows = guestList.map((guest) => ({
+      Name: guest.name || '',
+      Address: guest.address || '',
+      Phone: guest.phone || '',
+      Email: guest.email || '',
+      RSVP: guest.rsvp || 'Pending',
+      'Guest Count': guest.guest_count ?? guest.guestCount ?? (guest.plusOne ? 2 : 1)
+    }));
+
+    const csvContent = Papa.unparse(rows);
+    const blob = new window.Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const today = new Date().toISOString().slice(0, 10);
+
+    link.href = downloadUrl;
+    link.download = `guest-list-${today}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+  };
+
+  const saveLookupField = async (nextField) => {
+    setLookupSaving(true);
+    setLookupError('');
+    setLookupMessage('');
+
+    try {
+      await requestJson(
+        `${API_BASE_URL}/settings`,
+        {
+          method: 'PUT',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ guestLookupField: nextField })
+        },
+        'Failed to save lookup option.'
+      );
+
+      setLookupMessage('Lookup option saved. RSVP and Contact forms will use this field for suggestions.');
+    } catch (saveError) {
+      setLookupError(saveError.message || 'Failed to save lookup option.');
+      throw saveError;
+    } finally {
+      setLookupSaving(false);
+    }
+  };
+
+  const handleLookupFieldChange = async (event) => {
+    const nextField = event.target.value === 'email' ? 'email' : 'name';
+    if (nextField === lookupField) {
+      return;
+    }
+
+    const previousField = lookupField;
+    setLookupField(nextField);
+
+    try {
+      await saveLookupField(nextField);
+    } catch {
+      setLookupField(previousField);
+    }
   };
 
   const handleEdit = (guest) => {
@@ -294,19 +428,17 @@ export function GuestManagementModal({ onClose }) {
           <div className="csv-upload-section">
             <h3>Import Guests from CSV</h3>
             <div className="upload-controls">
-              <div className="file-input-group">
-                <input
-                  type="file"
-                  accept=".csv,.xlsx,.xls"
-                  onChange={handleFileUpload}
-                  id="csv-file"
-                  className="file-input"
-                />
+              <input
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={handleFileUpload}
+                id="csv-file"
+                className="file-input"
+              />
+              <div className="upload-mode upload-mode-import">
                 <label htmlFor="csv-file" className="file-input-label">
-                  Choose CSV File
+                  Import CSV File
                 </label>
-              </div>
-              <div className="upload-mode">
                 <label>
                   <input
                     type="radio"
@@ -353,22 +485,22 @@ export function GuestManagementModal({ onClose }) {
                     <thead>
                       <tr>
                         <th>Name</th>
-                        <th>Email</th>
-                        <th>Phone</th>
                         <th>Address</th>
+                        <th>Phone</th>
+                        <th>Email</th>
                         <th>RSVP</th>
-                        <th>Plus One</th>
+                        <th>Guest Count</th>
                       </tr>
                     </thead>
                     <tbody>
                       {uploadedGuests.slice(0, 5).map((guest, index) => (
                         <tr key={index}>
                           <td>{guest.name}</td>
-                          <td>{guest.email}</td>
-                          <td>{guest.phone || '-'}</td>
                           <td>{guest.address || '-'}</td>
+                          <td>{guest.phone || '-'}</td>
+                          <td>{guest.email || '-'}</td>
                           <td>{guest.rsvp}</td>
-                          <td>{guest.plusOne ? 'Yes' : 'No'}</td>
+                          <td>{guest.guestCount ?? (guest.plusOne ? 2 : 1)}</td>
                         </tr>
                       ))}
                       {uploadedGuests.length > 5 && (
@@ -389,55 +521,100 @@ export function GuestManagementModal({ onClose }) {
               <p>Your CSV file should include these columns:</p>
               <ul>
                 <li><strong>Name</strong> (required) - Guest&apos;s full name</li>
-                <li><strong>Email</strong> (required) - Guest&apos;s email address</li>
-                <li><strong>Phone</strong> (optional) - Guest&apos;s phone number</li>
                 <li><strong>Address</strong> (optional) - Guest&apos;s mailing address</li>
+                <li><strong>Phone</strong> (optional) - Guest&apos;s phone number</li>
+                <li><strong>Email</strong> (optional) - Guest&apos;s email address</li>
                 <li><strong>RSVP</strong> (optional) - &quot;Yes&quot;, &quot;No&quot;, or &quot;Pending&quot;</li>
-                <li><strong>Plus One</strong> (optional) - &quot;Yes&quot; or &quot;No&quot;</li>
+                <li><strong>Guest Count</strong> (optional) - Total party size including the primary guest</li>
               </ul>
               <a href="/sample-guests.csv" download>Download Sample CSV</a>
             </div>
           </div>
 
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Address</th>
-                <th>RSVP</th>
-                <th>Plus One</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {guestList.map(guest => (
-                <tr key={guest.id}>
-                  <td>{guest.name}</td>
-                  <td>{guest.email}</td>
-                  <td>{guest.phone || '-'}</td>
-                  <td>{guest.address || '-'}</td>
-                  <td>
-                    <select
-                      value={guest.rsvp}
-                      onChange={(e) => handleRSVPChange(guest.id, e.target.value)}
-                      className="rsvp-select"
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </select>
-                  </td>
-                  <td>{guest.plusOne ? 'Yes' : 'No'}</td>
-                  <td className="table-actions">
-                    <button className="edit-btn" onClick={() => handleEdit(guest)}>Edit</button>
-                    <button className="delete-btn" onClick={() => handleDelete(guest.id)}>Delete</button>
-                  </td>
+          <div className="upload-preview lookup-settings-panel guest-list-toolbar">
+            <h4>RSVP Options</h4>
+            <div className="guest-list-toolbar-row">
+              <div className="upload-mode lookup-mode">
+                <label>
+                  <input
+                    type="radio"
+                    value="name"
+                    checked={lookupField === 'name'}
+                    onChange={handleLookupFieldChange}
+                    disabled={lookupSaving}
+                  />
+                  Lookup by Name
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    value="email"
+                    checked={lookupField === 'email'}
+                    onChange={handleLookupFieldChange}
+                    disabled={lookupSaving}
+                  />
+                  Lookup by Email
+                </label>
+              </div>
+            </div>
+            <div className="lookup-feedback">
+              {lookupSaving && <div className="upload-status">Saving lookup option...</div>}
+              {lookupMessage && <div className="upload-status">{lookupMessage}</div>}
+              {lookupError && <div className="upload-error">{lookupError}</div>}
+            </div>
+            <div className="guest-list-toolbar-actions">
+              <button
+                type="button"
+                className="export-btn"
+                onClick={handleExportGuests}
+                disabled={guestList.length === 0}
+              >
+                Export Guests CSV
+              </button>
+            </div>
+          </div>
+
+          <div className="guest-table-container">
+            <table className="admin-table guest-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Address</th>
+                  <th>Phone</th>
+                  <th>Email</th>
+                  <th>RSVP</th>
+                  <th>Guest Count</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {guestList.map(guest => (
+                  <tr key={guest.id}>
+                    <td>{guest.name}</td>
+                    <td>{guest.address || '-'}</td>
+                    <td>{guest.phone || '-'}</td>
+                    <td>{guest.email || '-'}</td>
+                    <td>
+                      <select
+                        value={guest.rsvp}
+                        onChange={(e) => handleRSVPChange(guest.id, e.target.value)}
+                        className="rsvp-select"
+                      >
+                        <option value="Pending">Pending</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </td>
+                    <td>{guest.guest_count ?? guest.guestCount ?? (guest.plusOne ? 2 : 1)}</td>
+                    <td className="table-actions">
+                      <button className="edit-btn" onClick={() => handleEdit(guest)}>Edit</button>
+                      <button className="delete-btn" onClick={() => handleDelete(guest.id)}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
         <div className="admin-modal-footer">
           <button type="button" className="cancel-btn" onClick={onClose}>Close</button>
@@ -462,20 +639,27 @@ export function AddGuestModal({ onSave, onClose }) {
     phone: '',
     address: '',
     rsvp: 'Pending',
-    plusOne: false
+    guestCount: 1
   });
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: name === 'guestCount' ? Number.parseInt(value, 10) || 0 : value
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+    const normalizedGuestCount = Number.isInteger(formData.guestCount) && formData.guestCount >= 0
+      ? formData.guestCount
+      : 1;
+    onSave({
+      ...formData,
+      guestCount: normalizedGuestCount,
+      plusOne: normalizedGuestCount > 1
+    });
   };
 
   return (
@@ -545,15 +729,16 @@ export function AddGuestModal({ onSave, onClose }) {
               <option value="No">Not Attending</option>
             </select>
           </div>
-          <div className="checkbox-group">
+          <div className="form-group">
+            <label htmlFor="guestCount">Guest Count (including this guest)</label>
             <input
-              id="plusOne"
-              name="plusOne"
-              type="checkbox"
-              checked={formData.plusOne}
+              id="guestCount"
+              name="guestCount"
+              type="number"
+              min="0"
+              value={formData.guestCount}
               onChange={handleChange}
             />
-            <label htmlFor="plusOne">Plus One Allowed</label>
           </div>
         </form>
         <div className="admin-modal-footer">
@@ -566,19 +751,29 @@ export function AddGuestModal({ onSave, onClose }) {
 }
 
 function EditGuestModal({ guest, onSave, onClose }) {
-  const [formData, setFormData] = useState(guest);
+  const [formData, setFormData] = useState({
+    ...guest,
+    guestCount: guest.guest_count ?? guest.guestCount ?? (guest.plusOne ? 2 : 1)
+  });
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: name === 'guestCount' ? Number.parseInt(value, 10) || 0 : value
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+    const normalizedGuestCount = Number.isInteger(formData.guestCount) && formData.guestCount >= 0
+      ? formData.guestCount
+      : 1;
+    onSave({
+      ...formData,
+      guestCount: normalizedGuestCount,
+      plusOne: normalizedGuestCount > 1
+    });
   };
 
   return (
@@ -646,15 +841,16 @@ function EditGuestModal({ guest, onSave, onClose }) {
               <option value="No">Not Attending</option>
             </select>
           </div>
-          <div className="checkbox-group">
+          <div className="form-group">
+            <label htmlFor="edit-guestCount">Guest Count (including this guest)</label>
             <input
-              id="edit-plusOne"
-              name="plusOne"
-              type="checkbox"
-              checked={formData.plusOne}
+              id="edit-guestCount"
+              name="guestCount"
+              type="number"
+              min="0"
+              value={formData.guestCount}
               onChange={handleChange}
             />
-            <label htmlFor="edit-plusOne">Plus One Allowed</label>
           </div>
         </form>
         <div className="admin-modal-footer">
@@ -683,6 +879,8 @@ EditGuestModal.propTypes = {
     phone: PropTypes.string,
     address: PropTypes.string,
     rsvp: PropTypes.string,
+    guest_count: PropTypes.number,
+    guestCount: PropTypes.number,
     plusOne: PropTypes.bool,
   }).isRequired,
   onSave: PropTypes.func.isRequired,

@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 jest.mock('dotenv', () => ({ config: jest.fn() }));
 
 jest.mock('nodemailer', () => ({

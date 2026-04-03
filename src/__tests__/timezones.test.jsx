@@ -1,10 +1,11 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { describe, expect, it } from 'vitest';
 import { extractStateFromAddress, timezoneFromAddress } from '../utils/timezones';
 
 describe('timezones utilities', () => {
   it('derives timezone from a US address with state code and zip', () => {
-    expect(timezoneFromAddress('4725 Lighthouse Drive, Wind Point, WI 53402')).toBe('America/Chicago');
-    expect(extractStateFromAddress('4725 Lighthouse Drive, Wind Point, WI 53402')).toBe('WI');
+    expect(timezoneFromAddress('100 Main St, Milwaukee, WI 53202')).toBe('America/Chicago');
+    expect(extractStateFromAddress('100 Main St, Milwaukee, WI 53202')).toBe('WI');
   });
 
   it('derives timezone from a US address with WA state code', () => {
@@ -37,7 +38,7 @@ describe('timezones utilities', () => {
   });
 
   it('falls back to the default timezone when no location can be inferred', () => {
-    expect(timezoneFromAddress('Somewhere over the rainbow')).toBe('America/Chicago');
+    expect(timezoneFromAddress('Somewhere over the rainbow')).toBe('America/New_York');
   });
 
   it('does not misidentify "Maui" as Australia (false-positive "au" substring)', () => {

@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 jest.mock('dotenv', () => ({ config: jest.fn() }));
 
 jest.mock('nodemailer', () => ({
@@ -116,7 +117,16 @@ describe('POST /api/gallery/upload-file', () => {
     const res = await request(app)
       .post('/api/gallery/upload-file');
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/file is required/i);
+    expect(res.body.error).toMatch(/at least one image file is required/i);
+  });
+
+  it('returns 400 when uploaded file is not an allowed image type', async () => {
+    const res = await request(app)
+      .post('/api/gallery/upload-file')
+      .attach('photo', Buffer.from('not-an-image'), 'notes.txt');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/only jpeg, png, gif, and webp images are allowed/i);
   });
 
   it('uploads a file and stores a local uploads URL', async () => {

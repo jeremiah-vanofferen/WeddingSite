@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 const configuredApiUrl = import.meta.env.VITE_API_URL;
 
 // Default to same-origin API so browser requests work in local and Docker proxy setups.

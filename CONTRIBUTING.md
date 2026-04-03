@@ -43,6 +43,7 @@ Optional vars include `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_EMAIL`, `GMAIL_
 - Do not hardcode `/api/...` paths in components.
 - Check `response.ok` before `response.json()` when handling fetch responses directly.
 - Prefer shared helpers for request logic and settings/public data behavior.
+- Public endpoints require an anonymous JWT in non-test environments; for direct public `fetch` calls use `getPublicAuthHeaders()` from `src/utils/http.js`.
 - Keep components functional with React hooks.
 - Keep styling in CSS files (avoid adding new inline style blocks when a class is appropriate).
 - Keep admin modal behavior consistent: on save failure show error and keep modal open.

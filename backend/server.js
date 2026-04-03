@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -64,24 +65,45 @@ const uploadPhoto = multer({
 
 app.use('/uploads', express.static(uploadDir));
 
-// Rate limiting — general API
+let guestCountColumnReady = false;
+
+// Rate limiting
+// In test/dev environments, use relaxed defaults to avoid flaky local and CI runs.
+const isRelaxedRateLimitEnv = ['test', 'development'].includes(process.env.NODE_ENV);
+const parseRateLimitMax = (value, fallback) => {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const generalRateLimitMax = parseRateLimitMax(
+  process.env.RATE_LIMIT_MAX,
+  isRelaxedRateLimitEnv ? 10000 : 100
+);
+
+const strictRateLimitMax = parseRateLimitMax(
+  process.env.STRICT_RATE_LIMIT_MAX,
+  isRelaxedRateLimitEnv ? 10000 : 20
+);
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100
+  max: generalRateLimitMax,
+  message: { error: 'Too many requests, please try again later' }
 });
 app.use('/api/', limiter);
 
-// Stricter rate limiter for auth and public submission endpoints
-// In test/dev environments, use relaxed limits to avoid test failures
-const isTestEnv = ['test', 'development'].includes(process.env.NODE_ENV);
 const strictLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: isTestEnv ? 10000 : 20,
+  max: strictRateLimitMax,
   message: { error: 'Too many requests, please try again later' }
 });
 app.use('/api/auth/login', strictLimiter);
 app.use('/api/auth/change-password', strictLimiter);
 app.use('/api/rsvp', strictLimiter);
+app.use('/api/public/token', strictLimiter);
+
+const requirePublicAccessToken = process.env.NODE_ENV !== 'test';
+const publicTokenExpiresIn = process.env.PUBLIC_JWT_EXPIRES_IN || '2h';
 
 // Auth middleware
 const authenticateToken = (req, res, next) => {
@@ -97,6 +119,27 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+const authenticatePublicToken = (req, res, next) => {
+  if (!requirePublicAccessToken) {
+    return next();
+  }
+
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Public access token required' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, payload) => {
+    if (err || payload?.type !== 'public') {
+      return res.status(403).json({ error: 'Invalid public access token' });
+    }
+    req.publicToken = payload;
+    next();
+  });
+};
+
 const sendError = (res, status, message) => res.status(status).json({ error: message });
 const sendBadRequest = (res, message) => sendError(res, 400, message);
 const sendNotFound = (res, message) => sendError(res, 404, message);
@@ -108,6 +151,17 @@ const sendInternalError = (res, context, error) => {
 // Verify token route
 app.get('/api/auth/verify', authenticateToken, (req, res) => {
   res.json({ user: { id: req.user.id, username: req.user.username } });
+});
+
+// Mint anonymous token for public endpoints
+app.post('/api/public/token', (_req, res) => {
+  const token = jwt.sign(
+    { type: 'public' },
+    process.env.JWT_SECRET,
+    { expiresIn: publicTokenExpiresIn }
+  );
+
+  res.json({ token, expiresIn: publicTokenExpiresIn });
 });
 
 // Routes
@@ -206,17 +260,28 @@ app.get('/api/guests', authenticateToken, async (req, res) => {
 // Add new guest
 app.post('/api/guests', authenticateToken, async (req, res) => {
   try {
-    const { name, email, phone, address, rsvp, plusOne } = req.body;
+    await ensureGuestCountColumn();
 
-    if (!name || !email) {
-      return res.status(400).json({ error: 'Name and email are required' });
+    const { name, email, phone, address, rsvp, plusOne, plus_one, guestCount, guest_count } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: 'Name is required' });
     }
 
+    const normalizedGuestCount = normalizeGuestCount(guestCount ?? guest_count, plusOne ?? plus_one);
+
     const result = await pool.query(
-      `INSERT INTO guests (name, email, phone, address, rsvp, plus_one)
+      `INSERT INTO guests (name, email, phone, address, rsvp, guest_count)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [name, email, phone || null, address || null, rsvp || 'Pending', plusOne || false]
+      [
+        name,
+        email || null,
+        phone || null,
+        address || null,
+        rsvp || 'Pending',
+        normalizedGuestCount
+      ]
     );
 
     res.status(201).json(result.rows[0]);
@@ -233,15 +298,19 @@ app.post('/api/guests', authenticateToken, async (req, res) => {
 // Update guest
 app.put('/api/guests/:id', authenticateToken, async (req, res) => {
   try {
+    await ensureGuestCountColumn();
+
     const { id } = req.params;
-    const { name, email, phone, address, rsvp, plusOne } = req.body;
+    const { name, email, phone, address, rsvp, plusOne, plus_one, guestCount, guest_count } = req.body;
+
+    const normalizedGuestCount = normalizeGuestCount(guestCount ?? guest_count, plusOne ?? plus_one);
 
     const result = await pool.query(
       `UPDATE guests
-       SET name = $1, email = $2, phone = $3, address = $4, rsvp = $5, plus_one = $6, updated_at = CURRENT_TIMESTAMP
+       SET name = $1, email = $2, phone = $3, address = $4, rsvp = $5, guest_count = $6, updated_at = CURRENT_TIMESTAMP
        WHERE id = $7
        RETURNING *`,
-      [name, email, phone || null, address || null, rsvp, plusOne, id]
+      [name, email, phone || null, address || null, rsvp, normalizedGuestCount, id]
     );
 
     if (result.rows.length === 0) {
@@ -279,6 +348,8 @@ app.delete('/api/guests/:id', authenticateToken, async (req, res) => {
 // Bulk import guests
 app.post('/api/guests/bulk', authenticateToken, async (req, res) => {
   try {
+    await ensureGuestCountColumn();
+
     const { guests, mode } = req.body;
 
     if (!Array.isArray(guests)) {
@@ -304,22 +375,31 @@ app.post('/api/guests/bulk', authenticateToken, async (req, res) => {
         guest.phone || null,
         guest.address || null,
         guest.rsvp || 'Pending',
-        guest.plusOne || false
+        normalizeGuestCount(guest.guestCount, guest.plusOne)
       ]);
 
       for (const value of values) {
-        await client.query(
-          `INSERT INTO guests (name, email, phone, address, rsvp, plus_one)
-           VALUES ($1, $2, $3, $4, $5, $6)
-           ON CONFLICT (email) DO UPDATE SET
-             name = EXCLUDED.name,
-             phone = EXCLUDED.phone,
-             address = EXCLUDED.address,
-             rsvp = EXCLUDED.rsvp,
-             plus_one = EXCLUDED.plus_one,
-             updated_at = CURRENT_TIMESTAMP`,
-          value
-        );
+        const [, email] = value;
+        if (email) {
+          await client.query(
+            `INSERT INTO guests (name, email, phone, address, rsvp, guest_count)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (email) DO UPDATE SET
+               name = EXCLUDED.name,
+               phone = EXCLUDED.phone,
+               address = EXCLUDED.address,
+               rsvp = EXCLUDED.rsvp,
+               guest_count = EXCLUDED.guest_count,
+               updated_at = CURRENT_TIMESTAMP`,
+            value
+          );
+        } else {
+          await client.query(
+            `INSERT INTO guests (name, email, phone, address, rsvp, guest_count)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            value
+          );
+        }
       }
 
       await client.query('COMMIT');
@@ -338,9 +418,11 @@ app.post('/api/guests/bulk', authenticateToken, async (req, res) => {
 });
 
 // Public RSVP endpoint
-app.post('/api/rsvp', async (req, res) => {
+app.post('/api/rsvp', authenticatePublicToken, async (req, res) => {
   try {
-    const { name, email, rsvp, guests, dietary } = req.body;
+    await ensureGuestCountColumn();
+
+    const { name, email, rsvp, guests } = req.body;
     if (!name || !email || !rsvp) {
       return sendBadRequest(res, 'Name, email, and RSVP status are required');
     }
@@ -363,20 +445,52 @@ app.post('/api/rsvp', async (req, res) => {
       return sendBadRequest(res, 'Attending guests must be at least 1');
     }
 
-    // Insert or update guest by email
+    const normalizedName = name.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Match guest by name first, then update that record.
     const rsvpStatus = normalizedRsvp === 'yes' ? 'Yes' : 'No';
-    const result = await pool.query(
-      `INSERT INTO guests (name, email, rsvp, plus_one, address)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (email) DO UPDATE SET
-         name = EXCLUDED.name,
-         rsvp = EXCLUDED.rsvp,
-         plus_one = EXCLUDED.plus_one,
-         address = EXCLUDED.address,
-         updated_at = CURRENT_TIMESTAMP
-       RETURNING *`,
-      [name, email, rsvpStatus, parsedGuests > 1, dietary || null]
+    const existingByNameResult = await pool.query(
+      `SELECT id, email
+       FROM guests
+       WHERE lower(btrim(name)) = lower(btrim($1))
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [normalizedName]
     );
+
+    let result;
+    if (existingByNameResult.rowCount > 0) {
+      const matchedGuest = existingByNameResult.rows[0];
+
+      const emailOwnerResult = await pool.query(
+        'SELECT id FROM guests WHERE email = $1 AND id <> $2 LIMIT 1',
+        [normalizedEmail, matchedGuest.id]
+      );
+
+      if (emailOwnerResult.rowCount > 0) {
+        return res.status(409).json({ error: 'Email already exists' });
+      }
+
+      result = await pool.query(
+        `UPDATE guests
+         SET name = $1,
+             email = $2,
+             rsvp = $3,
+             guest_count = $4,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $5
+         RETURNING *`,
+        [normalizedName, normalizedEmail, rsvpStatus, parsedGuests, matchedGuest.id]
+      );
+    } else {
+      result = await pool.query(
+        `INSERT INTO guests (name, email, rsvp, guest_count)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [normalizedName, normalizedEmail, rsvpStatus, parsedGuests]
+      );
+    }
 
     // Send email notification to admin
     const adminEmail = await getAdminEmail();
@@ -390,12 +504,11 @@ app.post('/api/rsvp', async (req, res) => {
           }
         });
         const guestCount = `${parsedGuests} guest${parsedGuests === 1 ? '' : 's'}`;
-        const dietaryNote = dietary ? `\nDietary notes: ${dietary}` : '';
         await transporter.sendMail({
           from: process.env.GMAIL_USER,
           to: adminEmail,
           subject: `New RSVP: ${name} — ${rsvpStatus}`,
-          text: `A new RSVP has been submitted.\n\nName: ${name}\nEmail: ${email}\nRSVP: ${rsvpStatus}\nParty size: ${guestCount}${dietaryNote}`
+          text: `A new RSVP has been submitted.\n\nName: ${name}\nEmail: ${email}\nRSVP: ${rsvpStatus}\nParty size: ${guestCount}`
         });
         console.log('RSVP notification email sent to', adminEmail);
       } catch (emailError) {
@@ -405,12 +518,15 @@ app.post('/api/rsvp', async (req, res) => {
 
     res.status(201).json({ success: true, guest: result.rows[0] });
   } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Email already exists' });
+    }
     return sendInternalError(res, 'RSVP error', error);
   }
 });
 
 // Public contact form endpoint
-app.post('/api/messages', strictLimiter, async (req, res) => {
+app.post('/api/messages', strictLimiter, authenticatePublicToken, async (req, res) => {
   try {
     const { name, email, message } = req.body;
     if (!name || !email || !message) {
@@ -420,6 +536,9 @@ app.post('/api/messages', strictLimiter, async (req, res) => {
       `INSERT INTO messages (name, email, message) VALUES ($1, $2, $3) RETURNING *`,
       [name, email, message]
     );
+
+    await updateGuestEmailByName(name, email);
+
     // Send email to admin
     const adminEmail = await getAdminEmail();
     if (adminEmail && process.env.GMAIL_USER && process.env.GMAIL_PASS) {
@@ -483,7 +602,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Get public settings (wedding details + display settings, no auth required)
-app.get('/api/public/settings', async (req, res) => {
+app.get('/api/public/settings', authenticatePublicToken, async (req, res) => {
   try {
     const PUBLIC_KEYS = ['websiteName', 'theme', 'primaryColor', 'primaryColorHover', 'fontFamily',
       'showCountdown', 'allowRsvp', 'welcomeMessage',
@@ -505,8 +624,60 @@ app.get('/api/public/settings', async (req, res) => {
   }
 });
 
+// Get public guest names for RSVP/contact autofill suggestions
+app.get('/api/public/guest-names', authenticatePublicToken, async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT DISTINCT name
+       FROM guests
+       WHERE name IS NOT NULL
+         AND btrim(name) <> ''
+       ORDER BY name ASC
+       LIMIT 500`
+    );
+
+    const names = result.rows
+      .map((row) => row.name)
+      .filter((name) => typeof name === 'string' && name.trim() !== '');
+
+    res.json(names);
+  } catch (error) {
+    return sendInternalError(res, 'Get public guest names error', error);
+  }
+});
+
+// Get RSVP/Contact lookup field and suggestions
+app.get('/api/public/guest-lookup', authenticatePublicToken, async (_req, res) => {
+  try {
+    const lookupFieldResult = await pool.query(
+      "SELECT value FROM settings WHERE key = 'guestLookupField' LIMIT 1"
+    );
+
+    const rawField = lookupFieldResult.rows[0]?.value;
+    const field = rawField === 'email' ? 'email' : 'name';
+
+    const valueColumn = field === 'email' ? 'email' : 'name';
+    const result = await pool.query(
+      `SELECT DISTINCT ${valueColumn} AS value
+       FROM guests
+       WHERE ${valueColumn} IS NOT NULL
+         AND btrim(${valueColumn}) <> ''
+       ORDER BY ${valueColumn} ASC
+       LIMIT 500`
+    );
+
+    const suggestions = result.rows
+      .map((row) => row.value)
+      .filter((value) => typeof value === 'string' && value.trim() !== '');
+
+    res.json({ field, suggestions });
+  } catch (error) {
+    return sendInternalError(res, 'Get public guest lookup error', error);
+  }
+});
+
 // Get schedule (public)
-app.get('/api/schedule', async (req, res) => {
+app.get('/api/schedule', authenticatePublicToken, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM schedule ORDER BY sort_order, time');
     res.json(result.rows);
@@ -653,7 +824,7 @@ app.put('/api/settings', authenticateToken, async (req, res) => {
 // ── Gallery ──────────────────────────────────────────────────────────────────
 
 // Public: submit a photo for admin approval
-app.post('/api/gallery/upload', strictLimiter, async (req, res) => {
+app.post('/api/gallery/upload', strictLimiter, authenticatePublicToken, async (req, res) => {
   try {
     const { url, caption, submitterName } = req.body;
     if (!url) {
@@ -675,30 +846,43 @@ app.post('/api/gallery/upload', strictLimiter, async (req, res) => {
 });
 
 // Public: submit a photo file for admin approval
-app.post('/api/gallery/upload-file', strictLimiter, (req, res) => {
-  uploadPhoto.single('photo')(req, res, async (uploadError) => {
+app.post('/api/gallery/upload-file', strictLimiter, authenticatePublicToken, (req, res) => {
+  uploadPhoto.array('photo', 10)(req, res, async (uploadError) => {
     try {
       if (uploadError) {
         const status = uploadError.status || (uploadError.code === 'LIMIT_FILE_SIZE' ? 413 : 400);
         return res.status(status).json({ error: uploadError.message || 'Invalid upload' });
       }
 
-      if (!req.file) {
-        return sendBadRequest(res, 'Image file is required');
+      const files = Array.isArray(req.files) ? req.files : (req.file ? [req.file] : []);
+      if (files.length === 0) {
+        return sendBadRequest(res, 'At least one image file is required');
       }
 
       const { caption, submitterName } = req.body;
-      const url = `/uploads/${req.file.filename}`;
-      const result = await pool.query(
-        `INSERT INTO photo_uploads (url, caption, submitter_name, status)
-         VALUES ($1, $2, $3, 'pending') RETURNING *`,
-        [url, caption || null, submitterName || null]
-      );
+      const uploadedPhotos = [];
 
-      return res.status(201).json({ success: true, photo: result.rows[0] });
+      for (const file of files) {
+        const url = `/uploads/${file.filename}`;
+        const result = await pool.query(
+          `INSERT INTO photo_uploads (url, caption, submitter_name, status)
+           VALUES ($1, $2, $3, 'pending') RETURNING *`,
+          [url, caption || null, submitterName || null]
+        );
+        uploadedPhotos.push(result.rows[0]);
+      }
+
+      return res.status(201).json({
+        success: true,
+        photo: uploadedPhotos[0],
+        photos: uploadedPhotos
+      });
     } catch (error) {
-      if (req.file?.path) {
-        fs.unlink(req.file.path, () => {});
+      const uploadedFiles = Array.isArray(req.files) ? req.files : (req.file ? [req.file] : []);
+      for (const file of uploadedFiles) {
+        if (file?.path) {
+          fs.unlink(file.path, () => {});
+        }
       }
       return sendInternalError(res, 'Gallery file upload error', error);
     }
@@ -707,29 +891,42 @@ app.post('/api/gallery/upload-file', strictLimiter, (req, res) => {
 
 // Admin: upload an image file and directly approve it
 app.post('/api/gallery/upload-file-admin', authenticateToken, (req, res) => {
-  uploadPhoto.single('photo')(req, res, async (uploadError) => {
+  uploadPhoto.array('photo', 10)(req, res, async (uploadError) => {
     try {
       if (uploadError) {
         const status = uploadError.status || (uploadError.code === 'LIMIT_FILE_SIZE' ? 413 : 400);
         return res.status(status).json({ error: uploadError.message || 'Invalid upload' });
       }
 
-      if (!req.file) {
-        return sendBadRequest(res, 'Image file is required');
+      const files = Array.isArray(req.files) ? req.files : (req.file ? [req.file] : []);
+      if (files.length === 0) {
+        return sendBadRequest(res, 'At least one image file is required');
       }
 
       const { caption, submitterName } = req.body;
-      const url = `/uploads/${req.file.filename}`;
-      const result = await pool.query(
-        `INSERT INTO photo_uploads (url, caption, submitter_name, status)
-         VALUES ($1, $2, $3, 'approved') RETURNING *`,
-        [url, caption || null, submitterName || null]
-      );
+      const uploadedPhotos = [];
 
-      return res.status(201).json({ success: true, photo: result.rows[0] });
+      for (const file of files) {
+        const url = `/uploads/${file.filename}`;
+        const result = await pool.query(
+          `INSERT INTO photo_uploads (url, caption, submitter_name, status)
+           VALUES ($1, $2, $3, 'approved') RETURNING *`,
+          [url, caption || null, submitterName || null]
+        );
+        uploadedPhotos.push(result.rows[0]);
+      }
+
+      return res.status(201).json({
+        success: true,
+        photo: uploadedPhotos[0],
+        photos: uploadedPhotos
+      });
     } catch (error) {
-      if (req.file?.path) {
-        fs.unlink(req.file.path, () => {});
+      const uploadedFiles = Array.isArray(req.files) ? req.files : (req.file ? [req.file] : []);
+      for (const file of uploadedFiles) {
+        if (file?.path) {
+          fs.unlink(file.path, () => {});
+        }
       }
       return sendInternalError(res, 'Gallery file upload error', error);
     }
@@ -737,7 +934,7 @@ app.post('/api/gallery/upload-file-admin', authenticateToken, (req, res) => {
 });
 
 // Public: get all approved photos
-app.get('/api/gallery', async (req, res) => {
+app.get('/api/gallery', authenticatePublicToken, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, url, caption, submitter_name, featured, uploaded_at
@@ -751,7 +948,7 @@ app.get('/api/gallery', async (req, res) => {
 });
 
 // Public: get all featured photos for carousel
-app.get('/api/gallery/carousel/featured', async (req, res) => {
+app.get('/api/gallery/carousel/featured', authenticatePublicToken, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, url, caption, submitter_name, uploaded_at
@@ -922,6 +1119,82 @@ process.on('SIGINT', () => {
 async function getAdminEmail() {
   const result = await pool.query("SELECT value FROM settings WHERE key = 'adminEmail'");
   return result.rows[0]?.value || process.env.ADMIN_EMAIL;
+}
+
+async function ensureGuestCountColumn() {
+  if (guestCountColumnReady || process.env.NODE_ENV === 'test') {
+    return;
+  }
+
+  await pool.query(
+    'ALTER TABLE guests ADD COLUMN IF NOT EXISTS guest_count INTEGER DEFAULT 1 CHECK (guest_count >= 0)'
+  );
+  const plusOneColumnResult = await pool.query(
+    `SELECT 1
+     FROM information_schema.columns
+     WHERE table_name = 'guests' AND column_name = 'plus_one'
+     LIMIT 1`
+  );
+
+  if (plusOneColumnResult.rowCount > 0) {
+    await pool.query(
+      'UPDATE guests SET guest_count = CASE WHEN plus_one THEN 2 ELSE 1 END WHERE guest_count IS NULL'
+    );
+    await pool.query('ALTER TABLE guests DROP COLUMN IF EXISTS plus_one');
+  } else {
+    await pool.query('UPDATE guests SET guest_count = 1 WHERE guest_count IS NULL');
+  }
+
+  guestCountColumnReady = true;
+}
+
+function normalizeGuestCount(guestCount, plusOne) {
+  if (guestCount !== undefined && guestCount !== null && String(guestCount).trim() !== '') {
+    const parsed = Number.parseInt(guestCount, 10);
+    if (Number.isInteger(parsed) && parsed >= 0) {
+      return parsed;
+    }
+  }
+
+  return plusOne ? 2 : 1;
+}
+
+async function updateGuestEmailByName(name, email) {
+  const normalizedName = typeof name === 'string' ? name.trim() : '';
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+
+  if (!normalizedName || !normalizedEmail) {
+    return;
+  }
+
+  const matchedGuestResult = await pool.query(
+    `SELECT id
+     FROM guests
+     WHERE lower(btrim(name)) = lower(btrim($1))
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [normalizedName]
+  );
+
+  if (matchedGuestResult.rowCount === 0) {
+    return;
+  }
+
+  const matchedGuestId = matchedGuestResult.rows[0].id;
+
+  const emailInUseResult = await pool.query(
+    'SELECT id FROM guests WHERE email = $1 AND id <> $2 LIMIT 1',
+    [normalizedEmail, matchedGuestId]
+  );
+
+  if (emailInUseResult.rowCount > 0) {
+    return;
+  }
+
+  await pool.query(
+    'UPDATE guests SET email = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+    [normalizedEmail, matchedGuestId]
+  );
 }
 
 module.exports = app;

@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { DEFAULT_SETTINGS } from './constants';
 
 export function mergeSettings(currentSettings, incomingSettings) {

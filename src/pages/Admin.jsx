@@ -1,4 +1,5 @@
-﻿import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+// Copyright 2026 Jeremiah Van Offeren
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useAuth } from '../utils/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import '../pages/pages.css';
@@ -6,6 +7,7 @@ import './Admin.css';
 import { DEFAULT_SETTINGS, DEFAULT_WEDDING_TIME_ZONE } from '../utils/constants';
 import { API_BASE_URL } from '../utils/api';
 import { getAuthHeaders, requestJson } from '../utils/http';
+import { fetchArray } from '../utils/publicData';
 import { formatIsoDate, formatIsoDateTime, resolveTimeZone } from '../utils/dateTime';
 import { mergeSettings, mergeWeddingDetails } from '../utils/settings';
 
@@ -54,6 +56,7 @@ export default function Admin() {
   });
 
   const [schedule, setSchedule] = useState([]);
+  const [guestList, setGuestList] = useState([]);
 
   const [photos, setPhotos] = useState([]);
 
@@ -61,22 +64,37 @@ export default function Admin() {
 
   // Load schedule from backend on mount
   useEffect(() => {
-    fetch(`${API_BASE_URL}/schedule`)
-      .then(res => (res.ok ? res.json() : []))
-      .then(data => Array.isArray(data) ? setSchedule(data) : setSchedule([]))
-      .catch(() => {});
+    fetchArray('/schedule')
+      .then(setSchedule)
+      .catch(() => {
+        setSchedule([]);
+      });
   }, []);
 
   const fetchPhotos = () => {
-    fetch(`${API_BASE_URL}/gallery`)
-      .then(res => res.ok ? res.json() : [])
-      .then(data => setPhotos(Array.isArray(data) ? data : []))
-      .catch(() => {});
+    fetchArray('/gallery')
+      .then(setPhotos)
+      .catch(() => {
+        setPhotos([]);
+      });
   };
 
   useEffect(() => {
     fetchPhotos();
   }, []);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetch(`${API_BASE_URL}/guests`, {
+        headers: getAuthHeaders()
+      })
+        .then(res => (res.ok ? res.json() : []))
+        .then(data => setGuestList(Array.isArray(data) ? data : []))
+        .catch(() => {
+          setGuestList([]);
+        });
+    }
+  }, [isLoggedIn]);
 
   // Load all settings (includes wedding details) from backend on mount
   const fetchSettings = useCallback(() => {
@@ -106,7 +124,10 @@ export default function Admin() {
         headers: getAuthHeaders()
       })
         .then(res => (res.ok ? res.json() : []))
-        .then(data => Array.isArray(data) ? setMessages(data) : setMessages([]));
+        .then(data => Array.isArray(data) ? setMessages(data) : setMessages([]))
+        .catch(() => {
+          setMessages([]);
+        });
     }
   }, [isLoggedIn]);
 
@@ -126,6 +147,13 @@ export default function Admin() {
   const [_editingItem, setEditingItem] = useState(null);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const unreadMessageCount = messages.filter(message => !message.is_read).length;
+  const totalPartySize = guestList.reduce((sum, guest) => {
+    const rawCount = guest.guest_count ?? guest.guestCount;
+    if (Number.isInteger(rawCount) && rawCount >= 0) {
+      return sum + rawCount;
+    }
+    return sum + (guest.plusOne ? 2 : 1);
+  }, 0);
 
   // Mark message as read when modal opens
   useEffect(() => {
@@ -202,6 +230,11 @@ export default function Admin() {
 
         <div className="admin-overview-grid">
           <div className="metric-card">
+            <span className="metric-label">Guests</span>
+            <span className="metric-value">{totalPartySize}</span>
+            <span className="metric-meta">Confirmed party size</span>
+          </div>
+          <div className="metric-card">
             <span className="metric-label">Timeline</span>
             <span className="metric-value">{schedule.length}</span>
             <span className="metric-meta">Scheduled events</span>
@@ -248,8 +281,8 @@ export default function Admin() {
           <div className="demo-card admin-console-card">
             <p className="section-kicker">Guests</p>
             <h3>Guest Management</h3>
-            <p>View RSVPs and manage your guest list.</p>
-            <div className="admin-card-meta">Attendance and manual edits</div>
+            <p>View RSVPs and manage your guest list ({guestList.length} records).</p>
+            <div className="admin-card-meta">Attendance and manual edits - party size {totalPartySize}</div>
             <div className="admin-actions">
               <button onClick={() => openModal('guests')}>Manage Guests</button>
               <button className="tonal-button" onClick={() => openModal('add-guest')}>Add Guest</button>
@@ -459,8 +492,9 @@ export default function Admin() {
 
         {activeModal === 'add-photo' && (
           <AddPhotoModal
-            onSave={(newPhoto) => {
-              const updatedPhotos = [newPhoto, ...photos];
+            onSave={(newPhotos) => {
+              const photosToAdd = Array.isArray(newPhotos) ? newPhotos : [newPhotos];
+              const updatedPhotos = [...photosToAdd, ...photos];
               setPhotos(updatedPhotos);
               closeModal();
             }}

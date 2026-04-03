@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SettingsModal } from '../components/SettingsModal';
@@ -62,6 +63,30 @@ describe('SettingsModal', () => {
     await waitFor(() => expect(screen.getByText('Network error')).toBeInTheDocument());
     expect(onClose).not.toHaveBeenCalled();
     consoleSpy.mockRestore();
+  });
+
+  it('shows fallback save error message when rejection has no message', async () => {
+    onSave = vi.fn().mockRejectedValue({});
+    render(<SettingsModal settings={defaultSettings} onSave={onSave} onClose={onClose} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /save settings/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to save settings.')).toBeInTheDocument();
+    });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('uses dark text on light hover color in live preview', () => {
+    render(
+      <SettingsModal
+        settings={{ ...defaultSettings, primaryColorHover: '#ffffff' }}
+        onSave={onSave}
+        onClose={onClose}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /hover state/i })).toHaveStyle({ color: '#173042' });
   });
 
   it('calls onClose when Cancel is clicked', () => {

@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PublicPhotoUploadModal } from '../components/PublicPhotoUploadModal';
@@ -127,6 +128,22 @@ describe('PublicPhotoUploadModal', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Upload failed. Please try again.')).toBeInTheDocument();
+    });
+  });
+
+  it('shows a network-specific error when fetch fails with a TypeError', async () => {
+    global.fetch.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+    const { container } = render(<PublicPhotoUploadModal onSuccess={onSuccess} onClose={onClose} />);
+
+    const fileInput = screen.getByLabelText(/photo file/i);
+    const file = new File(['image-bytes'], 'photo.png', { type: 'image/png' });
+    setSelectedFiles(fileInput, [file]);
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    fireEvent.submit(container.querySelector('form'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Network error. Please try again.')).toBeInTheDocument();
     });
   });
 

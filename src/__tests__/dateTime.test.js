@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { describe, it, expect } from 'vitest';
 import {
   resolveTimeZone,
