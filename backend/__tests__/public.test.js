@@ -148,24 +148,12 @@ describe('GET /api/public/guest-lookup', () => {
     silenceExpectedConsole();
   });
 
-  it('returns name suggestions by default', async () => {
-    pool.query
-      .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [{ value: 'Alice Smith' }, { value: 'Bob Jones' }] });
+  it('returns name suggestions', async () => {
+    pool.query.mockResolvedValueOnce({ rows: [{ value: 'Alice Smith' }, { value: 'Bob Jones' }] });
 
     const res = await request(app).get('/api/public/guest-lookup');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ field: 'name', suggestions: ['Alice Smith', 'Bob Jones'] });
-  });
-
-  it('returns email suggestions when guestLookupField is email', async () => {
-    pool.query
-      .mockResolvedValueOnce({ rows: [{ value: 'email' }] })
-      .mockResolvedValueOnce({ rows: [{ value: 'a@test.local' }, { value: 'b@test.local' }] });
-
-    const res = await request(app).get('/api/public/guest-lookup');
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ field: 'email', suggestions: ['a@test.local', 'b@test.local'] });
+    expect(res.body).toEqual({ suggestions: ['Alice Smith', 'Bob Jones'] });
   });
 
   it('returns 500 on database error', async () => {

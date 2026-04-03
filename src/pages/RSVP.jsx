@@ -15,21 +15,19 @@ export default function RSVP() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [guestLookupField, setGuestLookupField] = useState('name');
   const [guestSuggestions, setGuestSuggestions] = useState([]);
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadGuestLookup = async () => {
+    const loadGuestNames = async () => {
       const data = await fetchGuestLookupSuggestions();
       if (isMounted) {
-        setGuestLookupField(data.field);
         setGuestSuggestions(data.suggestions);
       }
     };
 
-    loadGuestLookup();
+    loadGuestNames();
 
     return () => {
       isMounted = false;
@@ -118,16 +116,16 @@ export default function RSVP() {
           <form className="contact-form" onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="rsvp-name">Name</label>
-              <input id="rsvp-name" name="name" type="text" list={guestLookupField === 'name' ? 'rsvp-guest-suggestions' : undefined} value={form.name} onChange={handleChange} required />
+              <input id="rsvp-name" name="name" type="text" list="rsvp-guest-suggestions" value={form.name} onChange={handleChange} required />
               <datalist id="rsvp-guest-suggestions">
-                {guestLookupField === 'name' && guestSuggestions.map((name) => (
+                {guestSuggestions.map((name) => (
                   <option key={name} value={name} />
                 ))}
               </datalist>
             </div>
             <div className="form-group">
               <label htmlFor="rsvp-email">Email</label>
-              <input id="rsvp-email" name="email" type="email" list={guestLookupField === 'email' ? 'rsvp-guest-suggestions' : undefined} value={form.email} onChange={handleChange} required />
+              <input id="rsvp-email" name="email" type="email" value={form.email} onChange={handleChange} required />
             </div>
             <div className="form-row">
               <div className="form-group">

@@ -6,7 +6,7 @@ import RSVP from '../pages/RSVP';
 const mockRsvpFetch = () => {
   global.fetch = vi.fn((url) => {
     if (url.includes('/public/guest-lookup')) {
-      return Promise.resolve({ ok: true, json: async () => ({ field: 'name', suggestions: ['John Doe', 'Jane Doe'] }) });
+      return Promise.resolve({ ok: true, json: async () => ({ suggestions: ['John Doe', 'Jane Doe'] }) });
     }
 
     if (url.includes('/rsvp')) {
@@ -64,7 +64,7 @@ describe('RSVP Page', () => {
   it('shows an inline error when the API returns an error', async () => {
     global.fetch = vi.fn((url) => {
       if (url.includes('/public/guest-lookup')) {
-        return Promise.resolve({ ok: true, json: async () => ({ field: 'name', suggestions: [] }) });
+        return Promise.resolve({ ok: true, json: async () => ({ suggestions: [] }) });
       }
 
       if (url.includes('/rsvp')) {
@@ -93,7 +93,7 @@ describe('RSVP Page', () => {
   it('shows a fallback submission error when the API error response is not JSON', async () => {
     global.fetch = vi.fn((url) => {
       if (url.includes('/public/guest-lookup')) {
-        return Promise.resolve({ ok: true, json: async () => ({ field: 'name', suggestions: [] }) });
+        return Promise.resolve({ ok: true, json: async () => ({ suggestions: [] }) });
       }
 
       if (url.includes('/rsvp')) {

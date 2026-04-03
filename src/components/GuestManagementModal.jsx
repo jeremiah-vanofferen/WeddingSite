@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Papa from 'papaparse';
 import PropTypes from 'prop-types';
 import { API_BASE_URL } from '../utils/api';
-import { getAuthHeaders, requestJson } from '../utils/http';
+import { getAuthHeaders } from '../utils/http';
 
 export function GuestManagementModal({ onClose }) {
   const [guestList, setGuestList] = useState([]);
@@ -14,15 +14,10 @@ export function GuestManagementModal({ onClose }) {
   const [uploadError, setUploadError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
-  const [lookupField, setLookupField] = useState('name');
-  const [lookupSaving, setLookupSaving] = useState(false);
-  const [lookupMessage, setLookupMessage] = useState('');
-  const [lookupError, setLookupError] = useState('');
 
   // Fetch guests on component mount
   useEffect(() => {
     fetchGuests();
-    fetchLookupSettings();
   }, []);
 
   const stats = useMemo(() => {
@@ -64,23 +59,7 @@ export function GuestManagementModal({ onClose }) {
     }
   };
 
-  const fetchLookupSettings = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/settings`, {
-        headers: getAuthHeaders()
-      });
 
-      if (!response.ok) {
-        return;
-      }
-
-      const settings = await response.json();
-      const value = settings?.guestLookupField;
-      setLookupField(value === 'email' ? 'email' : 'name');
-    } catch {
-      // Keep default lookup field when settings cannot be loaded.
-    }
-  };
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -280,46 +259,7 @@ export function GuestManagementModal({ onClose }) {
     window.URL.revokeObjectURL(downloadUrl);
   };
 
-  const saveLookupField = async (nextField) => {
-    setLookupSaving(true);
-    setLookupError('');
-    setLookupMessage('');
 
-    try {
-      await requestJson(
-        `${API_BASE_URL}/settings`,
-        {
-          method: 'PUT',
-          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify({ guestLookupField: nextField })
-        },
-        'Failed to save lookup option.'
-      );
-
-      setLookupMessage('Lookup option saved. RSVP and Contact forms will use this field for suggestions.');
-    } catch (saveError) {
-      setLookupError(saveError.message || 'Failed to save lookup option.');
-      throw saveError;
-    } finally {
-      setLookupSaving(false);
-    }
-  };
-
-  const handleLookupFieldChange = async (event) => {
-    const nextField = event.target.value === 'email' ? 'email' : 'name';
-    if (nextField === lookupField) {
-      return;
-    }
-
-    const previousField = lookupField;
-    setLookupField(nextField);
-
-    try {
-      await saveLookupField(nextField);
-    } catch {
-      setLookupField(previousField);
-    }
-  };
 
   const handleEdit = (guest) => {
     setEditingGuest(guest);
@@ -531,37 +471,7 @@ export function GuestManagementModal({ onClose }) {
             </div>
           </div>
 
-          <div className="upload-preview lookup-settings-panel guest-list-toolbar">
-            <h4>RSVP Options</h4>
-            <div className="guest-list-toolbar-row">
-              <div className="upload-mode lookup-mode">
-                <label>
-                  <input
-                    type="radio"
-                    value="name"
-                    checked={lookupField === 'name'}
-                    onChange={handleLookupFieldChange}
-                    disabled={lookupSaving}
-                  />
-                  Lookup by Name
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    value="email"
-                    checked={lookupField === 'email'}
-                    onChange={handleLookupFieldChange}
-                    disabled={lookupSaving}
-                  />
-                  Lookup by Email
-                </label>
-              </div>
-            </div>
-            <div className="lookup-feedback">
-              {lookupSaving && <div className="upload-status">Saving lookup option...</div>}
-              {lookupMessage && <div className="upload-status">{lookupMessage}</div>}
-              {lookupError && <div className="upload-error">{lookupError}</div>}
-            </div>
+          <div className="guest-list-toolbar">
             <div className="guest-list-toolbar-actions">
               <button
                 type="button"

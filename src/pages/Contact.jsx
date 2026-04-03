@@ -10,21 +10,19 @@ export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [guestLookupField, setGuestLookupField] = useState('name');
   const [guestSuggestions, setGuestSuggestions] = useState([]);
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadGuestLookup = async () => {
+    const loadGuestNames = async () => {
       const data = await fetchGuestLookupSuggestions();
       if (isMounted) {
-        setGuestLookupField(data.field);
         setGuestSuggestions(data.suggestions);
       }
     };
 
-    loadGuestLookup();
+    loadGuestNames();
 
     return () => {
       isMounted = false;
@@ -108,16 +106,16 @@ export default function Contact() {
           <form className="contact-form" onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="contact-name">Name</label>
-              <input id="contact-name" name="name" type="text" list={guestLookupField === 'name' ? 'contact-guest-suggestions' : undefined} value={form.name} onChange={handleChange} required />
+              <input id="contact-name" name="name" type="text" list="contact-guest-suggestions" value={form.name} onChange={handleChange} required />
               <datalist id="contact-guest-suggestions">
-                {guestLookupField === 'name' && guestSuggestions.map((name) => (
+                {guestSuggestions.map((name) => (
                   <option key={name} value={name} />
                 ))}
               </datalist>
             </div>
             <div className="form-group">
               <label htmlFor="contact-email">Email</label>
-              <input id="contact-email" name="email" type="email" list={guestLookupField === 'email' ? 'contact-guest-suggestions' : undefined} value={form.email} onChange={handleChange} required />
+              <input id="contact-email" name="email" type="email" value={form.email} onChange={handleChange} required />
             </div>
             <div className="form-group">
               <label htmlFor="contact-message">Message</label>

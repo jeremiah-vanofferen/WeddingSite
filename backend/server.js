@@ -690,23 +690,15 @@ app.get('/api/public/guest-names', authenticatePublicToken, async (_req, res) =>
   }
 });
 
-// Get RSVP/Contact lookup field and suggestions
+// Get guest name suggestions for RSVP/Contact
 app.get('/api/public/guest-lookup', authenticatePublicToken, async (_req, res) => {
   try {
-    const lookupFieldResult = await pool.query(
-      "SELECT value FROM settings WHERE key = 'guestLookupField' LIMIT 1"
-    );
-
-    const rawField = lookupFieldResult.rows[0]?.value;
-    const field = rawField === 'email' ? 'email' : 'name';
-
-    const valueColumn = field === 'email' ? 'email' : 'name';
     const result = await pool.query(
-      `SELECT DISTINCT ${valueColumn} AS value
+      `SELECT DISTINCT name AS value
        FROM guests
-       WHERE ${valueColumn} IS NOT NULL
-         AND btrim(${valueColumn}) <> ''
-       ORDER BY ${valueColumn} ASC
+       WHERE name IS NOT NULL
+         AND btrim(name) <> ''
+       ORDER BY name ASC
        LIMIT 500`
     );
 
@@ -714,9 +706,9 @@ app.get('/api/public/guest-lookup', authenticatePublicToken, async (_req, res) =
       .map((row) => row.value)
       .filter((value) => typeof value === 'string' && value.trim() !== '');
 
-    res.json({ field, suggestions });
+    res.json({ suggestions });
   } catch (error) {
-    return sendInternalError(res, 'Get public guest lookup error', error);
+    return sendInternalError(res, 'Get guest lookup error', error);
   }
 });
 

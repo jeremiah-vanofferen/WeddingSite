@@ -88,7 +88,7 @@ INSERT INTO settings (key, value) VALUES ('weddingLocation', :'wedding_location'
 INSERT INTO settings (key, value) VALUES ('weddingAddress', :'wedding_address') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('weddingDescription', :'wedding_description') ON CONFLICT (key) DO NOTHING;
 INSERT INTO settings (key, value) VALUES ('registryUrl', :'registry_link') ON CONFLICT (key) DO NOTHING;
-INSERT INTO settings (key, value) VALUES ('guestLookupField', 'name') ON CONFLICT (key) DO NOTHING;
+
 
 -- Insert admin user (credentials from ADMIN_USERNAME/ADMIN_PASSWORD env vars; defaults: admin/password123)
 INSERT INTO admin_users (username, password_hash)

@@ -42,8 +42,7 @@ export async function fetchPublicSettings() {
 }
 
 export async function fetchGuestLookupSuggestions() {
-  const data = await fetchJsonOrFallback('/public/guest-lookup', { field: 'name', suggestions: [] });
-  const field = data?.field === 'email' ? 'email' : 'name';
+  const data = await fetchJsonOrFallback('/public/guest-lookup', { suggestions: [] });
   const suggestions = Array.isArray(data?.suggestions)
     ? data.suggestions
       .filter((value) => typeof value === 'string')
@@ -51,10 +50,10 @@ export async function fetchGuestLookupSuggestions() {
       .filter((value) => value.length > 0)
     : [];
 
-  return { field, suggestions };
+  return { suggestions };
 }
 
 export async function fetchGuestNames() {
-  const { field, suggestions } = await fetchGuestLookupSuggestions();
-  return field === 'name' ? suggestions : [];
+  const { suggestions } = await fetchGuestLookupSuggestions();
+  return suggestions;
 }

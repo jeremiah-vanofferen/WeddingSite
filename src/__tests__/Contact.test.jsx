@@ -6,7 +6,7 @@ import Contact from '../pages/Contact';
 const mockContactFetch = () => {
   global.fetch = vi.fn((url) => {
     if (url.includes('/public/guest-lookup')) {
-      return Promise.resolve({ ok: true, json: async () => ({ field: 'name', suggestions: ['Alice', 'Bob'] }) });
+      return Promise.resolve({ ok: true, json: async () => ({ suggestions: ['Alice', 'Bob'] }) });
     }
 
     if (url.includes('/messages')) {
