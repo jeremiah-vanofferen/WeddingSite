@@ -318,24 +318,4 @@ describe('POST /api/messages', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.message.name).toBe('Jane');
   });
-
-  it('backfills missing guest email when contact form includes one', async () => {
-    const msg = { id: 2, name: 'Taylor', email: 'taylor@example.com', message: 'Hi!' };
-    pool.query
-      .mockResolvedValueOnce({ rows: [msg] })
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 7 }] })
-      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 7, email: 'taylor@example.com' }] })
-      .mockResolvedValueOnce({ rows: [] });
-
-    const res = await request(app)
-      .post('/api/messages')
-      .send({ name: 'Taylor', email: 'taylor@example.com', message: 'Hi!' });
-
-    expect(res.status).toBe(201);
-
-    const updateCall = pool.query.mock.calls.find(([sql]) => sql.includes('UPDATE guests') && sql.includes('SET email = $1'));
-    expect(updateCall).toBeDefined();
-    expect(updateCall[1]).toEqual(['taylor@example.com', 7]);
-  });
 });

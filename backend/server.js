@@ -350,6 +350,45 @@ app.delete('/api/guests/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Admin: approve or reject RSVP
+app.put('/api/guests/:id/approval', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (status !== 'approved' && status !== 'rejected' && status !== 'pending') {
+      return sendBadRequest(res, "Status must be 'approved', 'rejected', or 'pending'");
+    }
+
+    const result = await pool.query(
+      `UPDATE guests SET approval_status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
+      [status, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Guest not found' });
+    }
+
+    res.json({ guest: result.rows[0] });
+  } catch (error) {
+    console.error('Update RSVP approval error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Admin: get pending RSVPs
+app.get('/api/guests/pending-approvals', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM guests WHERE approval_status = 'pending' ORDER BY created_at DESC`
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get pending approvals error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Bulk import guests
 app.post('/api/guests/bulk', authenticateToken, async (req, res) => {
   try {
@@ -426,6 +465,7 @@ app.post('/api/guests/bulk', authenticateToken, async (req, res) => {
 app.post('/api/rsvp', authenticatePublicToken, async (req, res) => {
   try {
     await ensureGuestCountColumn();
+    await ensureApprovalStatusColumn();
 
     const { name, email, rsvp, guests } = req.body;
     if (!name || !email || !rsvp) {
@@ -483,6 +523,7 @@ app.post('/api/rsvp', authenticatePublicToken, async (req, res) => {
              email = $2,
              rsvp = $3,
              guest_count = $4,
+             approval_status = 'pending',
              updated_at = CURRENT_TIMESTAMP
          WHERE id = $5
          RETURNING *`,
@@ -490,8 +531,8 @@ app.post('/api/rsvp', authenticatePublicToken, async (req, res) => {
       );
     } else {
       result = await pool.query(
-        `INSERT INTO guests (name, email, rsvp, guest_count)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO guests (name, email, rsvp, guest_count, approval_status)
+         VALUES ($1, $2, $3, $4, 'pending')
          RETURNING *`,
         [normalizedName, normalizedEmail, rsvpStatus, parsedGuests]
       );
@@ -541,12 +582,6 @@ app.post('/api/messages', strictLimiter, authenticatePublicToken, async (req, re
       `INSERT INTO messages (name, email, message) VALUES ($1, $2, $3) RETURNING *`,
       [name, email, message]
     );
-
-    try {
-      await updateGuestEmailByName(name, email);
-    } catch (syncError) {
-      console.warn('Guest email sync skipped:', syncError?.message || syncError);
-    }
 
     // Send email to admin
     const adminEmail = await getAdminEmail();
@@ -1221,42 +1256,36 @@ function normalizeGuestCount(guestCount, plusOne) {
   return plusOne ? 2 : 1;
 }
 
-async function updateGuestEmailByName(name, email) {
-  const normalizedName = typeof name === 'string' ? name.trim() : '';
-  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
-
-  if (!normalizedName || !normalizedEmail) {
+async function ensureApprovalStatusColumn() {
+  if (process.env.NODE_ENV === 'test') {
     return;
   }
 
-  const matchedGuestResult = await pool.query(
-    `SELECT id
-     FROM guests
-     WHERE lower(btrim(name)) = lower(btrim($1))
-     ORDER BY created_at DESC
-     LIMIT 1`,
-    [normalizedName]
-  );
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
 
-  if (matchedGuestResult.rowCount === 0) {
-    return;
+    const approvalStatusColumnResult = await client.query(
+      `SELECT 1
+       FROM information_schema.columns
+       WHERE table_name = 'guests' AND column_name = 'approval_status'
+       LIMIT 1`
+    );
+
+    if (approvalStatusColumnResult.rowCount === 0) {
+      await client.query(
+        `ALTER TABLE guests ADD COLUMN approval_status VARCHAR(20) DEFAULT 'approved'
+         CHECK (approval_status IN ('pending', 'approved', 'rejected'))`
+      );
+    }
+
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
   }
-
-  const matchedGuestId = matchedGuestResult.rows[0].id;
-
-  const emailInUseResult = await pool.query(
-    'SELECT id FROM guests WHERE email = $1 AND id <> $2 LIMIT 1',
-    [normalizedEmail, matchedGuestId]
-  );
-
-  if (emailInUseResult.rowCount > 0) {
-    return;
-  }
-
-  await pool.query(
-    'UPDATE guests SET email = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-    [normalizedEmail, matchedGuestId]
-  );
 }
 
 module.exports = app;

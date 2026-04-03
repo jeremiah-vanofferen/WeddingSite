@@ -45,6 +45,8 @@ export default [
         console: 'readonly',
         File: 'readonly',
         CustomEvent: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
       },
       parserOptions: {
         ecmaFeatures: { jsx: true },

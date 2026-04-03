@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS guests (
     address TEXT,
     rsvp VARCHAR(20) DEFAULT 'Pending' CHECK (rsvp IN ('Yes', 'No', 'Pending')),
     guest_count INTEGER DEFAULT 1 CHECK (guest_count >= 0),
+    approval_status VARCHAR(20) DEFAULT 'approved' CHECK (approval_status IN ('pending', 'approved', 'rejected')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -111,6 +112,7 @@ CREATE INDEX IF NOT EXISTS idx_guests_rsvp ON guests(rsvp);
 CREATE INDEX IF NOT EXISTS idx_admin_users_username ON admin_users(username);
 CREATE INDEX IF NOT EXISTS idx_messages_email ON messages(email);
 CREATE INDEX IF NOT EXISTS idx_photo_uploads_status ON photo_uploads(status);
+CREATE INDEX IF NOT EXISTS idx_guests_approval_status ON guests(approval_status);
 
 EOSQL
 
