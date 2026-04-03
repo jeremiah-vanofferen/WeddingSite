@@ -610,7 +610,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Get public settings (wedding details + display settings, no auth required)
+// Get public settings (wedding details + display settings, requires a valid public token)
 app.get('/api/public/settings', authenticatePublicToken, async (req, res) => {
   try {
     const PUBLIC_KEYS = ['websiteName', 'theme', 'primaryColor', 'primaryColorHover', 'fontFamily',
