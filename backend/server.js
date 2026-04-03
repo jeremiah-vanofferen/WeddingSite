@@ -1208,6 +1208,18 @@ async function ensureGuestCountColumn() {
     await client.query('UPDATE guests SET guest_count = 1 WHERE guest_count IS NULL');
     await client.query('ALTER TABLE guests ALTER COLUMN guest_count SET DEFAULT 1');
 
+    const emailNotNullResult = await client.query(
+      `SELECT 1
+       FROM information_schema.columns
+       WHERE table_name = 'guests'
+         AND column_name = 'email'
+         AND is_nullable = 'NO'
+       LIMIT 1`
+    );
+
+    if (emailNotNullResult.rowCount > 0) {
+      await client.query('ALTER TABLE guests ALTER COLUMN email DROP NOT NULL');
+    }
     const guestCountConstraintResult = await client.query(
       `SELECT 1
        FROM pg_constraint
