@@ -158,17 +158,19 @@ export function GuestManagementModal({ onClose }) {
 
       // Parse plus one (legacy CSV support)
       const plusOneRaw = getValue(row, ['Plus One', 'plusOne', 'PlusOne', '+1', 'Dependants', 'dependants']) || 'No';
-      const plusOneValue = String(plusOneRaw).toLowerCase();
-      const plusOne =
-        plusOneValue.includes('yes') ||
-        plusOneValue.includes('true') ||
-        plusOneValue === '1' ||
-        (plusOneValue !== '' && plusOneValue !== 'no' && plusOneValue !== 'none' && plusOneValue !== '-');
+      const plusOneValue = String(plusOneRaw).trim().toLowerCase();
+      const plusOneAsNumber = Number.parseInt(plusOneValue, 10);
+      const plusOne = Number.isInteger(plusOneAsNumber)
+        ? plusOneAsNumber > 0
+        : (plusOneValue.includes('yes') ||
+           plusOneValue.includes('true') ||
+           (plusOneValue !== '' && plusOneValue !== 'no' && plusOneValue !== 'none' && plusOneValue !== '-'));
 
       const guestCountRaw = getValue(row, ['Guest Count', 'guestCount', 'guest_count', 'Guests', 'guests', 'Party Size', 'partySize']);
       let guestCount = Number.parseInt(guestCountRaw, 10);
       if (!Number.isInteger(guestCount) || guestCount < 0) {
-        guestCount = plusOne ? 2 : 1;
+        // Numeric plus-one values > 1 represent a direct party size
+        guestCount = (Number.isInteger(plusOneAsNumber) && plusOneAsNumber > 1) ? plusOneAsNumber : (plusOne ? 2 : 1);
       }
 
       // Parse address and phone (optional fields) including address-book export headers.

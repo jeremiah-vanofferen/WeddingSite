@@ -232,11 +232,11 @@ To use these as required status checks, go to **Settings → Branches → Branch
 
 ## API Endpoints
 
-### Public (anonymous JWT required, except `/api/health`)
+### Public (anonymous JWT required, except `/api/health` and `/api/public/token`)
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/api/public/token` | Mint anonymous public access token |
+| `POST` | `/api/public/token` | Mint anonymous public access token (no token required) |
 | `GET` | `/api/public/settings` | Site settings and wedding details |
 | `GET` | `/api/public/guest-names` | Guest name list for RSVP/Contact autofill suggestions |
 | `GET` | `/api/public/guest-lookup` | Lookup field + suggestions for RSVP/Contact autofill |

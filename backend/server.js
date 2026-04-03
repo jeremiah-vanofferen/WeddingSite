@@ -265,8 +265,6 @@ app.get('/api/guests', authenticateToken, async (req, res) => {
 // Add new guest
 app.post('/api/guests', authenticateToken, async (req, res) => {
   try {
-    await ensureGuestCountColumn();
-
     const { name, email, phone, address, rsvp, plusOne, plus_one, guestCount, guest_count } = req.body;
 
     if (!name) {
@@ -303,8 +301,6 @@ app.post('/api/guests', authenticateToken, async (req, res) => {
 // Update guest
 app.put('/api/guests/:id', authenticateToken, async (req, res) => {
   try {
-    await ensureGuestCountColumn();
-
     const { id } = req.params;
     const { name, email, phone, address, rsvp, plusOne, plus_one, guestCount, guest_count } = req.body;
 
@@ -392,8 +388,6 @@ app.get('/api/guests/pending-approvals', authenticateToken, async (req, res) => 
 // Bulk import guests
 app.post('/api/guests/bulk', authenticateToken, async (req, res) => {
   try {
-    await ensureGuestCountColumn();
-
     const { guests, mode } = req.body;
 
     if (!Array.isArray(guests)) {
@@ -464,9 +458,6 @@ app.post('/api/guests/bulk', authenticateToken, async (req, res) => {
 // Public RSVP endpoint
 app.post('/api/rsvp', authenticatePublicToken, async (req, res) => {
   try {
-    await ensureGuestCountColumn();
-    await ensureApprovalStatusColumn();
-
     const { name, email, rsvp, guests } = req.body;
     if (!name || !email || !rsvp) {
       return sendBadRequest(res, 'Name, email, and RSVP status are required');
@@ -1144,9 +1135,17 @@ app.use('*', (req, res) => {
 
 // Start server only when run directly (not when required for testing)
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+  (async () => {
+    try {
+      await runMigrations();
+    } catch (error) {
+      console.error('Failed to run startup migrations:', error);
+      process.exit(1);
+    }
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  })();
 }
 
 // Graceful shutdown
@@ -1227,6 +1226,9 @@ async function ensureGuestCountColumn() {
       );
     }
 
+    // Ensure email column is nullable (changed from NOT NULL in init.sh)
+    await client.query('ALTER TABLE guests ALTER COLUMN email DROP NOT NULL');
+
     await client.query('COMMIT');
     guestCountColumnReady = true;
   } catch (error) {
@@ -1234,6 +1236,19 @@ async function ensureGuestCountColumn() {
     throw error;
   } finally {
     client.release();
+  }
+}
+
+async function runMigrations() {
+  if (process.env.NODE_ENV === 'test') {
+    return;
+  }
+  try {
+    await ensureGuestCountColumn();
+    await ensureApprovalStatusColumn();
+  } catch (error) {
+    console.error('Startup migration error:', error);
+    throw error;
   }
 }
 
