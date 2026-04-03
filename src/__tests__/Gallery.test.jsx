@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Gallery from '../pages/Gallery';

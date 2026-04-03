@@ -1,3 +1,4 @@
+/* Copyright 2026 Jeremiah Van Offeren */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -70,6 +71,9 @@
 
 .login-form {
   padding: 1.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .error-message {
@@ -83,7 +87,7 @@
 
 .submit-btn {
   width: 100%;
-  margin-top: 0.5rem;
+  margin-top: 2.5rem;
 }
 
 .demo-credentials {

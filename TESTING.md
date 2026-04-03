@@ -52,6 +52,20 @@ docker exec weddingsite-backend-1 npm test
 docker exec weddingsite-wedding-app-1 npx vitest run
 ```
 
+If you hit `429 Too many requests` during repeated local runs, restart the backend container to reset the in-memory limiter state:
+
+```bash
+docker restart weddingsite-backend-1
+```
+
+You can also set `RATE_LIMIT_MAX` and `STRICT_RATE_LIMIT_MAX` in `.env` to increase local limits when needed.
+
+Public endpoint auth note:
+
+- Outside `NODE_ENV=test`, public API routes require an anonymous JWT minted from `POST /api/public/token`.
+- Frontend helpers (`fetchArray`, `fetchJsonOrFallback`) and `getPublicAuthHeaders()` handle this automatically.
+- Backend tests run with `NODE_ENV=test`, so anonymous-token checks are bypassed by design.
+
 ### Locally
 
 Requires Node.js 22.x.

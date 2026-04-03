@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import Home from '../pages/Home';
@@ -42,7 +43,7 @@ describe('Home Page', () => {
       websiteName: 'Our Wedding',
       weddingLocation: 'The Grand Hall',
       weddingAddress: '123 Main St, Springfield',
-      weddingDate: '2026-08-08',
+      weddingDate: '2030-06-20',
       weddingTime: '16:00',
     });
 
@@ -71,7 +72,7 @@ describe('Home Page', () => {
       websiteName: 'Our Wedding',
       weddingLocation: 'The Grand Hall',
       weddingAddress: '123 Main St, Springfield',
-      weddingDate: '2026-08-08',
+      weddingDate: '2030-06-20',
       weddingTime: '16:00',
       registryUrl: 'https://www.example.com/registry',
     });

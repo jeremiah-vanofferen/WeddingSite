@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'

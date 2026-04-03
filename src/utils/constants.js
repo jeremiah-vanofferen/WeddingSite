@@ -1,4 +1,5 @@
-export const DEFAULT_WEDDING_TIME_ZONE = 'America/Chicago';
+// Copyright 2026 Jeremiah Van Offeren
+export const DEFAULT_WEDDING_TIME_ZONE = 'America/New_York';
 
 export const DEFAULT_SETTINGS = {
   websiteName: 'My Wedding',

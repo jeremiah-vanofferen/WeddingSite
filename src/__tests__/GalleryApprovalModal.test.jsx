@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import GalleryApprovalModal from '../components/GalleryApprovalModal';

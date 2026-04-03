@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { useState, useEffect } from 'react';
 import { PublicPhotoUploadModal } from '../components/PublicPhotoUploadModal';
 import { fetchArray } from '../utils/publicData';

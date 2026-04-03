@@ -17,7 +17,7 @@ A full-stack wedding website with a React frontend, Node.js/Express backend, and
 
 - **Home page** — Wedding details, countdown timer, and welcome message (all configurable via admin)
 - **Schedule page** — Publicly visible event timeline, managed from the admin panel
-- **RSVP page** — Guest self-service RSVP with party size and dietary notes; triggers email notification to admin
+- **RSVP page** — Guest self-service RSVP with party size; triggers email notification to admin
 - **Contact page** — Contact form that saves messages to the database and emails the admin
 - **Photo gallery** — Public gallery with lightbox viewing, featured-photo carousel support, and guest photo submission with admin approval
 - **Admin panel** — Password-protected dashboard with:
@@ -47,11 +47,15 @@ The frontend now uses shared utility helpers to reduce repeated request and sett
 - `src/utils/publicData.js` — public fetch helpers with safe fallbacks
 - `src/utils/settings.js` — shared settings/wedding-details merge and boolean coercion logic
 
+Public autofill helper:
+- `fetchGuestLookupSuggestions()` in `src/utils/publicData.js` loads `/api/public/guest-lookup` for RSVP/Contact suggestions.
+
 When adding frontend API calls:
 
 1. Use `requestJson` for admin/protected requests where non-2xx should throw.
 2. Use `publicData` helpers for public pages where graceful fallback is preferred.
-3. Reuse `mergeSettings` for settings normalization instead of duplicating boolean coercion.
+3. For direct public `fetch` calls, include anonymous public auth headers via `getPublicAuthHeaders()` from `src/utils/http.js`.
+4. Reuse `mergeSettings` for settings normalization instead of duplicating boolean coercion.
 
 ## Quick Start
 
@@ -84,6 +88,14 @@ ADMIN_EMAIL=your@gmail.com
 
 # Optional: pre-seed wedding registry URL in settings
 REGISTRY_LINK=https://example.com/your-registry
+
+# Optional: pre-seed wedding details in settings (first DB init only)
+WEDDING_DATE=2030-06-20
+WEDDING_TIME=16:00
+WEDDING_TIME_ZONE=America/New_York
+WEDDING_LOCATION=Celebration Venue
+WEDDING_ADDRESS=123 Celebration Ave, Hometown, ST 12345
+WEDDING_DESCRIPTION=Join us for our ceremony and reception.
 ```
 
 > **Gmail note:** Use an [App Password](https://support.google.com/accounts/answer/185833), not your regular Gmail password.
@@ -220,11 +232,14 @@ To use these as required status checks, go to **Settings → Branches → Branch
 
 ## API Endpoints
 
-### Public (no auth required)
+### Public (anonymous JWT required, except `/api/health` and `/api/public/token`)
 
 | Method | Endpoint | Description |
 |---|---|---|
+| `POST` | `/api/public/token` | Mint anonymous public access token (no token required) |
 | `GET` | `/api/public/settings` | Site settings and wedding details |
+| `GET` | `/api/public/guest-names` | Guest name list for RSVP/Contact autofill suggestions |
+| `GET` | `/api/public/guest-lookup` | Lookup field + suggestions for RSVP/Contact autofill |
 | `GET` | `/api/schedule` | Wedding day schedule |
 | `POST` | `/api/rsvp` | Submit a guest RSVP |
 | `POST` | `/api/messages` | Submit a contact message |
@@ -268,6 +283,27 @@ To use these as required status checks, go to **Settings → Branches → Branch
 | `POST` | `/api/gallery/upload` | Submit URL-based photo for approval |
 | `POST` | `/api/gallery/upload-file` | Submit file upload for approval |
 
+## Public Security Model
+
+Public endpoints are protected with short-lived anonymous JWTs (except `/api/health`). This reduces unauthenticated random traffic while keeping the public UX frictionless.
+
+Request flow:
+
+1. The frontend requests an anonymous token from `POST /api/public/token`.
+2. The backend returns a JWT with payload type `public` and short expiry (`PUBLIC_JWT_EXPIRES_IN`, default `2h`).
+3. The frontend includes `Authorization: Bearer <token>` on public API calls.
+4. The backend validates the token with `authenticatePublicToken` before serving public data or accepting public submissions.
+
+Frontend implementation notes:
+
+- `getPublicAuthHeaders()` in `src/utils/http.js` fetches/caches/refreshes the anonymous token.
+- `fetchJsonOrFallback()` and `fetchArray()` in `src/utils/publicData.js` automatically include public auth headers.
+- Direct public `fetch` calls (for example form submissions) should also call `getPublicAuthHeaders()`.
+
+Backend test note:
+
+- In `NODE_ENV=test`, public token enforcement is bypassed so existing endpoint tests can remain focused on route behavior.
+
 ## Environment Variables
 
 | Variable | Required | Description |
@@ -284,11 +320,20 @@ To use these as required status checks, go to **Settings → Branches → Branch
 | `GMAIL_PASS` | No | Gmail App Password |
 | `ADMIN_EMAIL` | No | Recipient address for email notifications |
 | `REGISTRY_LINK` | No | Seeds `settings.registryUrl` during first DB initialization |
+| `WEDDING_DATE` | No | Seeds `settings.weddingDate` during first DB initialization |
+| `WEDDING_TIME` | No | Seeds `settings.weddingTime` during first DB initialization |
+| `WEDDING_TIME_ZONE` | No | Seeds `settings.weddingTimeZone` during first DB initialization |
+| `WEDDING_LOCATION` | No | Seeds `settings.weddingLocation` during first DB initialization |
+| `WEDDING_ADDRESS` | No | Seeds `settings.weddingAddress` during first DB initialization |
+| `WEDDING_DESCRIPTION` | No | Seeds `settings.weddingDescription` during first DB initialization |
 | `VITE_API_URL` | No | Backend API base URL (default: `/api` — same origin via Vite proxy) |
+| `RATE_LIMIT_MAX` | No | General `/api/*` max requests per 15 minutes (default: `100` in production, `10000` in `test`/`development`) |
+| `STRICT_RATE_LIMIT_MAX` | No | Sensitive endpoint max requests per 15 minutes (default: `20` in production, `10000` in `test`/`development`) |
+| `PUBLIC_JWT_EXPIRES_IN` | No | Expiration for anonymous public JWTs minted by `/api/public/token` (default: `2h`) |
 
 > `ADMIN_USERNAME` and `ADMIN_PASSWORD` are consumed by the PostgreSQL container at database initialization. The password is hashed using bcrypt (`pgcrypto`) and stored in `admin_users` — the plaintext is never persisted.
 
-> `WEBSITE_NAME` and `REGISTRY_LINK` are also seed-time values in `init.sh`. Changing them after the Postgres volume already exists will not retroactively update existing rows in `settings` unless you re-seed or update them through the admin UI/API.
+> `WEBSITE_NAME`, `REGISTRY_LINK`, and `WEDDING_*` values are seed-time values in `init.sh`. Changing them after the Postgres volume already exists will not retroactively update existing rows in `settings` unless you re-seed or update them through the admin UI/API.
 
 ## RSVP Guest Count Rules
 

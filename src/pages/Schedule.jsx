@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { useState, useEffect } from 'react';
 import { fetchArray } from '../utils/publicData';
 import { formatTimeOfDay } from '../utils/dateTime';

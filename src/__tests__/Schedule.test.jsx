@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import Schedule from '../pages/Schedule';
@@ -58,7 +59,10 @@ describe('Schedule Page', () => {
 
     render(<Schedule />);
 
-    await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/schedule', undefined));
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith(
+      '/api/schedule',
+      expect.objectContaining({ headers: expect.any(Object) })
+    ));
     expect(screen.queryByRole('heading', { level: 3 })).not.toBeInTheDocument();
   });
 

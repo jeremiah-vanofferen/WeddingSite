@@ -1,6 +1,8 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { API_BASE_URL } from '../utils/api';
+import { getPublicAuthHeaders } from '../utils/http';
 
 export function PublicPhotoUploadModal({ onSuccess, onClose }) {
   const [caption, setCaption] = useState('');
@@ -36,18 +38,32 @@ export function PublicPhotoUploadModal({ onSuccess, onClose }) {
       if (caption) formData.append('caption', caption);
       if (submitterName) formData.append('submitterName', submitterName);
 
+      const headers = await getPublicAuthHeaders();
+
       const res = await fetch(`${API_BASE_URL}/gallery/upload-file`, {
         method: 'POST',
+        headers,
         body: formData,
       });
-      const data = await res.json();
+
+      let data = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
+
       if (!res.ok) {
-        throw new Error(data.error || 'Upload failed');
+        throw new Error(data?.error || 'Upload failed');
       }
 
       onSuccess();
     } catch (error) {
-      setUploadError(error.message || 'Upload failed. Please try again.');
+      if (error instanceof TypeError) {
+        setUploadError('Network error. Please try again.');
+      } else {
+        setUploadError(error.message || 'Upload failed. Please try again.');
+      }
     } finally {
       setUploading(false);
     }

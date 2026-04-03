@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 // GalleryApprovalModal.jsx
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
@@ -76,7 +77,11 @@ export function GalleryApprovalModal({ onClose }) {
                       </p>
                     )}
                     <p className="gallery-approval-date">
-                      {formatIsoDateTime(photo.uploaded_at, Intl.DateTimeFormat().resolvedOptions().timeZone)}
+                      {formatIsoDateTime(
+                        photo.uploaded_at,
+                        undefined,
+                        Intl.DateTimeFormat().resolvedOptions().timeZone
+                      )}
                     </p>
                     <div className="gallery-approval-actions">
                       <button

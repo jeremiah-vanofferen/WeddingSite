@@ -1,18 +1,38 @@
+// Copyright 2026 Jeremiah Van Offeren
 import '../pages/pages.css';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '../utils/api';
+import { getPublicAuthHeaders } from '../utils/http';
+import { fetchGuestLookupSuggestions } from '../utils/publicData';
 
 export default function RSVP() {
   const [form, setForm] = useState({
     name: '',
     email: '',
     attending: '',
-    guests: 0,
-    dietary: ''
+    guests: 0
   });
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [guestSuggestions, setGuestSuggestions] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadGuestNames = async () => {
+      const data = await fetchGuestLookupSuggestions();
+      if (isMounted) {
+        setGuestSuggestions(data.suggestions);
+      }
+    };
+
+    loadGuestNames();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -24,15 +44,15 @@ export default function RSVP() {
     setError('');
     setSubmitting(true);
     try {
+      const headers = await getPublicAuthHeaders({ 'Content-Type': 'application/json' });
       const response = await fetch(`${API_BASE_URL}/rsvp`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           name: form.name,
           email: form.email,
           rsvp: form.attending,
-          guests: Number(form.guests),
-          dietary: form.dietary
+          guests: Number(form.guests)
         })
       });
 
@@ -47,10 +67,14 @@ export default function RSVP() {
           data = null;
         }
 
-        setError(data.error || 'Submission failed. Please try again.');
+        setError(data?.error || 'Submission failed. Please try again.');
       }
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (error) {
+      if (error instanceof TypeError) {
+        setError('Network error. Please try again.');
+      } else {
+        setError('Submission failed. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -82,7 +106,7 @@ export default function RSVP() {
           <ul className="feature-list">
             <li>Include yourself in the guest count.</li>
             <li>If you cannot attend, set guests to 0.</li>
-            <li>Add dietary information so we can plan ahead.</li>
+            <li>Use the name on your invitation for faster matching.</li>
           </ul>
           <p className="supporting-copy">You can update us again later if your plans change.</p>
         </div>
@@ -92,7 +116,12 @@ export default function RSVP() {
           <form className="contact-form" onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="rsvp-name">Name</label>
-              <input id="rsvp-name" name="name" type="text" value={form.name} onChange={handleChange} required />
+              <input id="rsvp-name" name="name" type="text" list="rsvp-guest-suggestions" value={form.name} onChange={handleChange} required />
+              <datalist id="rsvp-guest-suggestions">
+                {guestSuggestions.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
             </div>
             <div className="form-group">
               <label htmlFor="rsvp-email">Email</label>
@@ -111,10 +140,6 @@ export default function RSVP() {
                 <label htmlFor="rsvp-guests">Number of Guests (including you)</label>
                 <input id="rsvp-guests" name="guests" type="number" min="0" max="10" value={form.guests} onChange={handleChange} required />
               </div>
-            </div>
-            <div className="form-group">
-              <label htmlFor="rsvp-dietary">Dietary Restrictions</label>
-              <input id="rsvp-dietary" name="dietary" type="text" value={form.dietary} onChange={handleChange} placeholder="Optional" />
             </div>
             {error && <p className="form-error" role="alert">{error}</p>}
             <button type="submit" disabled={submitting}>{submitting ? 'Submitting…' : 'Submit RSVP'}</button>

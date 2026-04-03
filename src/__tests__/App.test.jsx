@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { render, screen, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import App from '../App';

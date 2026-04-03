@@ -1,4 +1,27 @@
+// Copyright 2026 Jeremiah Van Offeren
 import js from '@eslint/js';
+
+const HEADER = '// Copyright 2026 Jeremiah Van Offeren';
+const copyrightHeader = {
+  meta: {
+    type: 'suggestion',
+    fixable: 'code',
+    messages: { missing: `File must start with: ${HEADER}` },
+  },
+  create(context) {
+    return {
+      Program(node) {
+        const src = context.sourceCode ?? context.getSourceCode();
+        if (src.getText().startsWith(HEADER)) return;
+        context.report({
+          node,
+          messageId: 'missing',
+          fix: (fixer) => fixer.replaceTextRange([0, 0], HEADER + '\n'),
+        });
+      },
+    };
+  },
+};
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 
@@ -7,6 +30,7 @@ export default [
   {
     files: ['src/**/*.{js,jsx}'],
     plugins: {
+      'copyright-header': { rules: { required: copyrightHeader } },
       react: reactPlugin,
       'react-hooks': reactHooksPlugin,
     },
@@ -21,6 +45,8 @@ export default [
         console: 'readonly',
         File: 'readonly',
         CustomEvent: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
       },
       parserOptions: {
         ecmaFeatures: { jsx: true },
@@ -38,6 +64,8 @@ export default [
       'no-unused-vars': ['warn', { varsIgnorePattern: '^_', argsIgnorePattern: '^_' }],
       // Prevent console.log slipping into production (allow warn/error)
       'no-console': ['warn', { allow: ['warn', 'error'] }],
+      // Copyright header required on all source files
+      'copyright-header/required': 'error',
       // React 17+ JSX transform — no need to import React in every file
       'react/react-in-jsx-scope': 'off',
       // PropTypes enforced

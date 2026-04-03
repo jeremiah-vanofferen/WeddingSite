@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { DEFAULT_WEDDING_TIME_ZONE } from './constants';
 
 function parseDateString(dateString) {
@@ -26,6 +27,33 @@ export function resolveTimeZone(timeZone) {
   }
 }
 
+function resolveLocale(locale) {
+  try {
+    if (!locale) {
+      return undefined;
+    }
+
+    Intl.getCanonicalLocales(locale);
+    return locale;
+  } catch {
+    return undefined;
+  }
+}
+
+function normalizeLocaleAndTimeZone(locale, timeZone) {
+  if (!timeZone && typeof locale === 'string' && locale.includes('/')) {
+    return {
+      locale: undefined,
+      timeZone: resolveTimeZone(locale),
+    };
+  }
+
+  return {
+    locale: resolveLocale(locale),
+    timeZone: resolveTimeZone(timeZone),
+  };
+}
+
 export function formatWeddingDate(dateString, locale = undefined) {
   const parsedDate = parseDateString(dateString);
   if (!parsedDate) {
@@ -33,7 +61,7 @@ export function formatWeddingDate(dateString, locale = undefined) {
   }
 
   const date = new Date(Date.UTC(parsedDate.year, parsedDate.month - 1, parsedDate.day, 12, 0, 0));
-  return new Intl.DateTimeFormat(locale, {
+  return new Intl.DateTimeFormat(resolveLocale(locale), {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -53,7 +81,7 @@ export function formatTimeOfDay(timeString, locale = undefined) {
   }
 
   const date = new Date(Date.UTC(1970, 0, 1, hour, minute, 0));
-  return new Intl.DateTimeFormat(locale, {
+  return new Intl.DateTimeFormat(resolveLocale(locale), {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
@@ -71,11 +99,13 @@ export function formatIsoDate(isoString, locale = undefined, timeZone = undefine
     return '';
   }
 
-  return new Intl.DateTimeFormat(locale, {
+  const normalized = normalizeLocaleAndTimeZone(locale, timeZone);
+
+  return new Intl.DateTimeFormat(normalized.locale, {
     year: 'numeric',
     month: 'numeric',
     day: 'numeric',
-    timeZone: resolveTimeZone(timeZone),
+    timeZone: normalized.timeZone,
   }).format(date);
 }
 
@@ -89,13 +119,15 @@ export function formatIsoDateTime(isoString, locale = undefined, timeZone = unde
     return '';
   }
 
-  return new Intl.DateTimeFormat(locale, {
+  const normalized = normalizeLocaleAndTimeZone(locale, timeZone);
+
+  return new Intl.DateTimeFormat(normalized.locale, {
     year: 'numeric',
     month: 'numeric',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
-    timeZone: resolveTimeZone(timeZone),
+    timeZone: normalized.timeZone,
   }).format(date);
 }
 
@@ -106,7 +138,7 @@ export function getTimeZoneLabel(timeZone, locale = undefined, dateString = unde
     ? new Date(Date.UTC(parsedDate.year, parsedDate.month - 1, parsedDate.day, 12, 0, 0))
     : new Date();
 
-  const formatter = new Intl.DateTimeFormat(locale, {
+  const formatter = new Intl.DateTimeFormat(resolveLocale(locale), {
     timeZone: safeTimeZone,
     timeZoneName: 'short',
   });

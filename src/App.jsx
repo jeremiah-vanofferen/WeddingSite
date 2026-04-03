@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { AuthProvider } from './utils/AuthContext'

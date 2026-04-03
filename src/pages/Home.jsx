@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { useState, useEffect } from 'react';
 import { PhotoCarousel } from '../components/PhotoCarousel';
 import { DEFAULT_SETTINGS, DEFAULT_WEDDING_TIME_ZONE } from '../utils/constants';
@@ -8,12 +9,12 @@ import '../pages/pages.css';
 
 export default function Home() {
   const [weddingDetails, setWeddingDetails] = useState({
-    date: '2026-08-08',
+    date: '2030-06-20',
     time: '16:00',
     timeZone: DEFAULT_WEDDING_TIME_ZONE,
-    location: 'Windpoint Lighthouse',
-    address: '4725 Lighthouse Drive, Wind Point, WI 53402',
-    description: 'Join us for a beautiful outdoor ceremony followed by an elegant reception.',
+    location: 'Celebration Venue',
+    address: '123 Celebration Ave, Hometown, ST 12345',
+    description: 'Join us for our ceremony and reception.',
     registryUrl: ''
   });
 

@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { useState } from 'react';
 import { useAuth } from '../utils/AuthContext';
 import PropTypes from 'prop-types';

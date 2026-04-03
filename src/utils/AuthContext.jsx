@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { createContext, useState, useContext, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { API_BASE_URL } from './api';

@@ -1,16 +1,13 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GuestManagementModal, AddGuestModal } from '../components/GuestManagementModal';
 import Papa from 'papaparse';
+import { mockGuests } from './fixtures/guests';
 
 vi.mock('papaparse', () => ({
-  default: { parse: vi.fn() }
+  default: { parse: vi.fn(), unparse: vi.fn(() => 'Name,Email\nAlice Smith,alice@example.com') }
 }));
-
-const mockGuests = [
-  { id: 1, name: 'Alice Smith', email: 'alice@example.com', phone: '555-1234', address: '1 Main St', rsvp: 'Yes', plusOne: true },
-  { id: 2, name: 'Bob Jones', email: 'bob@example.com', phone: '', address: '', rsvp: 'Pending', plusOne: false },
-];
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -57,18 +54,18 @@ describe('GuestManagementModal', () => {
 
   it('shows upload preview after successful CSV parse', async () => {
     Papa.parse.mockImplementation((_file, opts) => {
-      opts.complete({ data: [{ Name: 'Charlie Brown', Email: 'charlie@test.com' }] });
+      opts.complete({ data: [{ Name: 'Guest Three', Email: 'guest.three@test.local' }] });
     });
 
     render(<GuestManagementModal onClose={vi.fn()} />);
     await waitFor(() => screen.getByText('Alice Smith'));
 
     const fileInput = document.querySelector('#csv-file');
-    const file = new File(['Name,Email\nCharlie Brown,charlie@test.com'], 'guests.csv', { type: 'text/csv' });
+    const file = new File(['Name,Email\nGuest Three,guest.three@test.local'], 'guests.csv', { type: 'text/csv' });
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => expect(screen.getByText(/Preview/i)).toBeInTheDocument());
-    expect(screen.getByText('Charlie Brown')).toBeInTheDocument();
+    expect(screen.getByText('Guest Three')).toBeInTheDocument();
   });
 
   it('shows error when CSV parse fails', async () => {
@@ -88,10 +85,10 @@ describe('GuestManagementModal', () => {
 
   it('calls bulk import API when Import Guests is clicked', async () => {
     Papa.parse.mockImplementation((_file, opts) => {
-      opts.complete({ data: [{ Name: 'Dave Lee', Email: 'dave@test.com' }] });
+      opts.complete({ data: [{ Name: 'Guest Four', Email: 'guest.four@test.local' }] });
     });
 
-    const bulkResponse = [...mockGuests, { id: 3, name: 'Dave Lee', email: 'dave@test.com', rsvp: 'Pending', plusOne: false }];
+    const bulkResponse = [...mockGuests, { id: 3, name: 'Guest Four', email: 'guest.four@test.local', rsvp: 'Pending', plusOne: false }];
     global.fetch = vi.fn((url) => {
       if (url.includes('/bulk')) return Promise.resolve({ ok: true, json: () => Promise.resolve(bulkResponse) });
       return Promise.resolve({ ok: true, json: () => Promise.resolve(mockGuests) });
@@ -101,7 +98,7 @@ describe('GuestManagementModal', () => {
     await waitFor(() => screen.getByText('Alice Smith'));
 
     const fileInput = document.querySelector('#csv-file');
-    const file = new File(['Name,Email\nDave Lee,dave@test.com'], 'guests.csv', { type: 'text/csv' });
+    const file = new File(['Name,Email\nGuest Four,guest.four@test.local'], 'guests.csv', { type: 'text/csv' });
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => screen.getByText('Import Guests'));
@@ -117,19 +114,19 @@ describe('GuestManagementModal', () => {
 
   it('clears upload preview when Cancel is clicked', async () => {
     Papa.parse.mockImplementation((_file, opts) => {
-      opts.complete({ data: [{ Name: 'Eve Adams', Email: 'eve@test.com' }] });
+      opts.complete({ data: [{ Name: 'Guest Five', Email: 'guest.five@test.local' }] });
     });
 
     render(<GuestManagementModal onClose={vi.fn()} />);
     await waitFor(() => screen.getByText('Alice Smith'));
 
     const fileInput = document.querySelector('#csv-file');
-    const file = new File(['Name,Email\nEve Adams,eve@test.com'], 'guests.csv', { type: 'text/csv' });
+    const file = new File(['Name,Email\nGuest Five,guest.five@test.local'], 'guests.csv', { type: 'text/csv' });
     fireEvent.change(fileInput, { target: { files: [file] } });
-    await waitFor(() => screen.getByText('Eve Adams'));
+    await waitFor(() => screen.getByText('Guest Five'));
 
     fireEvent.click(screen.getByText('Cancel'));
-    await waitFor(() => expect(screen.queryByText('Eve Adams')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('Guest Five')).not.toBeInTheDocument());
   });
 
   it('shows stat counts correctly', async () => {
@@ -150,6 +147,46 @@ describe('GuestManagementModal', () => {
     expect(mergeRadio).toBeChecked();
     fireEvent.click(replaceRadio);
     expect(replaceRadio).toBeChecked();
+  });
+
+  it('exports the current guest list as CSV', async () => {
+    const originalCreateObjectURL = window.URL.createObjectURL;
+    const originalRevokeObjectURL = window.URL.revokeObjectURL;
+
+    window.URL.createObjectURL = vi.fn(() => 'blob:guests-csv');
+    window.URL.revokeObjectURL = vi.fn();
+
+    const originalCreateElement = document.createElement.bind(document);
+    const downloadLink = originalCreateElement('a');
+    const clickSpy = vi.spyOn(downloadLink, 'click').mockImplementation(() => {});
+    const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
+      if (String(tagName).toLowerCase() === 'a') {
+        return downloadLink;
+      }
+      return originalCreateElement(tagName);
+    });
+
+    render(<GuestManagementModal onClose={vi.fn()} />);
+    await waitFor(() => screen.getByText('Alice Smith'));
+
+    fireEvent.click(screen.getByRole('button', { name: /export guests csv/i }));
+
+    expect(Papa.unparse).toHaveBeenCalledWith(expect.arrayContaining([
+      expect.objectContaining({
+        Name: 'Alice Smith',
+        Email: 'alice@example.com'
+      })
+    ]));
+    expect(window.URL.createObjectURL).toHaveBeenCalledTimes(1);
+    expect(downloadLink.download).toMatch(/guest-list-\d{4}-\d{2}-\d{2}\.csv/);
+    expect(downloadLink.href).toBe('blob:guests-csv');
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(window.URL.revokeObjectURL).toHaveBeenCalledWith('blob:guests-csv');
+
+    createElementSpy.mockRestore();
+    clickSpy.mockRestore();
+    window.URL.createObjectURL = originalCreateObjectURL;
+    window.URL.revokeObjectURL = originalRevokeObjectURL;
   });
 
   it('updates RSVP status via dropdown and calls API', async () => {
@@ -366,7 +403,7 @@ describe('GuestManagementModal', () => {
       expect(screen.getByText(/1 validation error/i)).toBeInTheDocument();
     });
 
-    it('parses RSVP "Attending" as Yes and Plus One "Yes" as true', async () => {
+    it('parses RSVP "Attending" as Yes and derives guest count from legacy Plus One field', async () => {
       Papa.parse.mockImplementation((_file, opts) => {
         opts.complete({
           data: [{ Name: 'Tom Guest', Email: 'tom@example.com', RSVP: 'Attending', 'Plus One': 'Yes' }],
@@ -381,10 +418,10 @@ describe('GuestManagementModal', () => {
 
       await waitFor(() => screen.getByText('Tom Guest'));
       expect(screen.getByText('tom@example.com')).toBeInTheDocument();
-      // plusOne=true renders as 'Yes' in the preview table
+      // Legacy Plus One=Yes should now render guest count of 2 in preview.
       const rows = screen.getAllByRole('row');
       const guestRow = rows.find(row => row.textContent.includes('Tom Guest'));
-      expect(guestRow.textContent).toContain('Yes');
+      expect(guestRow.textContent).toContain('2');
     });
 
     it('shows "and X more guests" row when CSV preview exceeds 5 rows', async () => {
@@ -405,6 +442,37 @@ describe('GuestManagementModal', () => {
       await waitFor(() => screen.getByText('Guest 1'));
       expect(screen.getByText(/1 more guest/i)).toBeInTheDocument();
     });
+
+    it('parses address-book CSV headers and allows missing email', async () => {
+      Papa.parse.mockImplementation((_file, opts) => {
+        opts.complete({
+          data: [
+            {
+              'First name': 'Sample One',
+              'Last Name': 'Sample Two',
+              Dependants: '',
+              'Street address': '100 Example Ave',
+              'Addtess Line 2': 'Unit 2',
+              City: 'Exampletown',
+              State: 'EX',
+              Zip: '12345',
+              Phone: '555-000-0000',
+              Email: ''
+            }
+          ]
+        });
+      });
+
+      render(<GuestManagementModal onClose={vi.fn()} />);
+      await waitFor(() => screen.getByText('Alice Smith'));
+
+      const fileInput = document.querySelector('#csv-file');
+      fireEvent.change(fileInput, { target: { files: [new File([''], 'address-book.csv', { type: 'text/csv' })] } });
+
+      await waitFor(() => screen.getByText('Sample One Sample Two'));
+      // Email is now optional, so no fallback is generated when missing
+      expect(screen.getByText(/100 Example Ave, Unit 2, Exampletown, EX 12345/i)).toBeInTheDocument();
+    });
 });
 
 describe('AddGuestModal', () => {
@@ -415,7 +483,7 @@ describe('AddGuestModal', () => {
     expect(screen.getByLabelText('Phone Number')).toBeInTheDocument();
     expect(screen.getByLabelText('Address')).toBeInTheDocument();
     expect(screen.getByLabelText('RSVP Status')).toBeInTheDocument();
-    expect(screen.getByLabelText('Plus One Allowed')).toBeInTheDocument();
+    expect(screen.getByLabelText('Guest Count (including this guest)')).toBeInTheDocument();
   });
 
   it('calls onSave with form data on submit', () => {
@@ -424,9 +492,10 @@ describe('AddGuestModal', () => {
 
     fireEvent.change(screen.getByLabelText('Guest Name'), { target: { value: 'Jane Doe' } });
     fireEvent.change(screen.getByLabelText('Email Address'), { target: { value: 'jane@example.com' } });
+    fireEvent.change(screen.getByLabelText('Guest Count (including this guest)'), { target: { value: '3' } });
     fireEvent.click(screen.getByText('Add Guest'));
 
-    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ name: 'Jane Doe', email: 'jane@example.com' }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ name: 'Jane Doe', email: 'jane@example.com', guestCount: 3, plusOne: true }));
   });
 
   it('calls onClose when Cancel is clicked', () => {

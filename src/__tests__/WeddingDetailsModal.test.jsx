@@ -1,13 +1,14 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { WeddingDetailsModal, ViewDetailsModal } from '../components/WeddingDetailsModal';
 
 const sampleDetails = {
-  date: '2026-08-08',
+  date: '2030-06-20',
   time: '16:00',
-  timeZone: 'America/Chicago',
-  location: 'Windpoint Lighthouse',
-  address: '4725 Lighthouse Drive, Wind Point, WI 53402',
+  timeZone: 'America/New_York',
+  location: 'Celebration Venue',
+  address: '123 Celebration Ave, Hometown, ST 12345',
   description: 'A beautiful outdoor ceremony.',
   registryUrl: 'https://www.example.com/registry',
 };
@@ -22,11 +23,11 @@ describe('WeddingDetailsModal', () => {
 
   it('renders all form fields with the provided details', () => {
     render(<WeddingDetailsModal details={sampleDetails} onSave={onSave} onClose={onClose} />);
-    expect(screen.getByLabelText(/wedding date/i)).toHaveValue('2026-08-08');
+    expect(screen.getByLabelText(/wedding date/i)).toHaveValue('2030-06-20');
     expect(screen.getByLabelText(/^wedding time$/i)).toHaveValue('16:00');
-    expect(screen.getByLabelText(/wedding time zone/i)).toHaveValue('America/Chicago');
-    expect(screen.getByLabelText(/venue name/i)).toHaveValue('Windpoint Lighthouse');
-    expect(screen.getByLabelText(/venue address/i)).toHaveValue('4725 Lighthouse Drive, Wind Point, WI 53402');
+    expect(screen.getByLabelText(/wedding time zone/i)).toHaveValue('America/New_York');
+    expect(screen.getByLabelText(/venue name/i)).toHaveValue('Celebration Venue');
+    expect(screen.getByLabelText(/venue address/i)).toHaveValue('123 Celebration Ave, Hometown, ST 12345');
     expect(screen.getByLabelText(/description/i)).toHaveValue('A beautiful outdoor ceremony.');
     expect(screen.getByLabelText(/registry link/i)).toHaveValue('https://www.example.com/registry');
   });
@@ -71,8 +72,8 @@ describe('WeddingDetailsModal', () => {
 describe('ViewDetailsModal', () => {
   it('displays wedding details', () => {
     render(<ViewDetailsModal details={sampleDetails} onClose={vi.fn()} />);
-    expect(screen.getByText('Windpoint Lighthouse')).toBeInTheDocument();
-    expect(screen.getByText('4725 Lighthouse Drive, Wind Point, WI 53402')).toBeInTheDocument();
+    expect(screen.getByText('Celebration Venue')).toBeInTheDocument();
+    expect(screen.getByText('123 Celebration Ave, Hometown, ST 12345')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /view our registry/i })).toBeInTheDocument();
     expect(screen.getByText('A beautiful outdoor ceremony.')).toBeInTheDocument();
   });

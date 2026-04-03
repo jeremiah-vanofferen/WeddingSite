@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { DEFAULT_WEDDING_TIME_ZONE } from './constants';
 
 const REGION_CODE_TIMEZONES = {

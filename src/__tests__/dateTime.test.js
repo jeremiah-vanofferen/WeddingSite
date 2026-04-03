@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { describe, it, expect } from 'vitest';
 import {
   resolveTimeZone,
@@ -119,6 +120,12 @@ describe('formatIsoDateTime', () => {
 
   it('returns a formatted datetime string for a valid ISO string', () => {
     const result = formatIsoDateTime('2026-06-15T14:30:00.000Z', 'en-US', 'UTC');
+    expect(result).toBeTruthy();
+    expect(result).toContain('2026');
+  });
+
+  it('treats a timezone passed as the second argument as a timezone fallback', () => {
+    const result = formatIsoDateTime('2026-06-15T14:30:00.000Z', 'America/Chicago');
     expect(result).toBeTruthy();
     expect(result).toContain('2026');
   });

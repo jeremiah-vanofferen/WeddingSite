@@ -1,15 +1,26 @@
+// Copyright 2026 Jeremiah Van Offeren
 // ScheduleModal.jsx
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { formatTimeOfDay } from '../utils/dateTime';
+
+const sortEventsByTime = (events) => [...events].sort((a, b) => a.time.localeCompare(b.time));
 
 export function ScheduleModal({
   schedule,
   onSave,
   onClose,
 }) {
-  const [scheduleList, setScheduleList] = useState(schedule);
+  const [scheduleList, setScheduleList] = useState(() => sortEventsByTime(schedule));
   const [editingEvent, setEditingEvent] = useState(null);
+  const [swapAnimation, setSwapAnimation] = useState(null);
+  const swapTimerRef = useRef(null);
+
+  useEffect(() => () => {
+    if (swapTimerRef.current) {
+      clearTimeout(swapTimerRef.current);
+    }
+  }, []);
 
   const handleEdit = (event) => {
     setEditingEvent(event);
@@ -19,32 +30,74 @@ export function ScheduleModal({
     const updatedList = scheduleList.map(event =>
       event.id === updatedEvent.id ? updatedEvent : event
     );
-    setScheduleList(updatedList);
-    onSave(updatedList);
+    const sortedList = sortEventsByTime(updatedList);
+    setScheduleList(sortedList);
+    onSave(sortedList);
     setEditingEvent(null);
   };
 
   const handleDelete = (eventId) => {
     if (window.confirm('Are you sure you want to delete this event?')) {
       const updatedList = scheduleList.filter(event => event.id !== eventId);
-      setScheduleList(updatedList);
-      onSave(updatedList);
+      const sortedList = sortEventsByTime(updatedList);
+      setScheduleList(sortedList);
+      onSave(sortedList);
     }
   };
 
   const moveEvent = (eventId, direction) => {
     const currentIndex = scheduleList.findIndex(event => event.id === eventId);
-    if (direction === 'up' && currentIndex > 0) {
-      const newList = [...scheduleList];
-      [newList[currentIndex - 1], newList[currentIndex]] = [newList[currentIndex], newList[currentIndex - 1]];
-      setScheduleList(newList);
-      onSave(newList);
-    } else if (direction === 'down' && currentIndex < scheduleList.length - 1) {
-      const newList = [...scheduleList];
-      [newList[currentIndex], newList[currentIndex + 1]] = [newList[currentIndex + 1], newList[currentIndex]];
-      setScheduleList(newList);
-      onSave(newList);
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= scheduleList.length) {
+      return;
     }
+
+    const newList = [...scheduleList];
+    const currentEvent = newList[currentIndex];
+    const targetEvent = newList[targetIndex];
+
+    newList[currentIndex] = {
+      ...currentEvent,
+      time: targetEvent.time,
+    };
+
+    newList[targetIndex] = {
+      ...targetEvent,
+      time: currentEvent.time,
+    };
+
+    const sortedList = sortEventsByTime(newList);
+    setScheduleList(sortedList);
+    onSave(sortedList);
+
+    setSwapAnimation({ fromId: currentEvent.id, toId: targetEvent.id, direction });
+    if (swapTimerRef.current) {
+      clearTimeout(swapTimerRef.current);
+    }
+    swapTimerRef.current = setTimeout(() => {
+      setSwapAnimation(null);
+    }, 360);
+  };
+
+  const getSwapClassName = (eventId) => {
+    if (!swapAnimation) {
+      return '';
+    }
+
+    if (eventId === swapAnimation.fromId) {
+      return swapAnimation.direction === 'up'
+        ? 'timeline-item-nudge-up'
+        : 'timeline-item-nudge-down';
+    }
+
+    if (eventId === swapAnimation.toId) {
+      return swapAnimation.direction === 'up'
+        ? 'timeline-item-nudge-down'
+        : 'timeline-item-nudge-up';
+    }
+
+    return '';
   };
 
   return (
@@ -57,17 +110,18 @@ export function ScheduleModal({
         <div className="admin-modal-body">
           <div className="schedule-timeline">
             {scheduleList
-              .sort((a, b) => a.time.localeCompare(b.time))
               .map((event, index) => (
-                <div key={event.id} className="timeline-item">
+                <div key={event.id} className={`timeline-item ${getSwapClassName(event.id)}`}>
                   <div className="timeline-marker"></div>
                   <div className="timeline-content">
                     <div className="event-header">
-                      <h4>
-                        <span className="event-time-badge">
+                      <h4 className="event-title-row">
+                        <span
+                          className={`event-time-badge ${swapAnimation && (event.id === swapAnimation.fromId || event.id === swapAnimation.toId) ? 'event-time-badge-swapped' : ''}`}
+                        >
                           {formatTimeOfDay(event.time)}
                         </span>
-                        {event.event}
+                        <span className="event-title-text">{event.event}</span>
                       </h4>
                       <div className="event-actions">
                         <button

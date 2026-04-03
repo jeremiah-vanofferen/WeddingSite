@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PhotoCarousel } from '../components/PhotoCarousel';
@@ -284,5 +285,36 @@ describe('PhotoCarousel', () => {
     fireEvent.mouseDown(screen.getByRole('button', { name: 'Next photo' }));
 
     expect(screen.getByRole('img', { name: 'Second photo' })).toBeInTheDocument();
+  });
+
+  it('shows a photo empty state when no featured images are available', async () => {
+    global.fetch = vi.fn((url) => {
+      if (String(url).includes('/public/settings')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            carouselSpeed: '2',
+            carouselTransition: 'fade',
+          }),
+        });
+      }
+
+      if (String(url).includes('/gallery/carousel/featured')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      }
+
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+    });
+
+    render(<PhotoCarousel />);
+
+    await waitFor(() => {
+      expect(screen.getByText('No Photos Yet')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Photos will appear here once they are uploaded.')).toBeInTheDocument();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 });

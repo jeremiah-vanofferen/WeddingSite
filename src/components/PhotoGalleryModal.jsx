@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 // PhotoGalleryModal.jsx
 import { useRef, useState } from 'react';
 import PropTypes from 'prop-types';
@@ -146,31 +147,35 @@ export function AddPhotoModal({ onSave, onClose }) {
   const [uploadError, setUploadError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [selectedCount, setSelectedCount] = useState(0);
   const fileInputRef = useRef(null);
 
   const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
+    const files = Array.from(e.target.files || []);
+    const file = files[0];
     if (!file) {
       setPreviewUrl('');
+      setSelectedCount(0);
       return;
     }
+    setSelectedCount(files.length);
     setPreviewUrl(window.URL.createObjectURL(file));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setUploadError('');
-    const file = fileInputRef.current?.files?.[0];
+    const files = Array.from(fileInputRef.current?.files || []);
 
-    if (!file) {
-      setUploadError('Please select an image file.');
+    if (files.length === 0) {
+      setUploadError('Please select at least one image file.');
       return;
     }
 
     try {
       setUploading(true);
       const formData = new window.FormData();
-      formData.append('photo', file);
+      files.forEach((file) => formData.append('photo', file));
       if (caption) formData.append('caption', caption);
       if (submitterName) formData.append('submitterName', submitterName);
 
@@ -184,7 +189,7 @@ export function AddPhotoModal({ onSave, onClose }) {
         'Upload failed'
       );
 
-      onSave(data.photo);
+      onSave(Array.isArray(data.photos) ? data.photos : [data.photo]);
     } catch (error) {
       setUploadError(error.message || 'Upload failed. Please try again.');
     } finally {
@@ -202,12 +207,13 @@ export function AddPhotoModal({ onSave, onClose }) {
         <form className="admin-modal-body admin-form" onSubmit={handleSubmit}>
           {uploadError && <p className="form-error">{uploadError}</p>}
           <div className="form-group">
-            <label htmlFor="photo">Photo File</label>
+            <label htmlFor="photo">Photo Files</label>
             <input
               id="photo"
               name="photo"
               type="file"
               accept="image/jpeg,image/png,image/gif,image/webp"
+              multiple
               onChange={handleFileChange}
               ref={fileInputRef}
               required
@@ -237,7 +243,9 @@ export function AddPhotoModal({ onSave, onClose }) {
           </div>
           {previewUrl && (
             <div className="photo-preview">
-              <h4>Preview:</h4>
+              <h4>
+                Preview{selectedCount > 1 ? ` (first of ${selectedCount} selected)` : ''}:
+              </h4>
               <div className="photo-image-container photo-preview-frame">
                 <img
                   src={previewUrl}

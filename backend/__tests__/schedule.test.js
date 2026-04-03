@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 jest.mock('dotenv', () => ({ config: jest.fn() }));
 
 jest.mock('nodemailer', () => ({
@@ -145,6 +146,15 @@ describe('PUT /api/schedule (reorder)', () => {
     expect(res.body.error).toBe('events must be an array');
   });
 
+  it('returns 400 when an event is missing required fields', async () => {
+    const res = await request(app)
+      .put('/api/schedule')
+      .set('Authorization', AUTH)
+      .send({ events: [{ id: 1, time: '14:00' }] }); // missing 'event'
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('events[0] must have id, time, and event');
+  });
+
   it('reorders events and returns the updated list', async () => {
     const client = makeClient();
     client.query.mockResolvedValue({});
@@ -157,7 +167,7 @@ describe('PUT /api/schedule (reorder)', () => {
     const res = await request(app)
       .put('/api/schedule')
       .set('Authorization', AUTH)
-      .send({ events: [{ id: 2 }, { id: 1 }] });
+      .send({ events: [{ id: 2, time: '14:00', event: 'Ceremony' }, { id: 1, time: '15:00', event: 'Reception' }] });
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(2);
@@ -174,7 +184,7 @@ describe('PUT /api/schedule (reorder)', () => {
     const res = await request(app)
       .put('/api/schedule')
       .set('Authorization', AUTH)
-      .send({ events: [{ id: 1 }] });
+      .send({ events: [{ id: 1, time: '14:00', event: 'Ceremony' }] });
 
     expect(res.status).toBe(500);
     expect(client.query).toHaveBeenCalledWith('ROLLBACK');

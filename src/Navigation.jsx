@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from './utils/AuthContext';

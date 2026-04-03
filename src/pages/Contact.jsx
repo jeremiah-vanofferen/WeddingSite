@@ -1,5 +1,8 @@
-import { useState } from 'react';
+// Copyright 2026 Jeremiah Van Offeren
+import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '../utils/api';
+import { getPublicAuthHeaders } from '../utils/http';
+import { fetchGuestLookupSuggestions } from '../utils/publicData';
 import '../pages/pages.css';
 
 export default function Contact() {
@@ -7,6 +10,24 @@ export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [guestSuggestions, setGuestSuggestions] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadGuestNames = async () => {
+      const data = await fetchGuestLookupSuggestions();
+      if (isMounted) {
+        setGuestSuggestions(data.suggestions);
+      }
+    };
+
+    loadGuestNames();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -18,9 +39,10 @@ export default function Contact() {
     setError('');
     setSubmitting(true);
     try {
+      const headers = await getPublicAuthHeaders({ 'Content-Type': 'application/json' });
       const response = await fetch(`${API_BASE_URL}/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(form)
       });
 
@@ -35,10 +57,14 @@ export default function Contact() {
           data = null;
         }
 
-        setError(data.error || 'Submission failed. Please try again.');
+        setError(data?.error || 'Submission failed. Please try again.');
       }
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (error) {
+      if (error instanceof TypeError) {
+        setError('Network error. Please try again.');
+      } else {
+        setError('Submission failed. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -80,7 +106,12 @@ export default function Contact() {
           <form className="contact-form" onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="contact-name">Name</label>
-              <input id="contact-name" name="name" type="text" value={form.name} onChange={handleChange} required />
+              <input id="contact-name" name="name" type="text" list="contact-guest-suggestions" value={form.name} onChange={handleChange} required />
+              <datalist id="contact-guest-suggestions">
+                {guestSuggestions.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
             </div>
             <div className="form-group">
               <label htmlFor="contact-email">Email</label>

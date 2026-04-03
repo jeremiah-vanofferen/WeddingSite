@@ -1,3 +1,4 @@
+// Copyright 2026 Jeremiah Van Offeren
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PhotoGalleryModal, AddPhotoModal } from '../components/PhotoGalleryModal';
@@ -81,7 +82,11 @@ describe('AddPhotoModal', () => {
     global.fetch = vi.fn(() =>
       Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({ success: true, photo: { id: 9, url: '/uploads/photo.jpg', caption: 'New Photo' } })
+        json: () => Promise.resolve({
+          success: true,
+          photo: { id: 9, url: '/uploads/photo.jpg', caption: 'New Photo' },
+          photos: [{ id: 9, url: '/uploads/photo.jpg', caption: 'New Photo' }]
+        })
       })
     );
     window.URL.createObjectURL = vi.fn(() => 'blob:preview-photo');
@@ -94,7 +99,7 @@ describe('AddPhotoModal', () => {
     expect(screen.getByLabelText(/submitter name/i)).toBeInTheDocument();
   });
 
-  it('calls upload endpoint and onSave with returned photo when Add Photo is clicked', async () => {
+  it('calls upload endpoint and onSave with returned photos when Add Photo is clicked', async () => {
     render(<AddPhotoModal onSave={onSave} onClose={onClose} />);
 
     const file = new File(['mock-image'], 'new.jpg', { type: 'image/jpeg' });
@@ -114,7 +119,26 @@ describe('AddPhotoModal', () => {
         expect.objectContaining({ method: 'POST' })
       )
     );
-    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ id: 9, url: '/uploads/photo.jpg' }));
+    expect(onSave).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 9, url: '/uploads/photo.jpg' })
+    ]);
+  });
+
+  it('submits all selected files in a single request', async () => {
+    render(<AddPhotoModal onSave={onSave} onClose={onClose} />);
+
+    const fileOne = new File(['mock-image-1'], 'first.jpg', { type: 'image/jpeg' });
+    const fileTwo = new File(['mock-image-2'], 'second.jpg', { type: 'image/jpeg' });
+    fireEvent.change(screen.getByLabelText(/photo file/i), { target: { files: [fileOne, fileTwo] } });
+
+    fireEvent.click(screen.getByRole('button', { name: /add photo/i }));
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+    const [, options] = global.fetch.mock.calls[0];
+    expect(options.body).toBeInstanceOf(window.FormData);
+    expect(options.body.getAll('photo')).toHaveLength(2);
+    expect(options.body.getAll('photo')[0]).toBe(fileOne);
+    expect(options.body.getAll('photo')[1]).toBe(fileTwo);
   });
 
   it('calls onClose when Cancel is clicked', () => {
