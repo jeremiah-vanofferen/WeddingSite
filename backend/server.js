@@ -1275,36 +1275,54 @@ function normalizeGuestCount(guestCount, plusOne) {
   return plusOne ? 2 : 1;
 }
 
+let approvalStatusColumnReady = false;
+let approvalStatusColumnReadyPromise = null;
+
 async function ensureApprovalStatusColumn() {
   if (process.env.NODE_ENV === 'test') {
     return;
   }
 
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-
-    const approvalStatusColumnResult = await client.query(
-      `SELECT 1
-       FROM information_schema.columns
-       WHERE table_name = 'guests' AND column_name = 'approval_status'
-       LIMIT 1`
-    );
-
-    if (approvalStatusColumnResult.rowCount === 0) {
-      await client.query(
-        `ALTER TABLE guests ADD COLUMN approval_status VARCHAR(20) DEFAULT 'approved'
-         CHECK (approval_status IN ('pending', 'approved', 'rejected'))`
-      );
-    }
-
-    await client.query('COMMIT');
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
+  if (approvalStatusColumnReady) {
+    return;
   }
+
+  if (approvalStatusColumnReadyPromise) {
+    await approvalStatusColumnReadyPromise;
+    return;
+  }
+
+  approvalStatusColumnReadyPromise = (async () => {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const approvalStatusColumnResult = await client.query(
+        `SELECT 1
+         FROM information_schema.columns
+         WHERE table_name = 'guests' AND column_name = 'approval_status'
+         LIMIT 1`
+      );
+
+      if (approvalStatusColumnResult.rowCount === 0) {
+        await client.query(
+          `ALTER TABLE guests ADD COLUMN approval_status VARCHAR(20) DEFAULT 'approved'
+           CHECK (approval_status IN ('pending', 'approved', 'rejected'))`
+        );
+      }
+
+      await client.query('COMMIT');
+      approvalStatusColumnReady = true;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+      approvalStatusColumnReadyPromise = null;
+    }
+  })();
+
+  await approvalStatusColumnReadyPromise;
 }
 
 module.exports = app;
