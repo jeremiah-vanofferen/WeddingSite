@@ -1244,9 +1244,6 @@ async function ensureGuestCountColumn() {
       );
     }
 
-    // Ensure email column is nullable (changed from NOT NULL in init.sh)
-    await client.query('ALTER TABLE guests ALTER COLUMN email DROP NOT NULL');
-
     await client.query('COMMIT');
     guestCountColumnReady = true;
   } catch (error) {
