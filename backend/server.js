@@ -348,6 +348,7 @@ app.delete('/api/guests/:id', authenticateToken, async (req, res) => {
 
 // Admin: approve or reject RSVP
 app.put('/api/guests/:id/approval', authenticateToken, async (req, res) => {
+  await ensureApprovalStatusColumn();
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -374,6 +375,7 @@ app.put('/api/guests/:id/approval', authenticateToken, async (req, res) => {
 
 // Admin: get pending RSVPs
 app.get('/api/guests/pending-approvals', authenticateToken, async (req, res) => {
+  await ensureApprovalStatusColumn();
   try {
     const result = await pool.query(
       `SELECT * FROM guests WHERE approval_status = 'pending' ORDER BY created_at DESC`
