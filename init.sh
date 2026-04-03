@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS guests (
     phone VARCHAR(50),
     address TEXT,
     rsvp VARCHAR(20) DEFAULT 'Pending' CHECK (rsvp IN ('Yes', 'No', 'Pending')),
-    guest_count INTEGER DEFAULT 1 CHECK (guest_count >= 0),
+    guest_count INTEGER DEFAULT 1 CONSTRAINT guests_guest_count_non_negative CHECK (guest_count >= 0),
     approval_status VARCHAR(20) DEFAULT 'approved' CHECK (approval_status IN ('pending', 'approved', 'rejected')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

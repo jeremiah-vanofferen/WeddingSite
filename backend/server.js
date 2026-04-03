@@ -486,7 +486,10 @@ app.post('/api/rsvp', authenticatePublicToken, async (req, res) => {
     const normalizedName = name.trim();
     const normalizedEmail = email.trim().toLowerCase();
 
-    // Match guest by name first, then update that record.
+    // Match guest by name only when the matched record has no email yet
+    // (admin pre-added guest without an email is eligible to be "claimed" via name).
+    // If the matched guest already has an email, insert a new RSVP to prevent
+    // one guest from overwriting another guest's record via a shared name.
     const rsvpStatus = normalizedRsvp === 'yes' ? 'Yes' : 'No';
     const existingByNameResult = await pool.query(
       `SELECT id, email
@@ -497,13 +500,14 @@ app.post('/api/rsvp', authenticatePublicToken, async (req, res) => {
       [normalizedName]
     );
 
-    let result;
-    if (existingByNameResult.rowCount > 0) {
-      const matchedGuest = existingByNameResult.rows[0];
+    const matchedByName = existingByNameResult.rowCount > 0 ? existingByNameResult.rows[0] : null;
+    const canClaimByName = matchedByName !== null && matchedByName.email === null;
 
+    let result;
+    if (canClaimByName) {
       const emailOwnerResult = await pool.query(
         'SELECT id FROM guests WHERE email = $1 AND id <> $2 LIMIT 1',
-        [normalizedEmail, matchedGuest.id]
+        [normalizedEmail, matchedByName.id]
       );
 
       if (emailOwnerResult.rowCount > 0) {
@@ -520,7 +524,7 @@ app.post('/api/rsvp', authenticatePublicToken, async (req, res) => {
              updated_at = CURRENT_TIMESTAMP
          WHERE id = $5
          RETURNING *`,
-        [normalizedName, normalizedEmail, rsvpStatus, parsedGuests, matchedGuest.id]
+        [normalizedName, normalizedEmail, rsvpStatus, parsedGuests, matchedByName.id]
       );
     } else {
       result = await pool.query(

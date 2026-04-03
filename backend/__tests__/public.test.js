@@ -263,17 +263,22 @@ describe('POST /api/rsvp', () => {
     expect(updateCall[1]).toEqual(['Alex Guest', 'alex@example.com', 'Yes', 1, 3]);
   });
 
-  it('returns 409 when matched name tries to use another guest email', async () => {
+  it('inserts a new RSVP when name matches an existing guest that already has an email', async () => {
+    const newGuest = { id: 10, name: 'Alex Guest', email: 'new@example.com', rsvp: 'Yes' };
     pool.query
       .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 3, email: 'alex-old@example.com' }] })
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 8 }] });
+      .mockResolvedValueOnce({ rows: [newGuest] })
+      .mockResolvedValueOnce({ rows: [] });
 
     const res = await request(app)
       .post('/api/rsvp')
-      .send({ name: 'Alex Guest', email: 'used@example.com', rsvp: 'yes', guests: 1 });
+      .send({ name: 'Alex Guest', email: 'new@example.com', rsvp: 'yes', guests: 1 });
 
-    expect(res.status).toBe(409);
-    expect(res.body.error).toBe('Email already exists');
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+
+    const insertCall = pool.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO guests'));
+    expect(insertCall).toBeDefined();
   });
 });
 
