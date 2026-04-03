@@ -527,12 +527,33 @@ app.post('/api/rsvp', authenticatePublicToken, async (req, res) => {
         [normalizedName, normalizedEmail, rsvpStatus, parsedGuests, matchedByName.id]
       );
     } else {
-      result = await pool.query(
-        `INSERT INTO guests (name, email, rsvp, guest_count, approval_status)
-         VALUES ($1, $2, $3, $4, 'pending')
-         RETURNING *`,
-        [normalizedName, normalizedEmail, rsvpStatus, parsedGuests]
+      // Upsert by email: allow guests to update an existing RSVP by resubmitting
+      // with the same email address (preserves prior upsert behavior).
+      const existingByEmailResult = await pool.query(
+        'SELECT id FROM guests WHERE email = $1 LIMIT 1',
+        [normalizedEmail]
       );
+
+      if (existingByEmailResult.rowCount > 0) {
+        result = await pool.query(
+          `UPDATE guests
+           SET name = $1,
+               rsvp = $2,
+               guest_count = $3,
+               approval_status = 'pending',
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = $4
+           RETURNING *`,
+          [normalizedName, rsvpStatus, parsedGuests, existingByEmailResult.rows[0].id]
+        );
+      } else {
+        result = await pool.query(
+          `INSERT INTO guests (name, email, rsvp, guest_count, approval_status)
+           VALUES ($1, $2, $3, $4, 'pending')
+           RETURNING *`,
+          [normalizedName, normalizedEmail, rsvpStatus, parsedGuests]
+        );
+      }
     }
 
     // Send email notification to admin

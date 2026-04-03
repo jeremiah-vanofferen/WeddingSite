@@ -230,8 +230,9 @@ describe('POST /api/rsvp', () => {
 
   it('creates an RSVP and returns 201', async () => {
     const guest = { id: 1, name: 'John Doe', email: 'john@example.com', rsvp: 'Yes' };
-    // First query: name lookup (no match); second query: insert; third query: getAdminEmail
+    // First query: name lookup (no match); second query: email lookup (no match); third: insert; fourth: getAdminEmail
     pool.query
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })
       .mockResolvedValueOnce({ rowCount: 0, rows: [] })
       .mockResolvedValueOnce({ rows: [guest] })
       .mockResolvedValueOnce({ rows: [] });
@@ -266,9 +267,10 @@ describe('POST /api/rsvp', () => {
   it('inserts a new RSVP when name matches an existing guest that already has an email', async () => {
     const newGuest = { id: 10, name: 'Alex Guest', email: 'new@example.com', rsvp: 'Yes' };
     pool.query
-      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 3, email: 'alex-old@example.com' }] })
-      .mockResolvedValueOnce({ rows: [newGuest] })
-      .mockResolvedValueOnce({ rows: [] });
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 3, email: 'alex-old@example.com' }] }) // name lookup — has email
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] }) // email lookup — new email not found
+      .mockResolvedValueOnce({ rows: [newGuest] })       // insert
+      .mockResolvedValueOnce({ rows: [] });              // getAdminEmail
 
     const res = await request(app)
       .post('/api/rsvp')
@@ -279,6 +281,26 @@ describe('POST /api/rsvp', () => {
 
     const insertCall = pool.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO guests'));
     expect(insertCall).toBeDefined();
+  });
+
+  it('updates existing RSVP when guest resubmits with same email', async () => {
+    const updatedGuest = { id: 5, name: 'Jane Doe', email: 'jane@example.com', rsvp: 'No' };
+    pool.query
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] })                       // name lookup — no match
+      .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 5 }] })             // email lookup — existing record
+      .mockResolvedValueOnce({ rows: [updatedGuest] })                        // update
+      .mockResolvedValueOnce({ rows: [] });                                   // getAdminEmail
+
+    const res = await request(app)
+      .post('/api/rsvp')
+      .send({ name: 'Jane Doe', email: 'jane@example.com', rsvp: 'no', guests: 0 });
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+
+    const updateCall = pool.query.mock.calls.find(([sql]) => sql.includes('UPDATE guests') && sql.includes('SET name = $1'));
+    expect(updateCall).toBeDefined();
+    expect(updateCall[1]).toEqual(['Jane Doe', 'No', 0, 5]);
   });
 });
 
