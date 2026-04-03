@@ -17,6 +17,10 @@ coverage/
 /build
 /dist
 
+# Runtime upload artifacts
+backend/uploads/*
+!backend/uploads/.gitkeep
+
 # Misc
 .DS_Store
 .env

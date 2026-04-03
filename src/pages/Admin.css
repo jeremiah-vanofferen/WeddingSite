@@ -830,6 +830,14 @@
   padding-left: 1.45rem;
 }
 
+.timeline-item-nudge-up .timeline-content {
+  animation: scheduleNudgeUp 320ms ease;
+}
+
+.timeline-item-nudge-down .timeline-content {
+  animation: scheduleNudgeDown 320ms ease;
+}
+
 .timeline-marker {
   position: absolute;
   left: -1.62rem;
@@ -861,6 +869,60 @@
   justify-content: space-between;
   gap: 0.6rem;
   flex-wrap: wrap;
+}
+
+.event-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.event-time-badge-swapped {
+  animation: scheduleTimeSwapPulse 360ms ease;
+}
+
+@keyframes scheduleNudgeUp {
+  0% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes scheduleNudgeDown {
+  0% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(8px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes scheduleTimeSwapPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(53, 89, 213, 0);
+  }
+  45% {
+    box-shadow: 0 0 0 9px rgba(53, 89, 213, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(53, 89, 213, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timeline-item-nudge-up .timeline-content,
+  .timeline-item-nudge-down .timeline-content,
+  .event-time-badge-swapped {
+    animation: none;
+  }
 }
 
 .move-btn {

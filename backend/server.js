@@ -537,7 +537,11 @@ app.post('/api/messages', strictLimiter, authenticatePublicToken, async (req, re
       [name, email, message]
     );
 
-    await updateGuestEmailByName(name, email);
+    try {
+      await updateGuestEmailByName(name, email);
+    } catch (syncError) {
+      console.warn('Guest email sync skipped:', syncError?.message || syncError);
+    }
 
     // Send email to admin
     const adminEmail = await getAdminEmail();
@@ -734,7 +738,22 @@ app.put('/api/schedule', authenticateToken, async (req, res) => {
     try {
       await client.query('BEGIN');
       for (let i = 0; i < events.length; i++) {
-        await client.query('UPDATE schedule SET sort_order = $1 WHERE id = $2', [i + 1, events[i].id]);
+        const scheduleEvent = events[i];
+        await client.query(
+          `UPDATE schedule
+           SET sort_order = $1,
+               time = $2,
+               event = $3,
+               description = $4
+           WHERE id = $5`,
+          [
+            i + 1,
+            scheduleEvent.time,
+            scheduleEvent.event,
+            scheduleEvent.description || null,
+            scheduleEvent.id
+          ]
+        );
       }
       await client.query('COMMIT');
     } catch (err) {

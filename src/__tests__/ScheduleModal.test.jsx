@@ -82,26 +82,20 @@ describe('ScheduleModal', () => {
 
     it('moves an event down when the down arrow is clicked', () => {
       render(<ScheduleModal schedule={sampleSchedule} onSave={onSave} onClose={onClose} />);
-      // sorted render: [Ceremony(14:00), Reception(16:00)]
-      // Ceremony's down button (index 0 in sorted list) is enabled
       const downButtons = screen.getAllByTitle('Move down');
       fireEvent.click(downButtons[0]);
       expect(onSave).toHaveBeenCalledTimes(1);
-       // Verify onSave was called with both events (order may be mutated by render re-sort)
-       expect(onSave.mock.calls[0][0]).toHaveLength(2);
-       expect(onSave.mock.calls[0][0].map(e => e.id)).toEqual(expect.arrayContaining([1, 2]));
+      expect(onSave.mock.calls[0][0].map(e => e.id)).toEqual([2, 1]);
+      expect(onSave.mock.calls[0][0].map(e => e.time)).toEqual(['14:00', '16:00']);
     });
 
     it('moves an event up when the up arrow is clicked', () => {
       render(<ScheduleModal schedule={sampleSchedule} onSave={onSave} onClose={onClose} />);
-      // sorted render: [Ceremony(14:00), Reception(16:00)]
-      // Reception's up button (index 1 in sorted list) is enabled
       const upButtons = screen.getAllByTitle('Move up');
       fireEvent.click(upButtons[1]);
       expect(onSave).toHaveBeenCalledTimes(1);
-       // Verify onSave was called with both events
-       expect(onSave.mock.calls[0][0]).toHaveLength(2);
-       expect(onSave.mock.calls[0][0].map(e => e.id)).toEqual(expect.arrayContaining([1, 2]));
+      expect(onSave.mock.calls[0][0].map(e => e.id)).toEqual([2, 1]);
+      expect(onSave.mock.calls[0][0].map(e => e.time)).toEqual(['14:00', '16:00']);
     });
 
     it('saves an edited event and closes the edit modal', () => {
