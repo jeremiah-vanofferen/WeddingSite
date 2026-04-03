@@ -123,6 +123,12 @@ describe('formatIsoDateTime', () => {
     expect(result).toBeTruthy();
     expect(result).toContain('2026');
   });
+
+  it('treats a timezone passed as the second argument as a timezone fallback', () => {
+    const result = formatIsoDateTime('2026-06-15T14:30:00.000Z', 'America/Chicago');
+    expect(result).toBeTruthy();
+    expect(result).toContain('2026');
+  });
 });
 
 describe('getTimeZoneLabel', () => {
