@@ -155,13 +155,17 @@ app.get('/api/auth/verify', authenticateToken, (req, res) => {
 
 // Mint anonymous token for public endpoints
 app.post('/api/public/token', (_req, res) => {
-  const token = jwt.sign(
-    { type: 'public' },
-    process.env.JWT_SECRET,
-    { expiresIn: publicTokenExpiresIn }
-  );
+  try {
+    const token = jwt.sign(
+      { type: 'public' },
+      process.env.JWT_SECRET,
+      { expiresIn: publicTokenExpiresIn }
+    );
 
-  res.json({ token, expiresIn: publicTokenExpiresIn });
+    return res.json({ token, expiresIn: publicTokenExpiresIn });
+  } catch (error) {
+    return sendInternalError(res, 'Public token mint error', error);
+  }
 });
 
 // Routes
