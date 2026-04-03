@@ -95,4 +95,15 @@ describe('Public anonymous token auth', () => {
     );
     expect(res.body.token).toBe('minted-public-token');
   });
+
+  it('rejects a public token on admin-protected routes', async () => {
+    jwt.verify.mockImplementation((_token, _secret, cb) => cb(null, { type: 'public' }));
+
+    const res = await request(app)
+      .get('/api/guests')
+      .set('Authorization', 'Bearer public-token');
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toBe('Invalid token');
+  });
 });
