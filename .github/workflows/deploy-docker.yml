@@ -226,6 +226,7 @@ jobs:
         id: cpr
         uses: peter-evans/create-pull-request@v6
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           branch: chore/version-bump-${{ github.run_id }}
           delete-branch: true
           commit-message: chore: bump patch version to ${{ steps.new_version.outputs.value }} [skip ci]
@@ -244,5 +245,6 @@ jobs:
         if: steps.cpr.outputs.pull-request-number != ''
         uses: peter-evans/enable-pull-request-automerge@v3
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
           merge-method: squash
