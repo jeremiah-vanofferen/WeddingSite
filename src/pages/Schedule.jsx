@@ -2,13 +2,15 @@
 import { useState, useEffect } from 'react';
 import { fetchArray } from '../utils/publicData';
 import { formatTimeOfDay } from '../utils/dateTime';
+import LoadingSpinner from '../components/LoadingSpinner';
 import '../pages/pages.css';
 
 export default function Services() {
   const [schedule, setSchedule] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchArray('/schedule').then(data => setSchedule(data));
+    fetchArray('/schedule').then(data => setSchedule(data)).finally(() => setLoading(false));
   }, []);
 
   const formatTime = (time) => formatTimeOfDay(time);
@@ -21,23 +23,27 @@ export default function Services() {
       </div>
 
       <div className="public-schedule-timeline">
-        {schedule
-          .sort((a, b) => a.time.localeCompare(b.time))
-          .map((event, index) => (
-            <div key={event.id} className="public-timeline-item">
-              <div className="public-timeline-left">
-                <span className="public-timeline-time">{formatTime(event.time)}</span>
+        {loading ? (
+          <LoadingSpinner />
+        ) : (
+          schedule
+            .sort((a, b) => a.time.localeCompare(b.time))
+            .map((event, index) => (
+              <div key={event.id} className="public-timeline-item">
+                <div className="public-timeline-left">
+                  <span className="public-timeline-time">{formatTime(event.time)}</span>
+                </div>
+                <div className="public-timeline-center">
+                  <div className="public-timeline-dot"></div>
+                  {index < schedule.length - 1 && <div className="public-timeline-line"></div>}
+                </div>
+                <div className="public-timeline-card">
+                  <h3>{event.event}</h3>
+                  {event.description && <p>{event.description}</p>}
+                </div>
               </div>
-              <div className="public-timeline-center">
-                <div className="public-timeline-dot"></div>
-                {index < schedule.length - 1 && <div className="public-timeline-line"></div>}
-              </div>
-              <div className="public-timeline-card">
-                <h3>{event.event}</h3>
-                {event.description && <p>{event.description}</p>}
-              </div>
-            </div>
-          ))}
+            ))
+        )}
       </div>
     </div>
   );

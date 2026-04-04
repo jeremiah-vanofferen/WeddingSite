@@ -32,12 +32,18 @@
 }
 
 .page-hero-home {
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-  align-items: stretch;
+  grid-template-columns: 1fr;
+  align-items: start;
+  gap: 1.2rem;
 }
 
 .page-hero-home .page-hero-copy {
   justify-content: flex-start;
+  gap: 0.7rem;
+}
+
+.home-welcome-heading {
+  margin: 0;
 }
 
 .page-hero-copy {
@@ -167,12 +173,15 @@
 }
 
 .home-hero-card {
-  padding: 0;
+  width: 100%;
+  margin-bottom: 0;
+  padding: 0.95rem;
   overflow: hidden;
 }
 
 .home-hero-media {
-  min-height: 100%;
+  width: 100%;
+  min-height: clamp(280px, 42vw, 520px);
 }
 
 .home-welcome {
@@ -181,6 +190,7 @@
 
 .home-welcome-inline {
   padding: 0;
+  max-width: 70ch;
 }
 
 .home-welcome h3 {

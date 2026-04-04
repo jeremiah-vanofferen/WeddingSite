@@ -146,6 +146,26 @@ docker-compose up --build
 
 > This wipes all data. Export your guest list from the admin panel first if needed.
 
+### Seed Files in seed-uploads/
+
+On first database initialization (`docker-compose up` with a fresh volume):
+
+- Image files in `seed-uploads/` (`jpg`, `jpeg`, `png`, `gif`, `webp`) are seeded into the `photo_uploads` table as approved, featured photos (visible in the homepage carousel immediately).
+- The uploads target directory is cleared before image seeding, while preserving `.gitkeep`, to prevent duplicate leftover files across re-seeds.
+- The first compatible guest CSV in `seed-uploads/` is imported into the `guests` table.
+
+Supported guest CSV formats:
+
+1. `Name,Address,Phone,Email,RSVP,Guest Count`
+2. `First name,Last Name,Dependants,Street address,Address Line,City,State,Zip,Phone,Email`
+
+Guest import normalization:
+
+- Empty `email`, `phone`, and `address` values become `NULL`.
+- `RSVP` values are normalized to `Yes` / `No` / `Pending`.
+- `Guest Count` must be numeric; non-numeric values default to `1`.
+- Duplicate emails are skipped (`ON CONFLICT (email) DO NOTHING`).
+
 ## Local Development (without Docker)
 
 Requires Node.js 22.x and a running PostgreSQL instance.

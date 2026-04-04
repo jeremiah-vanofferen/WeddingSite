@@ -143,27 +143,31 @@ All test files live in `src/__tests__/`.
 
 | File | Component Under Test | Test Count | What Is Covered |
 |---|---|---|---|
-| [App.test.jsx](src/__tests__/App.test.jsx) | `App` | 8 | Routing, settings fetch on mount, CSS variable application, theme class, event name propagation |
+| [App.test.jsx](src/__tests__/App.test.jsx) | `App` | 8 | Routing, settings fetch on mount, CSS variable application, theme class, boolean coercion, event name propagation |
 | [AuthContext.test.jsx](src/__tests__/AuthContext.test.jsx) | `AuthContext` | 6 | Token verification, login / logout, `localStorage` persistence |
-| [Navigation.test.jsx](src/__tests__/Navigation.test.jsx) | `Navigation` | 7 | Auth-based nav items, logout button visibility, website name display |
-| [LoginModal.test.jsx](src/__tests__/LoginModal.test.jsx) | `LoginModal` | 5 | Form rendering, field input, credential submission, close button |
-| [Home.test.jsx](src/__tests__/Home.test.jsx) | `Home` | 4 | Welcome message, venue details, API failure resilience |
-| [RSVP.test.jsx](src/__tests__/RSVP.test.jsx) | `RSVP` | 4 | Form fields, successful submission, API error handling |
-| [Contact.test.jsx](src/__tests__/Contact.test.jsx) | `Contact` | 4 | Form fields, API submission, error state display |
-| [Schedule.test.jsx](src/__tests__/Schedule.test.jsx) | `Schedule` | 4 | Event list fetch, time formatting, empty state |
+| [Navigation.test.jsx](src/__tests__/Navigation.test.jsx) | `Navigation` | 12 | Auth-based nav items, logout button visibility, RSVP link toggle, website name display, login modal open/close/success |
+| [LoginModal.test.jsx](src/__tests__/LoginModal.test.jsx) | `LoginModal` | 5 | Form rendering, field input, credential submission, error display, close button |
+| [Home.test.jsx](src/__tests__/Home.test.jsx) | `Home` | 7 | Welcome message, venue details, registry link, countdown visibility, post-wedding arrival message, API failure resilience |
+| [RSVP.test.jsx](src/__tests__/RSVP.test.jsx) | `RSVP` | 6 | Form fields, name autofill, successful submission, API error handling, fallback error, payload validation |
+| [Contact.test.jsx](src/__tests__/Contact.test.jsx) | `Contact` | 6 | Form fields, name autofill, API submission, error state display, fallback error, payload validation |
+| [Schedule.test.jsx](src/__tests__/Schedule.test.jsx) | `Schedule` | 4 | Event list fetch, time formatting, empty state, non-array guard |
 | [Admin.test.jsx](src/__tests__/Admin.test.jsx) | `Admin` | 18 | Auth guard, dashboard stats, modal open/close, save-error display, message management |
-| [GuestManagementModal.test.jsx](src/__tests__/GuestManagementModal.test.jsx) | `GuestManagementModal` | 18 | Guest list display, add/edit/delete, CSV upload, bulk import (merge & replace) |
-| [ScheduleModal.test.jsx](src/__tests__/ScheduleModal.test.jsx) | `ScheduleModal` | 7 | Event CRUD, add/edit modals, deletion |
-| [PhotoGalleryModal.test.jsx](src/__tests__/PhotoGalleryModal.test.jsx) | `PhotoGalleryModal` | 12 | Photo list, featured toggle, add/edit/delete |
-| [Gallery.test.jsx](src/__tests__/Gallery.test.jsx) | `Gallery` | 12 | Gallery fetch/display, lightbox, upload modal interaction |
-| [GalleryApprovalModal.test.jsx](src/__tests__/GalleryApprovalModal.test.jsx) | `GalleryApprovalModal` | 5 | Pending photos load, approve/reject flow, modal close |
-| [PhotoCarousel.test.jsx](src/__tests__/PhotoCarousel.test.jsx) | `PhotoCarousel` | 3 | Autoplay timing, rapid navigation interactions |
-| [PublicPhotoUploadModal.test.jsx](src/__tests__/PublicPhotoUploadModal.test.jsx) | `PublicPhotoUploadModal` | 6 | Upload validation, form data submission, error handling |
-| [ChangePasswordModal.test.jsx](src/__tests__/ChangePasswordModal.test.jsx) | `ChangePasswordModal` | 6 | Password validation, submit payload, close interactions |
-| [SettingsModal.test.jsx](src/__tests__/SettingsModal.test.jsx) | `SettingsModal` | 5 | Settings form display, reset to defaults, save submission |
-| [WeddingDetailsModal.test.jsx](src/__tests__/WeddingDetailsModal.test.jsx) | `WeddingDetailsModal` | 5 | View details, toggle edit mode, form fields |
+| [GuestManagementModal.test.jsx](src/__tests__/GuestManagementModal.test.jsx) | `GuestManagementModal` | 28 | Guest list display, add/edit/delete, RSVP updates, stat counts, CSV export, CSV upload, bulk import (merge & replace), validation errors, legacy format parsing |
+| [ScheduleModal.test.jsx](src/__tests__/ScheduleModal.test.jsx) | `ScheduleModal` | 12 | Event CRUD, add/edit modals, deletion with confirm, up/down reorder arrows |
+| [PhotoGalleryModal.test.jsx](src/__tests__/PhotoGalleryModal.test.jsx) | `PhotoGalleryModal` | 13 | Photo list, featured badge, featured toggle, add (single & multi-file, preview), edit, delete |
+| [Gallery.test.jsx](src/__tests__/Gallery.test.jsx) | `Gallery` | 12 | Gallery fetch/display, lightbox open/close/overlay, upload modal interaction, success callback |
+| [GalleryApprovalModal.test.jsx](src/__tests__/GalleryApprovalModal.test.jsx) | `GalleryApprovalModal` | 5 | Pending photos load, approve/reject flow, error display, modal close |
+| [PhotoCarousel.test.jsx](src/__tests__/PhotoCarousel.test.jsx) | `PhotoCarousel` | 8 | Autoplay timing, empty state, rapid next/prev/dot/alternating clicks, slide mode reliability, invalid speed fallback |
+| [PublicPhotoUploadModal.test.jsx](src/__tests__/PublicPhotoUploadModal.test.jsx) | `PublicPhotoUploadModal` | 7 | Upload validation, file preview, form data submission, API/network error handling, overlay/cancel close |
+| [ChangePasswordModal.test.jsx](src/__tests__/ChangePasswordModal.test.jsx) | `ChangePasswordModal` | 6 | Password validation, error clearing, submit payload, close interactions |
+| [SettingsModal.test.jsx](src/__tests__/SettingsModal.test.jsx) | `SettingsModal` | 8 | Settings form display, field pre-fill, reset to defaults, save submission, live color preview, save error display |
+| [WeddingDetailsModal.test.jsx](src/__tests__/WeddingDetailsModal.test.jsx) | `WeddingDetailsModal` | 6 | View details modal, edit form fields, save/close, timezone auto-fill from address |
+| [dateTime.test.js](src/__tests__/dateTime.test.js) | `dateTime` utils | 35 | `resolveTimeZone`, `formatWeddingDate`, `formatTimeOfDay`, `formatIsoDate`, `formatIsoDateTime`, `getTimeZoneLabel`, `dateTimeToUTC` — null/invalid/valid inputs for each |
+| [timezones.test.jsx](src/__tests__/timezones.test.jsx) | `timezones` utils | 11 | Timezone derivation from US, Canadian, UK, and Australian addresses; false-positive guards for substring matches |
+| [http.test.js](src/__tests__/http.test.js) | `http` utils | 5 | `getAuthHeaders` header merging, `requestJson` success/network-error/API-error/non-JSON-error paths |
+| [publicData.test.js](src/__tests__/publicData.test.js) | `publicData` utils | 2 | Anonymous-token retry on 401, fallback return on repeated failure |
 
-**Total: 139 frontend tests**
+**Total: 230 frontend tests**
 
 ### Frontend Patterns & Conventions
 
@@ -239,16 +243,26 @@ Tests run serially (`--runInBand` in `backend/package.json`) to avoid shared sta
 
 All test files live in `backend/__tests__/`.
 
+Seeding regression coverage:
+
+- [backend/__tests__/init-seeding.test.js](backend/__tests__/init-seeding.test.js) validates `init.sh` keeps critical seed protections in place:
+  - uploads cleanup excludes `.gitkeep`
+  - seeded images are inserted with `featured = TRUE`
+  - guest CSV import supports both known formats
+  - simple-format guest count has numeric validation fallback
+
 | File | Routes Under Test | Test Count | What Is Covered |
 |---|---|---|---|
-| [auth.test.js](backend/__tests__/auth.test.js) | `POST /api/auth/login`, `GET /api/auth/verify` | 8 | Missing credentials (400), wrong password (401), valid login returns JWT, token verification |
-| [guests.test.js](backend/__tests__/guests.test.js) | `GET/POST/PUT/DELETE /api/guests` | 9 | List guests, add guest, duplicate email (409), update, delete, auth guard (401) |
-| [guests-extended.test.js](backend/__tests__/guests-extended.test.js) | `POST /api/guests/bulk` | 8 | CSV bulk import (merge & replace modes), transaction commit, rollback on error |
-| [public.test.js](backend/__tests__/public.test.js) | `/api/health`, `/api/public/settings`, `/api/rsvp`, `/api/messages` | 9 | Health check, public settings, RSVP submission (including guest-count validation), contact message submission |
-| [schedule.test.js](backend/__tests__/schedule.test.js) | `GET/POST/PUT/DELETE /api/schedule` | 9+ | List events, add event, update (including reorder via transaction), delete, auth guard |
-| [settings-messages.test.js](backend/__tests__/settings-messages.test.js) | `/api/settings`, `/api/messages` | 13 | Get/update settings, list messages, mark as read, admin email lookup |
+| [auth.test.js](backend/__tests__/auth.test.js) | `POST /api/auth/login`, `GET /api/auth/verify`, `POST /api/auth/change-password` | 13 | Missing credentials (400), wrong password (401), valid login returns JWT, token verification, change-password validation and success |
+| [public-auth.test.js](backend/__tests__/public-auth.test.js) | `POST /api/public/token` | 6 | Anonymous JWT minting, public-route token guard (401/403), admin token rejected on public-only routes, health check stays open |
+| [guests.test.js](backend/__tests__/guests.test.js) | `GET/POST/PUT/DELETE /api/guests` | 10 | List guests, add guest (with and without email), duplicate email (409), update, delete, auth guard (401) |
+| [guests-extended.test.js](backend/__tests__/guests-extended.test.js) | `POST /api/guests/bulk` | 9 | CSV bulk import (merge & replace modes), transaction commit, rollback on error, 500 paths for list/update/delete |
+| [public.test.js](backend/__tests__/public.test.js) | `/api/health`, `/api/public/settings`, `/api/public/guest-names`, `/api/public/guest-lookup`, `/api/schedule`, `/api/rsvp`, `/api/messages` | 18 | Health check, public settings, guest name/lookup endpoints, schedule list, RSVP submission (guest-count validation, email-match logic), contact message submission |
+| [schedule.test.js](backend/__tests__/schedule.test.js) | `POST/PUT/DELETE /api/schedule`, `PUT /api/schedule` (reorder) | 14 | Add event, update, reorder (transaction commit & rollback), delete, 404 and 500 paths, auth guard |
+| [settings-messages.test.js](backend/__tests__/settings-messages.test.js) | `GET/PUT /api/settings`, `GET/PUT /api/settings/admin-email`, `GET /api/messages`, `PUT /api/messages/:id/read` | 17 | Get/update settings, admin-email get/update, list messages, mark as read, auth guard (401), 404/500 paths |
+| [gallery.test.js](backend/__tests__/gallery.test.js) | `POST /api/gallery/upload`, `POST /api/gallery/upload-file`, `GET /api/gallery`, `GET /api/gallery/pending`, `PUT /api/gallery/:id/status`, `PUT /api/gallery/:id`, `DELETE /api/gallery/:id` | 28 | URL and file upload validation (400/201), approved/pending gallery fetch, status approval/rejection, photo edit, delete, auth guard (401), 404/500 paths |
 
-**Total: 96 backend tests**
+**Total: 115 backend route tests** (+ 5 seeding regression tests in `init-seeding.test.js` = **120 total**)
 
 ### Backend Patterns & Conventions
 

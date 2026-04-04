@@ -120,6 +120,11 @@ EOSQL
 # This runs only during first database initialization.
 UPLOADS_SEED_DIR="${UPLOADS_SEED_DIR:-/seed-uploads}"
 if [ -d "$UPLOADS_SEED_DIR" ]; then
+    if [ -d "/uploads-target" ]; then
+        # Remove previously seeded files before copying seed images again.
+        find /uploads-target -mindepth 1 -maxdepth 1 -type f ! -name '.gitkeep' -delete || true
+    fi
+
     for file in "$UPLOADS_SEED_DIR"/*; do
         [ -f "$file" ] || continue
 
@@ -138,16 +143,115 @@ if [ -d "$UPLOADS_SEED_DIR" ]; then
         url="/uploads/$filename"
         caption="${filename%.*}"
 
+        # Attempt copy directly; some mounts report non-writable to test checks even when copy works.
+        if ! cp "$file" "/uploads-target/$filename"; then
+            echo "Skipping image copy for $filename: failed to copy into /uploads-target"
+        fi
+
         psql -v ON_ERROR_STOP=1 \
                  --username "$POSTGRES_USER" \
                  --dbname "$POSTGRES_DB" \
                  -v photo_url="$url" \
                  -v photo_caption="$caption" <<-'EOSQL'
-INSERT INTO photo_uploads (url, caption, submitter_name, status)
-SELECT :'photo_url', :'photo_caption', 'seed-import', 'approved'
+INSERT INTO photo_uploads (url, caption, submitter_name, status, featured)
+SELECT :'photo_url', :'photo_caption', 'seed-import', 'approved', TRUE
 WHERE NOT EXISTS (
     SELECT 1 FROM photo_uploads WHERE url = :'photo_url'
 );
 EOSQL
     done
 fi
+
+# Seed guests from the first compatible CSV file found in seed-uploads.
+# Supported formats:
+# 1) Name,Address,Phone,Email,RSVP,Guest Count
+# 2) First name,Last Name,Dependants,Street address,Address Line,City,State,Zip,Phone,Email
+for csv_file in "$UPLOADS_SEED_DIR"/*.csv; do
+    [ -f "$csv_file" ] || continue
+    echo "Attempting guest seed import from $(basename "$csv_file")..."
+
+    # Format 1: Name,Address,Phone,Email,RSVP,Guest Count
+    if psql -v ON_ERROR_STOP=1 \
+         --username "$POSTGRES_USER" \
+         --dbname "$POSTGRES_DB" <<EOSQL
+CREATE TEMP TABLE guests_staging_simple (
+    name TEXT,
+    address TEXT,
+    phone TEXT,
+    email TEXT,
+    rsvp TEXT,
+    guest_count TEXT
+);
+\copy guests_staging_simple (name, address, phone, email, rsvp, guest_count) FROM '$csv_file' CSV HEADER
+
+INSERT INTO guests (name, email, phone, address, rsvp, guest_count, approval_status)
+SELECT
+    TRIM(name),
+    NULLIF(TRIM(email), ''),
+    NULLIF(TRIM(phone), ''),
+    NULLIF(TRIM(address), ''),
+    CASE
+        WHEN UPPER(TRIM(rsvp)) = 'YES' THEN 'Yes'
+        WHEN UPPER(TRIM(rsvp)) = 'NO' THEN 'No'
+        ELSE 'Pending'
+    END,
+    CASE WHEN TRIM(guest_count) ~ '^[0-9]+$' THEN TRIM(guest_count)::INTEGER ELSE 1 END,
+    'approved'
+FROM guests_staging_simple
+WHERE TRIM(name) != ''
+ON CONFLICT (email) DO NOTHING;
+EOSQL
+    then
+        echo "Guest seed import succeeded using 6-column format"
+        break
+    fi
+
+    # Format 2: First name,Last Name,Dependants,Street address,Address Line,City,State,Zip,Phone,Email
+    if psql -v ON_ERROR_STOP=1 \
+         --username "$POSTGRES_USER" \
+         --dbname "$POSTGRES_DB" <<EOSQL
+CREATE TEMP TABLE guests_staging_extended (
+    first_name TEXT,
+    last_name TEXT,
+    dependants TEXT,
+    street_address TEXT,
+    address_line TEXT,
+    city TEXT,
+    state TEXT,
+    zip TEXT,
+    phone TEXT,
+    email TEXT
+);
+\copy guests_staging_extended (first_name, last_name, dependants, street_address, address_line, city, state, zip, phone, email) FROM '$csv_file' CSV HEADER
+
+INSERT INTO guests (name, email, phone, address, rsvp, guest_count, approval_status)
+SELECT
+    TRIM(CONCAT_WS(' ', NULLIF(TRIM(first_name), ''), NULLIF(TRIM(last_name), ''))),
+    NULLIF(TRIM(email), ''),
+    NULLIF(TRIM(phone), ''),
+    NULLIF(
+        TRIM(
+            CONCAT_WS(', ',
+                NULLIF(TRIM(street_address), ''),
+                NULLIF(TRIM(address_line), ''),
+                NULLIF(TRIM(city), ''),
+                NULLIF(TRIM(state), ''),
+                NULLIF(TRIM(zip), '')
+            )
+        ),
+        ''
+    ),
+    'Pending',
+    1,
+    'approved'
+FROM guests_staging_extended
+WHERE TRIM(CONCAT_WS(' ', NULLIF(TRIM(first_name), ''), NULLIF(TRIM(last_name), ''))) != ''
+ON CONFLICT (email) DO NOTHING;
+EOSQL
+    then
+        echo "Guest seed import succeeded using 10-column format"
+        break
+    fi
+
+    echo "Guest seed import skipped for $(basename "$csv_file"): unsupported CSV format"
+done

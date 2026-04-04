@@ -1,6 +1,9 @@
 services:
   postgres:
     image: postgres:16
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["chmod 777 /uploads-target || true; exec /usr/local/bin/docker-entrypoint.sh postgres"]
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-wedding_db}
       POSTGRES_USER: ${POSTGRES_USER:-wedding_user}
@@ -20,6 +23,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sh:/docker-entrypoint-initdb.d/init.sh
       - ./seed-uploads:/seed-uploads:ro
+      - ./backend/uploads:/uploads-target
     ports:
       - "5432:5432"
     healthcheck:
@@ -53,6 +57,8 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
+      - ./backend/uploads:/app/uploads
+      - ./init.sh:/app/init.sh:ro
 
   wedding-app:
     build: .

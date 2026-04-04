@@ -10,6 +10,7 @@ import RSVP from './pages/RSVP'
 import { DEFAULT_SETTINGS } from './utils/constants'
 import { fetchPublicSettings } from './utils/publicData'
 import { mergeSettings } from './utils/settings'
+import LoadingSpinner from './components/LoadingSpinner'
 import './App.css'
 
 const Admin = lazy(() => import('./pages/Admin'));
@@ -17,14 +18,19 @@ const Gallery = lazy(() => import('./pages/Gallery'));
 
 function App() {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   useEffect(() => {
     let isActive = true;
 
     const fetchSettings = async () => {
-      const data = await fetchPublicSettings();
-      if (isActive && data) {
-        setSettings(prev => mergeSettings(prev, data));
+      try {
+        const data = await fetchPublicSettings();
+        if (isActive && data) {
+          setSettings(prev => mergeSettings(prev, data));
+        }
+      } finally {
+        if (isActive) setSettingsLoaded(true);
       }
     };
 
@@ -69,6 +75,10 @@ function App() {
     // Add the current theme class
     body.classList.add(`theme-${settings.theme}`);
   }, [settings.theme]);
+
+  if (!settingsLoaded) {
+    return <LoadingSpinner fullscreen />;
+  }
 
   return (
     <AuthProvider>
