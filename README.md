@@ -242,8 +242,7 @@ It gates deployment behind successful checks:
 After images are published, the workflow:
 
 1. Creates a GitHub Release tag (`v<current-version>`) if it does not already exist.
-2. Automatically bumps the patch version for both frontend and backend manifests.
-3. Pushes the bump commit back to `main` with a `[skip ci]` message to avoid an infinite deploy loop.
+2. Does not modify repository manifests or commit version bumps automatically.
 
 Published images:
 
@@ -340,12 +339,6 @@ To use these as required status checks, go to **Settings → Branches → Branch
 │   └── workflows/
 │       ├── frontend-ci.yml # GitHub Actions — lint + test frontend
 │       ├── backend-ci.yml  # GitHub Actions — lint + test backend
-
-# Optional: custom bind host/port and CORS during local dev
-# set BIND_HOST=127.0.0.1
-# set VITE_BIND_HOST=127.0.0.1
-# set VITE_BIND_PORT=3000
-# set CORS_ORIGIN=http://127.0.0.1:3000
 │       └── deploy-docker.yml # GitHub Actions — build/push Docker Hub images on main
 ├── Dockerfile              # Frontend container (Node 22 Alpine)
 ├── Dockerfile.backend      # Backend container (Node 22 Alpine)
