@@ -249,7 +249,5 @@ jobs:
 
           This PR includes:
           - package.json / package-lock.json
-          - backend/package.json / backend/package-lock.json" \
-            --label "automation" \
-            --label "version-bump")
+          - backend/package.json / backend/package-lock.json")
           gh pr merge "$PR_URL" --squash --delete-branch
