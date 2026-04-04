@@ -3,8 +3,11 @@ const fs = require('fs');
 const path = require('path');
 
 describe('init.sh seeding safeguards', () => {
-  // init.sh is bind-mounted at /app/init.sh inside the backend container
-  const initScriptPath = path.resolve(__dirname, '..', 'init.sh');
+  // The source-of-truth init script lives at repo root.
+  // Fall back to backend/init.sh for local compatibility.
+  const rootInitScriptPath = path.resolve(__dirname, '..', '..', 'init.sh');
+  const backendInitScriptPath = path.resolve(__dirname, '..', 'init.sh');
+  const initScriptPath = fs.existsSync(rootInitScriptPath) ? rootInitScriptPath : backendInitScriptPath;
   const initScript = fs.readFileSync(initScriptPath, 'utf8');
 
   it('preserves .gitkeep when clearing uploads-target before image seeding', () => {
