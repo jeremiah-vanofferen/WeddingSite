@@ -192,6 +192,58 @@ Two GitHub Actions workflows run automatically on every push to `main`, `master`
 
 Each workflow runs **lint → test** in sequence. Concurrent runs on the same branch are cancelled to avoid redundant work.
 
+### Docker Hub Deploy (on main)
+
+The workflow `.github/workflows/deploy-docker.yml` publishes application images to Docker Hub when changes are merged to `main`.
+
+It gates deployment behind successful checks:
+
+1. Frontend lint and tests
+2. Backend lint, tests, and seed safeguard tests
+
+After images are published, the workflow:
+
+1. Creates a GitHub Release tag (`v<current-version>`) if it does not already exist.
+2. Automatically bumps the patch version for both frontend and backend manifests.
+3. Pushes the bump commit back to `main` with a `[skip ci]` message to avoid an infinite deploy loop.
+
+Published images:
+
+- `${DOCKERHUB_USERNAME}/weddingsite-frontend`
+- `${DOCKERHUB_USERNAME}/weddingsite-backend`
+- `${DOCKERHUB_USERNAME}/weddingsite-postgres`
+
+Required GitHub repository secrets:
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN` (Docker Hub access token)
+
+### Run Full Stack From Docker Hub Images
+
+Use `docker-compose.dockerhub.yml` to run all required containers (frontend, backend, and postgres) with no host bind mounts:
+
+```bash
+docker compose -f docker-compose.dockerhub.yml up -d
+```
+
+The compose file pulls:
+
+- `${DOCKERHUB_USERNAME}/weddingsite-frontend:${APP_IMAGE_TAG:-latest}`
+- `${DOCKERHUB_USERNAME}/weddingsite-backend:${APP_IMAGE_TAG:-latest}`
+- `${DOCKERHUB_USERNAME}/weddingsite-postgres:${APP_IMAGE_TAG:-latest}`
+
+Set these in `.env` before running:
+
+- `DOCKERHUB_USERNAME`
+- `POSTGRES_PASSWORD`
+- `DATABASE_URL`
+- `JWT_SECRET`
+
+Notes:
+
+- The Docker Hub compose stack uses named volumes only (`postgres_data`, `backend_uploads`) for a cleaner server deployment profile.
+- Database initialization and seed imports are packaged into the published postgres image via `Dockerfile.postgres`.
+
 To use these as required status checks, go to **Settings → Branches → Branch protection rules** in GitHub and add `Lint and Test Frontend` / `Lint and Test Backend` as required checks.
 
 ## Project Structure
@@ -201,10 +253,13 @@ To use these as required status checks, go to **Settings → Branches → Branch
 ├── .github/
 │   └── workflows/
 │       ├── frontend-ci.yml # GitHub Actions — lint + test frontend
-│       └── backend-ci.yml  # GitHub Actions — lint + test backend
+│       ├── backend-ci.yml  # GitHub Actions — lint + test backend
+│       └── deploy-docker.yml # GitHub Actions — build/push Docker Hub images on main
 ├── Dockerfile              # Frontend container (Node 22 Alpine)
 ├── Dockerfile.backend      # Backend container (Node 22 Alpine)
+├── Dockerfile.postgres     # Postgres image with init script and seed assets
 ├── docker-compose.yml      # Orchestrates frontend, backend, and postgres
+├── docker-compose.dockerhub.yml # Runs stack from Docker Hub app images + postgres
 ├── init.sh                 # PostgreSQL initialization script (tables + seed data)
 ├── vite.config.js          # Vite configuration
 ├── package.json            # Frontend dependencies

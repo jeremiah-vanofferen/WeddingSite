@@ -2,6 +2,7 @@
 // SettingsModal.jsx
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { DEFAULT_SETTINGS } from '../utils/constants';
 
 const EMPTY_SETTINGS = {
   websiteName: '',
@@ -78,20 +79,7 @@ export function SettingsModal({ settings, onSave, onClose }) {
   const hoverTextColor = getContrastTextColor(formData.primaryColorHover);
 
   const resetToDefaults = () => {
-    const defaults = {
-      websiteName: 'My Wedding',
-      theme: 'elegant',
-      primaryColor: '#0a20ca',
-      primaryColorHover: '#1894dc',
-      fontFamily: 'sans-serif',
-      showCountdown: true,
-      allowRsvp: true,
-      welcomeMessage: 'Thank you for visiting our wedding website. We\'re thrilled to share the details of our celebration with you.',
-      adminEmail: 'your@email.com',
-      carouselSpeed: 6,
-      carouselTransition: 'fade'
-    };
-    setFormData(defaults);
+    setFormData({ ...DEFAULT_SETTINGS });
   };
 
   return (

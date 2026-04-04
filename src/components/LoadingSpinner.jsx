@@ -1,4 +1,5 @@
 // Copyright 2026 Jeremiah Van Offeren
+import PropTypes from 'prop-types';
 import './LoadingSpinner.css';
 
 export default function LoadingSpinner({ fullscreen = false }) {
@@ -8,3 +9,7 @@ export default function LoadingSpinner({ fullscreen = false }) {
     </div>
   );
 }
+
+LoadingSpinner.propTypes = {
+  fullscreen: PropTypes.bool,
+};

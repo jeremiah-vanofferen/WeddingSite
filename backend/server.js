@@ -204,8 +204,7 @@ app.post('/api/auth/login', async (req, res) => {
       user: { id: user.id, username: user.username }
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return sendInternalError(res, 'Login error', error);
   }
 });
 
@@ -246,8 +245,7 @@ app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
 
     res.json({ success: true, message: 'Password changed successfully' });
   } catch (error) {
-    console.error('Change password error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return sendInternalError(res, 'Change password error', error);
   }
 });
 
@@ -257,8 +255,7 @@ app.get('/api/guests', authenticateToken, async (req, res) => {
     const result = await pool.query('SELECT * FROM guests ORDER BY created_at DESC');
     res.json(result.rows);
   } catch (error) {
-    console.error('Get guests error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return sendInternalError(res, 'Get guests error', error);
   }
 });
 
@@ -289,12 +286,10 @@ app.post('/api/guests', authenticateToken, async (req, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    if (error.code === '23505') { // Unique constraint violation
-      res.status(409).json({ error: 'Email already exists' });
-    } else {
-      console.error('Add guest error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+    if (error.code === '23505') {
+      return res.status(409).json({ error: 'Email already exists' });
     }
+    return sendInternalError(res, 'Add guest error', error);
   }
 });
 
@@ -321,11 +316,9 @@ app.put('/api/guests/:id', authenticateToken, async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     if (error.code === '23505') {
-      res.status(409).json({ error: 'Email already exists' });
-    } else {
-      console.error('Update guest error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(409).json({ error: 'Email already exists' });
     }
+    return sendInternalError(res, 'Update guest error', error);
   }
 });
 
@@ -341,8 +334,7 @@ app.delete('/api/guests/:id', authenticateToken, async (req, res) => {
 
     res.json({ message: 'Guest deleted successfully' });
   } catch (error) {
-    console.error('Delete guest error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return sendInternalError(res, 'Delete guest error', error);
   }
 });
 
@@ -368,8 +360,7 @@ app.put('/api/guests/:id/approval', authenticateToken, async (req, res) => {
 
     res.json({ guest: result.rows[0] });
   } catch (error) {
-    console.error('Update RSVP approval error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return sendInternalError(res, 'Update RSVP approval error', error);
   }
 });
 
@@ -382,8 +373,7 @@ app.get('/api/guests/pending-approvals', authenticateToken, async (req, res) => 
     );
     res.json(result.rows);
   } catch (error) {
-    console.error('Get pending approvals error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return sendInternalError(res, 'Get pending approvals error', error);
   }
 });
 

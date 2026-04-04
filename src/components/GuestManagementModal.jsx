@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Papa from 'papaparse';
 import PropTypes from 'prop-types';
 import { API_BASE_URL } from '../utils/api';
-import { getAuthHeaders } from '../utils/http';
+import { getAuthHeaders, requestJson } from '../utils/http';
 
 export function GuestManagementModal({ onClose }) {
   const [guestList, setGuestList] = useState([]);
@@ -14,6 +14,20 @@ export function GuestManagementModal({ onClose }) {
   const [uploadError, setUploadError] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
+
+  const fetchGuests = async () => {
+    try {
+      const guests = await requestJson(
+        `${API_BASE_URL}/guests`,
+        { headers: getAuthHeaders() },
+        'Failed to fetch guests'
+      );
+      setGuestList(Array.isArray(guests) ? guests : []);
+    } catch (err) {
+      console.error('Error fetching guests:', err);
+      setError('Failed to load guests');
+    }
+  };
 
   // Fetch guests on component mount
   useEffect(() => {
@@ -38,26 +52,6 @@ export function GuestManagementModal({ onClose }) {
       notAttending,
     };
   }, [guestList]);
-
-  const fetchGuests = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/guests`, {
-        headers: getAuthHeaders()
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch guests');
-      }
-
-      const guests = await response.json();
-      setGuestList(guests);
-    } catch (error) {
-      console.error('Error fetching guests:', error);
-      setError('Failed to load guests');
-    } finally {
-      // fetch complete
-    }
-  };
 
 
 
@@ -208,23 +202,21 @@ export function GuestManagementModal({ onClose }) {
     if (uploadedGuests.length === 0) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/guests/bulk`, {
-        method: 'POST',
-        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ guests: uploadedGuests, mode: uploadMode })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to import guests');
-      }
-
-      const updatedGuests = await response.json();
-      setGuestList(updatedGuests);
+      const updatedGuests = await requestJson(
+        `${API_BASE_URL}/guests/bulk`,
+        {
+          method: 'POST',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ guests: uploadedGuests, mode: uploadMode })
+        },
+        'Failed to import guests'
+      );
+      setGuestList(Array.isArray(updatedGuests) ? updatedGuests : []);
       setUploadedGuests([]);
       setUploadError('');
     } catch (error) {
       console.error('Import error:', error);
-      setUploadError('Failed to import guests. Please try again.');
+      setUploadError(error.message || 'Failed to import guests. Please try again.');
     }
   };
 
@@ -269,17 +261,15 @@ export function GuestManagementModal({ onClose }) {
 
   const handleSaveEdit = async (updatedGuest) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/guests/${updatedGuest.id}`, {
-        method: 'PUT',
-        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(updatedGuest)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update guest');
-      }
-
-      const savedGuest = await response.json();
+      const savedGuest = await requestJson(
+        `${API_BASE_URL}/guests/${updatedGuest.id}`,
+        {
+          method: 'PUT',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify(updatedGuest)
+        },
+        'Failed to update guest'
+      );
       const updatedList = guestList.map(guest =>
         guest.id === savedGuest.id ? savedGuest : guest
       );
@@ -287,27 +277,23 @@ export function GuestManagementModal({ onClose }) {
       setEditingGuest(null);
     } catch (error) {
       console.error('Update error:', error);
-      setError('Failed to update guest. Please try again.');
+      setError(error.message || 'Failed to update guest. Please try again.');
     }
   };
 
   const handleDelete = async (guestId) => {
     if (window.confirm('Are you sure you want to delete this guest?')) {
       try {
-        const response = await fetch(`${API_BASE_URL}/guests/${guestId}`, {
-          method: 'DELETE',
-          headers: getAuthHeaders()
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to delete guest');
-        }
-
+        await requestJson(
+          `${API_BASE_URL}/guests/${guestId}`,
+          { method: 'DELETE', headers: getAuthHeaders() },
+          'Failed to delete guest'
+        );
         const updatedList = guestList.filter(guest => guest.id !== guestId);
         setGuestList(updatedList);
       } catch (error) {
         console.error('Delete error:', error);
-        setError('Failed to delete guest. Please try again.');
+        setError(error.message || 'Failed to delete guest. Please try again.');
       }
     }
   };
@@ -317,24 +303,22 @@ export function GuestManagementModal({ onClose }) {
       const guest = guestList.find(g => g.id === guestId);
       if (!guest) return;
 
-      const response = await fetch(`${API_BASE_URL}/guests/${guestId}`, {
-        method: 'PUT',
-        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ ...guest, rsvp })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update RSVP');
-      }
-
-      const updatedGuest = await response.json();
-      const updatedList = guestList.map(guest =>
-        guest.id === updatedGuest.id ? updatedGuest : guest
+      const updatedGuest = await requestJson(
+        `${API_BASE_URL}/guests/${guestId}`,
+        {
+          method: 'PUT',
+          headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ ...guest, rsvp })
+        },
+        'Failed to update RSVP'
+      );
+      const updatedList = guestList.map(g =>
+        g.id === updatedGuest.id ? updatedGuest : g
       );
       setGuestList(updatedList);
     } catch (error) {
       console.error('RSVP update error:', error);
-      setError('Failed to update RSVP. Please try again.');
+      setError(error.message || 'Failed to update RSVP. Please try again.');
     }
   };
 

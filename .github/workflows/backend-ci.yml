@@ -46,3 +46,6 @@ jobs:
 
       - name: Test
         run: npm test
+
+      - name: Seed Safeguard Tests
+        run: npm run test:seed
