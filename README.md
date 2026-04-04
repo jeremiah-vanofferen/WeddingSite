@@ -83,6 +83,9 @@ BIND_HOST=0.0.0.0
 # Vite bind host/port (defaults: 0.0.0.0:3000)
 VITE_BIND_HOST=0.0.0.0
 VITE_BIND_PORT=3000
+# Optional: extra Vite allowed hosts (comma-separated)
+# Example: vanofferen.net,www.vanofferen.net
+VITE_ALLOWED_HOSTS=
 # Backend CORS allowlist origin (recommended in production)
 # Example: https://wedding.example.com
 CORS_ORIGIN=
@@ -117,6 +120,7 @@ Use these environment variables when you need to control how services bind and w
 - `BIND_HOST`: Host/IP for the backend Express server bind. Default is `0.0.0.0`.
 - `VITE_BIND_HOST`: Host/IP for the frontend Vite server bind. Default is `0.0.0.0`.
 - `VITE_BIND_PORT`: Frontend Vite port. Default is `3000`.
+- `VITE_ALLOWED_HOSTS`: Extra Vite allowed hosts, comma-separated. Example: `vanofferen.net,www.vanofferen.net`.
 - `CORS_ORIGIN`: Allowed origin for backend CORS in production. Example: `https://wedding.example.com`.
 
 Behavior notes:
@@ -272,7 +276,7 @@ Set these in `.env` before running:
 - `POSTGRES_PASSWORD`
 - `DATABASE_URL`
 - `JWT_SECRET`
-- Optional: `BIND_HOST`, `VITE_BIND_HOST`, `VITE_BIND_PORT`, `CORS_ORIGIN`
+- Optional: `BIND_HOST`, `VITE_BIND_HOST`, `VITE_BIND_PORT`, `VITE_ALLOWED_HOSTS`, `CORS_ORIGIN`
 
 Notes:
 
@@ -490,6 +494,7 @@ Backend test note:
 | `WEDDING_ADDRESS` | No | Seeds `settings.weddingAddress` during first DB initialization |
 | `WEDDING_DESCRIPTION` | No | Seeds `settings.weddingDescription` during first DB initialization |
 | `VITE_API_URL` | No | Backend API base URL (default: `/api` — same origin via Vite proxy) |
+| `VITE_ALLOWED_HOSTS` | No | Extra Vite allowed hosts (comma-separated) for reverse proxies/custom domains |
 | `RATE_LIMIT_MAX` | No | General `/api/*` max requests per 15 minutes (default: `100` in production, `10000` in `test`/`development`) |
 | `STRICT_RATE_LIMIT_MAX` | No | Sensitive endpoint max requests per 15 minutes (default: `20` in production, `10000` in `test`/`development`) |
 | `PUBLIC_JWT_EXPIRES_IN` | No | Expiration for anonymous public JWTs minted by `/api/public/token` (default: `2h`) |
