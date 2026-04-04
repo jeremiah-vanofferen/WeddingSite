@@ -3,8 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 describe('init.sh seeding safeguards', () => {
-  // init.sh is bind-mounted at /app/init.sh inside the backend container
-  const initScriptPath = path.resolve(__dirname, '..', 'init.sh');
+  // The seeding script lives at the repository root and is bind-mounted at /app/init.sh inside the backend container
+  const initScriptPath = path.resolve(__dirname, '..', '..', 'init.sh');
   const initScript = fs.readFileSync(initScriptPath, 'utf8');
 
   it('preserves .gitkeep when clearing uploads-target before image seeding', () => {

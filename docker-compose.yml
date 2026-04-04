@@ -1,9 +1,6 @@
 services:
   postgres:
     image: postgres:16
-    user: "0:0"
-    entrypoint: ["/bin/sh", "-c"]
-    command: ["chmod 777 /uploads-target || true; exec /usr/local/bin/docker-entrypoint.sh postgres"]
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-wedding_db}
       POSTGRES_USER: ${POSTGRES_USER:-wedding_user}

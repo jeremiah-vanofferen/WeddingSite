@@ -143,22 +143,22 @@ if [ -d "$UPLOADS_SEED_DIR" ]; then
         url="/uploads/$filename"
         caption="${filename%.*}"
 
-        # Attempt copy directly; some mounts report non-writable to test checks even when copy works.
-        if ! cp "$file" "/uploads-target/$filename"; then
-            echo "Skipping image copy for $filename: failed to copy into /uploads-target"
-        fi
-
-        psql -v ON_ERROR_STOP=1 \
-                 --username "$POSTGRES_USER" \
-                 --dbname "$POSTGRES_DB" \
-                 -v photo_url="$url" \
-                 -v photo_caption="$caption" <<-'EOSQL'
+        # Only seed the database when the file copy succeeds to avoid broken gallery entries.
+        if cp "$file" "/uploads-target/$filename" 2>/dev/null; then
+            psql -v ON_ERROR_STOP=1 \
+                     --username "$POSTGRES_USER" \
+                     --dbname "$POSTGRES_DB" \
+                     -v photo_url="$url" \
+                     -v photo_caption="$caption" <<-'EOSQL'
 INSERT INTO photo_uploads (url, caption, submitter_name, status, featured)
 SELECT :'photo_url', :'photo_caption', 'seed-import', 'approved', TRUE
 WHERE NOT EXISTS (
     SELECT 1 FROM photo_uploads WHERE url = :'photo_url'
 );
 EOSQL
+        else
+            echo "Skipping image seed for $filename: failed to copy into /uploads-target"
+        fi
     done
 fi
 
