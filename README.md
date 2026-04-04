@@ -279,6 +279,53 @@ Notes:
 - The Docker Hub compose stack uses named volumes only (`postgres_data`, `backend_uploads`) for a cleaner server deployment profile.
 - Database initialization and seed imports are packaged into the published postgres image via `Dockerfile.postgres`.
 
+### Production Deploy Over SSH With Dockerized Nginx
+
+If Nginx already runs in a container on your server, use SSH only for deployment and keep TLS termination in that Nginx container.
+
+1. Copy deploy artifacts to the server:
+
+```bash
+ssh user@your-server "sudo mkdir -p /weddingsite && sudo chown $USER:$USER /weddingsite"
+scp docker-compose.dockerhub.yml deploy/deploy.sh user@your-server:/weddingsite/
+```
+
+2. SSH to the server and create/update `/weddingsite/.env`:
+
+```bash
+ssh user@your-server
+nano /weddingsite/.env
+```
+
+Required values include:
+
+- `DOCKERHUB_USERNAME`
+- `POSTGRES_PASSWORD`
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `CORS_ORIGIN` set to your public HTTPS origin (example: `https://example.com`)
+
+3. Run the deploy script:
+
+```bash
+chmod +x /weddingsite/deploy.sh
+/weddingsite/deploy.sh
+```
+
+4. In your Nginx container config, proxy traffic to the app on the Docker host:
+
+- Upstream target should be the frontend service on port `3000`.
+- Preserve websocket upgrade headers.
+- If proxying to the Vite-based frontend service, set `Host` header to `localhost` so Vite `allowedHosts` validation passes.
+
+5. Re-deploy updates after each release by SSHing in and re-running:
+
+```bash
+/weddingsite/deploy.sh
+```
+
+If your Nginx container is managed in a separate compose stack, attach both stacks to a shared external Docker network so Nginx can reach the app service by container name.
+
 To use these as required status checks, go to **Settings → Branches → Branch protection rules** in GitHub and add `Lint and Test Frontend` / `Lint and Test Backend` as required checks.
 
 ## Project Structure
