@@ -222,29 +222,34 @@ jobs:
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "value=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
 
-      - name: Create patch bump PR
-        id: cpr
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: chore/version-bump-${{ github.run_id }}
-          delete-branch: true
-          commit-message: chore: bump patch version to ${{ steps.new_version.outputs.value }} [skip ci]
-          title: chore: bump patch version to ${{ steps.new_version.outputs.value }} [skip ci]
-          body: |
-            Automated patch version bump after successful release.
+      - name: Commit and push version bump branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          BRANCH="chore/version-bump-${{ github.run_id }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add package.json package-lock.json backend/package.json backend/package-lock.json
+          git commit -m "chore: bump patch version to ${{ steps.new_version.outputs.value }} [skip ci]"
+          git push origin "$BRANCH"
 
-            This PR includes:
-            - package.json / package-lock.json
-            - backend/package.json / backend/package-lock.json
-          labels: |
-            automation
-            version-bump
+      - name: Create and merge PR via GitHub CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          BRANCH="chore/version-bump-${{ github.run_id }}"
+          PR_URL=$(gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore: bump patch version to ${{ steps.new_version.outputs.value }} [skip ci]" \
+            --body "Automated patch version bump after successful release.
 
-      - name: Enable PR auto-merge (squash)
-        if: steps.cpr.outputs.pull-request-number != ''
-        uses: peter-evans/enable-pull-request-automerge@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
-          merge-method: squash
+          This PR includes:
+          - package.json / package-lock.json
+          - backend/package.json / backend/package-lock.json" \
+            --label "automation" \
+            --label "version-bump")
+          gh pr merge "$PR_URL" --squash --delete-branch
