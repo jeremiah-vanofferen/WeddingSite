@@ -19,8 +19,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - backend_uploads:/uploads-target
-    ports:
-      - "5432:5432"
+    # No port binding — Postgres is only accessible within the Docker network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wedding_user} -d ${POSTGRES_DB:-wedding_db}"]
       interval: 10s
@@ -39,6 +38,7 @@ services:
       GMAIL_USER: ${GMAIL_USER}
       GMAIL_PASS: ${GMAIL_PASS}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
+      CORS_ORIGIN: ${CORS_ORIGIN}
     depends_on:
       postgres:
         condition: service_healthy

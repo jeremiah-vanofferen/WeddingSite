@@ -15,11 +15,12 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const BIND_HOST = process.env.BIND_HOST || '0.0.0.0';
+const dbSslEnabled = process.env.DATABASE_SSL === 'true';
 
 // Database connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: dbSslEnabled ? { rejectUnauthorized: false } : false
 });
 
 // Validate required env vars at startup
