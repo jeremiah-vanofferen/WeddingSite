@@ -33,6 +33,7 @@ services:
       - "5000:5000"
     environment:
       NODE_ENV: production
+      BIND_HOST: ${BIND_HOST:-0.0.0.0}
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       GMAIL_USER: ${GMAIL_USER}
@@ -56,6 +57,8 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: production
+      VITE_BIND_HOST: ${VITE_BIND_HOST:-0.0.0.0}
+      VITE_BIND_PORT: ${VITE_BIND_PORT:-3000}
     depends_on:
       - backend
     restart: unless-stopped

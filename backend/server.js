@@ -14,6 +14,7 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const BIND_HOST = process.env.BIND_HOST || '0.0.0.0';
 
 // Database connection
 const pool = new Pool({
@@ -1165,8 +1166,8 @@ if (require.main === module) {
       console.error('Failed to run startup migrations:', error);
       process.exit(1);
     }
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+    app.listen(PORT, BIND_HOST, () => {
+      console.log(`Server running on ${BIND_HOST}:${PORT}`);
     });
   })();
 }

@@ -37,6 +37,7 @@ services:
       - "5000:5000"
     environment:
       - NODE_ENV=development
+      - BIND_HOST=${BIND_HOST:-0.0.0.0}
       - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET=${JWT_SECRET}
       - GMAIL_USER=${GMAIL_USER}
@@ -63,6 +64,8 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
+      - VITE_BIND_HOST=${VITE_BIND_HOST:-0.0.0.0}
+      - VITE_BIND_PORT=${VITE_BIND_PORT:-3000}
       # No VITE_API_URL — the SPA uses /api (same-origin) and the Vite proxy
       # routes it to http://backend:5000, which works from any client.
     depends_on:
@@ -76,7 +79,7 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-    command: npm run dev -- --host
+    command: npm run dev
 
 volumes:
   postgres_data:

@@ -77,6 +77,16 @@ POSTGRES_PASSWORD=your_secure_password
 DATABASE_URL=postgresql://wedding_user:your_secure_password@postgres:5432/wedding_db
 JWT_SECRET=your_jwt_secret_change_this
 
+# Optional: host binding / network controls
+# Backend bind host (default: 0.0.0.0)
+BIND_HOST=0.0.0.0
+# Vite bind host/port (defaults: 0.0.0.0:3000)
+VITE_BIND_HOST=0.0.0.0
+VITE_BIND_PORT=3000
+# Backend CORS allowlist origin (recommended in production)
+# Example: https://wedding.example.com
+CORS_ORIGIN=
+
 # Admin credentials (set before first run to override defaults)
 ADMIN_USERNAME=YourName
 ADMIN_PASSWORD=your_secure_password
@@ -99,6 +109,21 @@ WEDDING_DESCRIPTION=Join us for our ceremony and reception.
 ```
 
 > **Gmail note:** Use an [App Password](https://support.google.com/accounts/answer/185833), not your regular Gmail password.
+
+### Host Binding and CORS
+
+Use these environment variables when you need to control how services bind and which browser origins are allowed:
+
+- `BIND_HOST`: Host/IP for the backend Express server bind. Default is `0.0.0.0`.
+- `VITE_BIND_HOST`: Host/IP for the frontend Vite server bind. Default is `0.0.0.0`.
+- `VITE_BIND_PORT`: Frontend Vite port. Default is `3000`.
+- `CORS_ORIGIN`: Allowed origin for backend CORS in production. Example: `https://wedding.example.com`.
+
+Behavior notes:
+
+- In development, backend CORS is permissive by default.
+- In production, set `CORS_ORIGIN` to your frontend URL to avoid blocked browser requests.
+- Keep `BIND_HOST` and `VITE_BIND_HOST` as `0.0.0.0` for containerized deployments unless you have a specific networking policy.
 
 ### 2. Start All Services
 
@@ -181,6 +206,15 @@ npm install
 npm run dev          # http://localhost:5000
 ```
 
+Optional local network overrides (PowerShell):
+
+```powershell
+$env:BIND_HOST = "127.0.0.1"
+$env:VITE_BIND_HOST = "127.0.0.1"
+$env:VITE_BIND_PORT = "3000"
+$env:CORS_ORIGIN = "http://127.0.0.1:3000"
+```
+
 ## CI / GitHub Actions
 
 Two GitHub Actions workflows run automatically on every push to `main`, `master`, or `develop`, and on any pull request that touches the relevant paths.
@@ -238,6 +272,7 @@ Set these in `.env` before running:
 - `POSTGRES_PASSWORD`
 - `DATABASE_URL`
 - `JWT_SECRET`
+- Optional: `BIND_HOST`, `VITE_BIND_HOST`, `VITE_BIND_PORT`, `CORS_ORIGIN`
 
 Notes:
 
@@ -254,6 +289,12 @@ To use these as required status checks, go to **Settings → Branches → Branch
 │   └── workflows/
 │       ├── frontend-ci.yml # GitHub Actions — lint + test frontend
 │       ├── backend-ci.yml  # GitHub Actions — lint + test backend
+
+# Optional: custom bind host/port and CORS during local dev
+# set BIND_HOST=127.0.0.1
+# set VITE_BIND_HOST=127.0.0.1
+# set VITE_BIND_PORT=3000
+# set CORS_ORIGIN=http://127.0.0.1:3000
 │       └── deploy-docker.yml # GitHub Actions — build/push Docker Hub images on main
 ├── Dockerfile              # Frontend container (Node 22 Alpine)
 ├── Dockerfile.backend      # Backend container (Node 22 Alpine)
