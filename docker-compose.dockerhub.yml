@@ -25,6 +25,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   backend:
     image: ${DOCKERHUB_USERNAME}/weddingsite-backend:${APP_IMAGE_TAG:-latest}
