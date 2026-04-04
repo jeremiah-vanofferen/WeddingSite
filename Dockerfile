@@ -25,5 +25,5 @@ EXPOSE 3000
 # Set environment to production
 ENV NODE_ENV=production
 
-# Start development server with configurable bind host/port
-CMD ["sh", "-c", "npm run dev -- --host ${VITE_BIND_HOST:-0.0.0.0} --port ${VITE_BIND_PORT:-3000}"]
+# Serve the production build with configurable bind host/port
+CMD ["sh", "-c", "npm run preview -- --host ${VITE_BIND_HOST:-0.0.0.0} --port ${VITE_BIND_PORT:-3000}"]

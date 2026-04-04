@@ -26,7 +26,7 @@ export default defineConfig({
   server: {
     port: devPort,
     host: devHost,
-    allowedHosts: ['wedding-app', 'wedding-app-test', 'localhost', 'vanofferen.net'],
+    allowedHosts: ['wedding-app', 'wedding-app-test', 'localhost', process.env.VITE_BIND_HOST],
     proxy: {
       '/api': {
         target: 'http://backend:5000',
