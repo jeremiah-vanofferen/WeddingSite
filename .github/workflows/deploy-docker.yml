@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: deploy-docker-${{ github.ref }}
@@ -190,7 +191,7 @@ jobs:
           fi
 
   bump-patch-version:
-    name: Bump Patch Version
+    name: Bump Patch Version PR
     runs-on: ubuntu-latest
     needs:
       - release
@@ -214,16 +215,34 @@ jobs:
         working-directory: backend
         run: npm version patch --no-git-tag-version
 
-      - name: Commit and push patch bump
+      - name: Capture new version
+        id: new_version
         shell: bash
         run: |
           NEW_VERSION=$(node -p "require('./package.json').version")
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json backend/package.json backend/package-lock.json
-          if git diff --cached --quiet; then
-            echo "No version changes to commit"
-            exit 0
-          fi
-          git commit -m "chore: bump patch version to ${NEW_VERSION} [skip ci]"
-          git push
+          echo "value=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Create patch bump PR
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: chore/version-bump-${{ github.run_id }}
+          delete-branch: true
+          commit-message: chore: bump patch version to ${{ steps.new_version.outputs.value }} [skip ci]
+          title: chore: bump patch version to ${{ steps.new_version.outputs.value }} [skip ci]
+          body: |
+            Automated patch version bump after successful release.
+
+            This PR includes:
+            - package.json / package-lock.json
+            - backend/package.json / backend/package-lock.json
+          labels: |
+            automation
+            version-bump
+
+      - name: Enable PR auto-merge (squash)
+        if: steps.cpr.outputs.pull-request-number != ''
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          merge-method: squash
