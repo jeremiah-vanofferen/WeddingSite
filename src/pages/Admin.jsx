@@ -144,7 +144,6 @@ export default function Admin() {
 
   // Modal states
   const [activeModal, setActiveModal] = useState(null);
-  const [_editingItem, setEditingItem] = useState(null);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const unreadMessageCount = messages.filter(message => !message.is_read).length;
   const totalPartySize = guestList.reduce((sum, guest) => {
@@ -183,17 +182,15 @@ export default function Admin() {
     );
   }
 
-  const openModal = (modalType, item = null) => {
+  const openModal = (modalType, _item = null) => {
     if (modalType === 'settings') fetchSettings();
     setSaveError('');
     setActiveModal(modalType);
-    setEditingItem(item);
   };
 
   const closeModal = () => {
     setSaveError('');
     setActiveModal(null);
-    setEditingItem(null);
   };
 
   const handleSaveSettings = async (newSettings) => {

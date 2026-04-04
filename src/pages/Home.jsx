@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS, DEFAULT_WEDDING_TIME_ZONE } from '../utils/constants'
 import { formatWeddingDate, formatTimeOfDay, getTimeZoneLabel, resolveTimeZone, dateTimeToUTC } from '../utils/dateTime';
 import { fetchPublicSettings } from '../utils/publicData';
 import { mergeSettings, mergeWeddingDetails } from '../utils/settings';
+import LoadingSpinner from '../components/LoadingSpinner';
 import '../pages/pages.css';
 
 export default function Home() {
@@ -19,6 +20,7 @@ export default function Home() {
   });
 
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: false });
   const { date, time, timeZone } = weddingDetails;
 
@@ -30,7 +32,7 @@ export default function Home() {
 
       setSettings(prev => mergeSettings(prev, data));
       setWeddingDetails(prev => mergeWeddingDetails(prev, data));
-    });
+    }).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -73,28 +75,18 @@ export default function Home() {
     date
   );
 
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
   return (
     <div className="page page-home">
       <section className="page-hero page-hero-home">
         <div className="page-hero-copy">
           <p className="page-eyebrow">Celebration weekend</p>
+          <h3 className="home-welcome-heading">Welcome</h3>
           <div className="home-welcome home-welcome-inline">
-            <h3>Welcome</h3>
             <p>{settings.welcomeMessage}</p>
-          </div>
-          <div className="hero-detail-grid">
-            <div className="hero-detail-pill">
-              <span className="hero-detail-label">Date</span>
-              <strong>{formatWeddingDate(date)}</strong>
-            </div>
-            <div className="hero-detail-pill">
-              <span className="hero-detail-label">Time</span>
-              <strong>{formatTimeOfDay(time)}</strong>
-            </div>
-            <div className="hero-detail-pill">
-              <span className="hero-detail-label">Time zone</span>
-              <strong>{timeZoneLabel}</strong>
-            </div>
           </div>
         </div>
 

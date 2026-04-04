@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { PublicPhotoUploadModal } from '../components/PublicPhotoUploadModal';
 import { fetchArray } from '../utils/publicData';
+import LoadingSpinner from '../components/LoadingSpinner';
 import '../pages/pages.css';
 import './Gallery.css';
 
@@ -70,7 +71,7 @@ export default function Gallery() {
 
       {/* ── Photo grid ─────────────────────────────── */}
       {loading ? (
-        <p className="gallery-loading">Loading photos…</p>
+        <LoadingSpinner />
       ) : photos.length === 0 ? (
         <div className="demo-card">
           <p className="gallery-empty-text">No photos approved yet — check back soon!</p>

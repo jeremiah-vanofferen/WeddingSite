@@ -25,5 +25,5 @@ EXPOSE 3000
 # Set environment to production
 ENV NODE_ENV=production
 
-# Start development server (can be changed to serve static files in production)
-CMD ["npm", "run", "dev", "--", "--host"]
+# Start development server with configurable bind host/port
+CMD ["sh", "-c", "npm run dev -- --host ${VITE_BIND_HOST:-0.0.0.0} --port ${VITE_BIND_PORT:-3000}"]

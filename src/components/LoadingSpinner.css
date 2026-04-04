@@ -1,0 +1,31 @@
+/* Copyright 2026 Jeremiah Van Offeren */
+@keyframes spinner-spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 0;
+  min-height: 200px;
+}
+
+.loading-spinner-fullscreen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fbff;
+  z-index: 9999;
+}
+
+.spinner-ring {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(36, 85, 120, 0.14);
+  border-top-color: var(--primary-color, #5b8fcf);
+  border-radius: 50%;
+  animation: spinner-spin 0.7s linear infinite;
+}

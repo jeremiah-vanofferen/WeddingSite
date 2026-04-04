@@ -77,6 +77,16 @@ POSTGRES_PASSWORD=your_secure_password
 DATABASE_URL=postgresql://wedding_user:your_secure_password@postgres:5432/wedding_db
 JWT_SECRET=your_jwt_secret_change_this
 
+# Optional: host binding / network controls
+# Backend bind host (default: 0.0.0.0)
+BIND_HOST=0.0.0.0
+# Vite bind host/port (defaults: 0.0.0.0:3000)
+VITE_BIND_HOST=0.0.0.0
+VITE_BIND_PORT=3000
+# Backend CORS allowlist origin (recommended in production)
+# Example: https://wedding.example.com
+CORS_ORIGIN=
+
 # Admin credentials (set before first run to override defaults)
 ADMIN_USERNAME=YourName
 ADMIN_PASSWORD=your_secure_password
@@ -99,6 +109,21 @@ WEDDING_DESCRIPTION=Join us for our ceremony and reception.
 ```
 
 > **Gmail note:** Use an [App Password](https://support.google.com/accounts/answer/185833), not your regular Gmail password.
+
+### Host Binding and CORS
+
+Use these environment variables when you need to control how services bind and which browser origins are allowed:
+
+- `BIND_HOST`: Host/IP for the backend Express server bind. Default is `0.0.0.0`.
+- `VITE_BIND_HOST`: Host/IP for the frontend Vite server bind. Default is `0.0.0.0`.
+- `VITE_BIND_PORT`: Frontend Vite port. Default is `3000`.
+- `CORS_ORIGIN`: Allowed origin for backend CORS in production. Example: `https://wedding.example.com`.
+
+Behavior notes:
+
+- In development, backend CORS is permissive by default.
+- In production, set `CORS_ORIGIN` to your frontend URL to avoid blocked browser requests.
+- Keep `BIND_HOST` and `VITE_BIND_HOST` as `0.0.0.0` for containerized deployments unless you have a specific networking policy.
 
 ### 2. Start All Services
 
@@ -146,6 +171,26 @@ docker-compose up --build
 
 > This wipes all data. Export your guest list from the admin panel first if needed.
 
+### Seed Files in seed-uploads/
+
+On first database initialization (`docker-compose up` with a fresh volume):
+
+- Image files in `seed-uploads/` (`jpg`, `jpeg`, `png`, `gif`, `webp`) are seeded into the `photo_uploads` table as approved, featured photos (visible in the homepage carousel immediately).
+- The uploads target directory is cleared before image seeding, while preserving `.gitkeep`, to prevent duplicate leftover files across re-seeds.
+- The first compatible guest CSV in `seed-uploads/` is imported into the `guests` table.
+
+Supported guest CSV formats:
+
+1. `Name,Address,Phone,Email,RSVP,Guest Count`
+2. `First name,Last Name,Dependants,Street address,Address Line,City,State,Zip,Phone,Email`
+
+Guest import normalization:
+
+- Empty `email`, `phone`, and `address` values become `NULL`.
+- `RSVP` values are normalized to `Yes` / `No` / `Pending`.
+- `Guest Count` must be numeric; non-numeric values default to `1`.
+- Duplicate emails are skipped (`ON CONFLICT (email) DO NOTHING`).
+
 ## Local Development (without Docker)
 
 Requires Node.js 22.x and a running PostgreSQL instance.
@@ -161,6 +206,15 @@ npm install
 npm run dev          # http://localhost:5000
 ```
 
+Optional local network overrides (PowerShell):
+
+```powershell
+$env:BIND_HOST = "127.0.0.1"
+$env:VITE_BIND_HOST = "127.0.0.1"
+$env:VITE_BIND_PORT = "3000"
+$env:CORS_ORIGIN = "http://127.0.0.1:3000"
+```
+
 ## CI / GitHub Actions
 
 Two GitHub Actions workflows run automatically on every push to `main`, `master`, or `develop`, and on any pull request that touches the relevant paths.
@@ -172,6 +226,59 @@ Two GitHub Actions workflows run automatically on every push to `main`, `master`
 
 Each workflow runs **lint → test** in sequence. Concurrent runs on the same branch are cancelled to avoid redundant work.
 
+### Docker Hub Deploy (on main)
+
+The workflow `.github/workflows/deploy-docker.yml` publishes application images to Docker Hub when changes are merged to `main`.
+
+It gates deployment behind successful checks:
+
+1. Frontend lint and tests
+2. Backend lint, tests, and seed safeguard tests
+
+After images are published, the workflow:
+
+1. Creates a GitHub Release tag (`v<current-version>`) if it does not already exist.
+2. Automatically bumps the patch version for both frontend and backend manifests.
+3. Pushes the bump commit back to `main` with a `[skip ci]` message to avoid an infinite deploy loop.
+
+Published images:
+
+- `${DOCKERHUB_USERNAME}/weddingsite-frontend`
+- `${DOCKERHUB_USERNAME}/weddingsite-backend`
+- `${DOCKERHUB_USERNAME}/weddingsite-postgres`
+
+Required GitHub repository secrets:
+
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN` (Docker Hub access token)
+
+### Run Full Stack From Docker Hub Images
+
+Use `docker-compose.dockerhub.yml` to run all required containers (frontend, backend, and postgres) with no host bind mounts:
+
+```bash
+docker compose -f docker-compose.dockerhub.yml up -d
+```
+
+The compose file pulls:
+
+- `${DOCKERHUB_USERNAME}/weddingsite-frontend:${APP_IMAGE_TAG:-latest}`
+- `${DOCKERHUB_USERNAME}/weddingsite-backend:${APP_IMAGE_TAG:-latest}`
+- `${DOCKERHUB_USERNAME}/weddingsite-postgres:${APP_IMAGE_TAG:-latest}`
+
+Set these in `.env` before running:
+
+- `DOCKERHUB_USERNAME`
+- `POSTGRES_PASSWORD`
+- `DATABASE_URL`
+- `JWT_SECRET`
+- Optional: `BIND_HOST`, `VITE_BIND_HOST`, `VITE_BIND_PORT`, `CORS_ORIGIN`
+
+Notes:
+
+- The Docker Hub compose stack uses named volumes only (`postgres_data`, `backend_uploads`) for a cleaner server deployment profile.
+- Database initialization and seed imports are packaged into the published postgres image via `Dockerfile.postgres`.
+
 To use these as required status checks, go to **Settings → Branches → Branch protection rules** in GitHub and add `Lint and Test Frontend` / `Lint and Test Backend` as required checks.
 
 ## Project Structure
@@ -181,10 +288,19 @@ To use these as required status checks, go to **Settings → Branches → Branch
 ├── .github/
 │   └── workflows/
 │       ├── frontend-ci.yml # GitHub Actions — lint + test frontend
-│       └── backend-ci.yml  # GitHub Actions — lint + test backend
+│       ├── backend-ci.yml  # GitHub Actions — lint + test backend
+
+# Optional: custom bind host/port and CORS during local dev
+# set BIND_HOST=127.0.0.1
+# set VITE_BIND_HOST=127.0.0.1
+# set VITE_BIND_PORT=3000
+# set CORS_ORIGIN=http://127.0.0.1:3000
+│       └── deploy-docker.yml # GitHub Actions — build/push Docker Hub images on main
 ├── Dockerfile              # Frontend container (Node 22 Alpine)
 ├── Dockerfile.backend      # Backend container (Node 22 Alpine)
+├── Dockerfile.postgres     # Postgres image with init script and seed assets
 ├── docker-compose.yml      # Orchestrates frontend, backend, and postgres
+├── docker-compose.dockerhub.yml # Runs stack from Docker Hub app images + postgres
 ├── init.sh                 # PostgreSQL initialization script (tables + seed data)
 ├── vite.config.js          # Vite configuration
 ├── package.json            # Frontend dependencies

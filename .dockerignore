@@ -8,3 +8,8 @@
 !vite.config.js
 !src/**
 !public/**
+
+# Inputs needed by Dockerfile.postgres
+!Dockerfile.postgres
+!init.sh
+!seed-uploads/**

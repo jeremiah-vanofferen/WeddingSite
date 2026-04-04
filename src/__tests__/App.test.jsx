@@ -42,8 +42,7 @@ afterEach(() => {
 describe('App', () => {
   it('renders Navigation and the Home route by default', async () => {
     render(<App />);
-    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
-    expect(screen.getByTestId('navigation')).toBeInTheDocument();
+    expect(await screen.findByTestId('navigation')).toBeInTheDocument();
     expect(screen.getByTestId('home-page')).toBeInTheDocument();
   });
 
@@ -86,8 +85,7 @@ describe('App', () => {
     global.fetch = vi.fn(() => Promise.reject(new Error('Network error')));
     // Should render without crashing and use default settings
     render(<App />);
-    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
-    expect(screen.getByTestId('navigation')).toBeInTheDocument();
+    expect(await screen.findByTestId('navigation')).toBeInTheDocument();
   });
 
   it('updates settings when settingsChanged custom event fires', async () => {

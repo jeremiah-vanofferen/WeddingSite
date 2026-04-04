@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16
+    image: ${DOCKERHUB_USERNAME}/weddingsite-postgres:${APP_IMAGE_TAG:-latest}
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-wedding_db}
       POSTGRES_USER: ${POSTGRES_USER:-wedding_user}
@@ -18,9 +18,7 @@ services:
       WEDDING_DESCRIPTION: ${WEDDING_DESCRIPTION:-Join us for our ceremony and reception.}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sh:/docker-entrypoint-initdb.d/init.sh
-      - ./seed-uploads:/seed-uploads:ro
-      - ./backend/uploads:/uploads-target
+      - backend_uploads:/uploads-target
     ports:
       - "5432:5432"
     healthcheck:
@@ -30,19 +28,17 @@ services:
       retries: 5
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ${DOCKERHUB_USERNAME}/weddingsite-backend:${APP_IMAGE_TAG:-latest}
     ports:
       - "5000:5000"
     environment:
-      - NODE_ENV=development
-      - BIND_HOST=${BIND_HOST:-0.0.0.0}
-      - DATABASE_URL=${DATABASE_URL}
-      - JWT_SECRET=${JWT_SECRET}
-      - GMAIL_USER=${GMAIL_USER}
-      - GMAIL_PASS=${GMAIL_PASS}
-      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      NODE_ENV: production
+      BIND_HOST: ${BIND_HOST:-0.0.0.0}
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      GMAIL_USER: ${GMAIL_USER}
+      GMAIL_PASS: ${GMAIL_PASS}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,21 +49,16 @@ services:
       timeout: 5s
       retries: 3
     volumes:
-      - ./backend:/app
-      - /app/node_modules
-      - ./backend/uploads:/app/uploads
-      - ./init.sh:/app/init.sh:ro
+      - backend_uploads:/app/uploads
 
   wedding-app:
-    build: .
+    image: ${DOCKERHUB_USERNAME}/weddingsite-frontend:${APP_IMAGE_TAG:-latest}
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development
-      - VITE_BIND_HOST=${VITE_BIND_HOST:-0.0.0.0}
-      - VITE_BIND_PORT=${VITE_BIND_PORT:-3000}
-      # No VITE_API_URL — the SPA uses /api (same-origin) and the Vite proxy
-      # routes it to http://backend:5000, which works from any client.
+      NODE_ENV: production
+      VITE_BIND_HOST: ${VITE_BIND_HOST:-0.0.0.0}
+      VITE_BIND_PORT: ${VITE_BIND_PORT:-3000}
     depends_on:
       - backend
     restart: unless-stopped
@@ -76,10 +67,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-    volumes:
-      - .:/app
-      - /app/node_modules
-    command: npm run dev
 
 volumes:
   postgres_data:
+  backend_uploads:

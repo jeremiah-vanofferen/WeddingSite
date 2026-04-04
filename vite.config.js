@@ -2,6 +2,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+const parsedDevPort = Number.parseInt(process.env.VITE_BIND_PORT || '3000', 10)
+const devPort = Number.isInteger(parsedDevPort) && parsedDevPort > 0 ? parsedDevPort : 3000
+const devHost = process.env.VITE_BIND_HOST || '0.0.0.0'
+
 export default defineConfig({
   test: {
     globals: true,
@@ -20,8 +24,8 @@ export default defineConfig({
   },
   plugins: [react()],
   server: {
-    port: 3000,
-    host: '0.0.0.0',
+    port: devPort,
+    host: devHost,
     allowedHosts: ['wedding-app', 'wedding-app-test', 'localhost'],
     proxy: {
       '/api': {
