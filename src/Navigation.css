@@ -157,8 +157,7 @@
     padding: 1.25rem;
     padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
     border-left: 1px solid var(--outline-color);
-    background: #ffffff !important;
-    background-color: #ffffff !important;
+    background: var(--surface-strong);
     opacity: 1;
     color: var(--text-primary, #0f172a);
     box-shadow: -30px 0 60px rgba(2, 6, 23, 0.42);
