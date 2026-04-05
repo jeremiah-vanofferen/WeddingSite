@@ -8,10 +8,11 @@ yarn-error.log*
 # Dependencies
 node_modules/
 /.pnp
-.pnp.js
 
 # Testing
 coverage/
+backend/coverage/
+.pnp.js
 
 # Production
 /build
@@ -41,5 +42,3 @@ seed-uploads/*
 *.swp
 *.swo
 *~
-deploy/nginx.conf
-deploy/deploy.sh

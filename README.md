@@ -20,6 +20,7 @@ A full-stack wedding website with a React frontend, Node.js/Express backend, and
 - **RSVP page** — Guest self-service RSVP with party size; triggers email notification to admin
 - **Contact page** — Contact form that saves messages to the database and emails the admin
 - **Photo gallery** — Public gallery with lightbox viewing, featured-photo carousel support, and guest photo submission with admin approval
+- **Responsive navigation** — Desktop nav transitions to a mobile drawer menu on narrow screens
 - **Admin panel** — Password-protected dashboard with:
   - Wedding details management
   - Guest list (add, edit, delete, bulk CSV import)
@@ -83,9 +84,6 @@ BIND_HOST=0.0.0.0
 # Vite bind host/port (defaults: 0.0.0.0:3000)
 VITE_BIND_HOST=0.0.0.0
 VITE_BIND_PORT=3000
-# Optional: extra Vite allowed hosts (comma-separated)
-# Example: vanofferen.net,www.vanofferen.net
-VITE_ALLOWED_HOSTS=
 # Backend CORS allowlist origin (recommended in production)
 # Example: https://wedding.example.com
 CORS_ORIGIN=
@@ -120,8 +118,9 @@ Use these environment variables when you need to control how services bind and w
 - `BIND_HOST`: Host/IP for the backend Express server bind. Default is `0.0.0.0`.
 - `VITE_BIND_HOST`: Host/IP for the frontend Vite server bind. Default is `0.0.0.0`.
 - `VITE_BIND_PORT`: Frontend Vite port. Default is `3000`.
-- `VITE_ALLOWED_HOSTS`: Extra Vite allowed hosts, comma-separated. Example: `vanofferen.net,www.vanofferen.net`.
 - `CORS_ORIGIN`: Allowed origin for backend CORS in production. Example: `https://wedding.example.com`.
+
+Vite allowed hosts are configured statically in `vite.config.js` for `wedding-app`, `wedding-app-test`, and `localhost`.
 
 Behavior notes:
 
@@ -234,6 +233,8 @@ Each workflow runs **lint → test** in sequence. Concurrent runs on the same br
 
 The workflow `.github/workflows/deploy-docker.yml` publishes application images to Docker Hub when changes are merged to `main`.
 
+For complete server rollout instructions, see `deploy/DOCKERHUB_DEPLOYMENT.md`.
+
 It gates deployment behind successful checks:
 
 1. Frontend lint and tests
@@ -275,7 +276,7 @@ Set these in `.env` before running:
 - `POSTGRES_PASSWORD`
 - `DATABASE_URL`
 - `JWT_SECRET`
-- Optional: `BIND_HOST`, `VITE_BIND_HOST`, `VITE_BIND_PORT`, `VITE_ALLOWED_HOSTS`, `CORS_ORIGIN`
+- Optional: `BIND_HOST`, `VITE_BIND_HOST`, `VITE_BIND_PORT`, `CORS_ORIGIN`
 
 Notes:
 
@@ -328,6 +329,15 @@ chmod +x /weddingsite/deploy.sh
 ```
 
 If your Nginx container is managed in a separate compose stack, attach both stacks to a shared external Docker network so Nginx can reach the app service by container name.
+
+### Deployment Documentation Sync
+
+When deployment behavior changes, update docs in the same PR. At minimum, review and update:
+
+- `README.md` Docker Hub deployment and environment variable sections
+- `deploy/DOCKERHUB_DEPLOYMENT.md`
+- `deploy/deploy.sh` usage comments (if commands or required files changed)
+- `.github/workflows/deploy-docker.yml` notes in PR description (trigger/tag/registry behavior)
 
 To use these as required status checks, go to **Settings → Branches → Branch protection rules** in GitHub and add `Lint and Test Frontend` / `Lint and Test Backend` as required checks.
 
@@ -487,7 +497,6 @@ Backend test note:
 | `WEDDING_ADDRESS` | No | Seeds `settings.weddingAddress` during first DB initialization |
 | `WEDDING_DESCRIPTION` | No | Seeds `settings.weddingDescription` during first DB initialization |
 | `VITE_API_URL` | No | Backend API base URL (default: `/api` — same origin via Vite proxy) |
-| `VITE_ALLOWED_HOSTS` | No | Extra Vite allowed hosts (comma-separated) for reverse proxies/custom domains |
 | `RATE_LIMIT_MAX` | No | General `/api/*` max requests per 15 minutes (default: `100` in production, `10000` in `test`/`development`) |
 | `STRICT_RATE_LIMIT_MAX` | No | Sensitive endpoint max requests per 15 minutes (default: `20` in production, `10000` in `test`/`development`) |
 | `PUBLIC_JWT_EXPIRES_IN` | No | Expiration for anonymous public JWTs minted by `/api/public/token` (default: `2h`) |

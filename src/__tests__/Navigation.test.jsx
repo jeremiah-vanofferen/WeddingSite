@@ -67,6 +67,44 @@ describe('Navigation (logged out)', () => {
     renderNav({ ...defaultSettings, allowRsvp: false });
     expect(screen.queryByRole('link', { name: /rsvp/i })).not.toBeInTheDocument();
   });
+
+  it('toggles the mobile drawer from the menu button', () => {
+    renderNav();
+    const toggleButton = screen.getByRole('button', { name: /toggle navigation menu/i });
+    const navDrawer = document.getElementById('site-navigation');
+
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'false');
+    expect(navDrawer).not.toHaveClass('open');
+
+    fireEvent.click(toggleButton);
+
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'true');
+    expect(navDrawer).toHaveClass('open');
+  });
+
+  it('closes the mobile drawer when Escape is pressed', () => {
+    renderNav();
+    const toggleButton = screen.getByRole('button', { name: /toggle navigation menu/i });
+    const navDrawer = document.getElementById('site-navigation');
+
+    fireEvent.click(toggleButton);
+    expect(navDrawer).toHaveClass('open');
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(navDrawer).not.toHaveClass('open');
+  });
+
+  it('closes the mobile drawer when a nav link is clicked', () => {
+    renderNav();
+    const toggleButton = screen.getByRole('button', { name: /toggle navigation menu/i });
+    const navDrawer = document.getElementById('site-navigation');
+
+    fireEvent.click(toggleButton);
+    expect(navDrawer).toHaveClass('open');
+
+    fireEvent.click(screen.getByRole('link', { name: /^home$/i }));
+    expect(navDrawer).not.toHaveClass('open');
+  });
 });
 
 describe('Navigation (logged in)', () => {

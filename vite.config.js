@@ -5,10 +5,6 @@ import react from '@vitejs/plugin-react'
 const parsedDevPort = Number.parseInt(process.env.VITE_BIND_PORT || '3000', 10)
 const devPort = Number.isInteger(parsedDevPort) && parsedDevPort > 0 ? parsedDevPort : 3000
 const devHost = process.env.VITE_BIND_HOST || '0.0.0.0'
-const extraAllowedHosts = (process.env.VITE_ALLOWED_HOSTS || '')
-  .split(',')
-  .map((host) => host.trim())
-  .filter(Boolean)
 
 export default defineConfig({
   test: {
@@ -30,7 +26,7 @@ export default defineConfig({
   server: {
     port: devPort,
     host: devHost,
-    allowedHosts: ['wedding-app', 'wedding-app-test', 'localhost', ...extraAllowedHosts],
+    allowedHosts: ['wedding-app', 'wedding-app-test', 'localhost'],
     proxy: {
       '/api': {
         target: 'http://backend:5000',
