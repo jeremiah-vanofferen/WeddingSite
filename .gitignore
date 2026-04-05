@@ -42,4 +42,5 @@ seed-uploads/*
 *.swo
 *~
 deploy/nginx.conf
+deploy/nginx.compose.conf
 deploy/deploy.sh
