@@ -1,6 +1,6 @@
 {
   "name": "wedding-backend",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Backend API for wedding website",
   "main": "server.js",
   "scripts": {
