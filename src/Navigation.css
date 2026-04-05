@@ -220,8 +220,16 @@
   .nav-overlay {
     position: fixed;
     inset: 0;
+    width: 100vw;
+    height: 100dvh;
     z-index: 1250;
+    margin: 0;
+    padding: 0;
     border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    appearance: none;
+    -webkit-appearance: none;
     background: rgba(15, 23, 42, 0.32);
     opacity: 0;
     visibility: hidden;
