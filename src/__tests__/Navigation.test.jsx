@@ -1,6 +1,6 @@
 // Copyright 2026 Jeremiah Van Offeren
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Navigation from '../Navigation';
 
@@ -30,6 +30,14 @@ function renderNav(settings = defaultSettings) {
   );
 }
 
+function getDesktopNav() {
+  return document.querySelector('.nav-menu-desktop');
+}
+
+function getDesktopAuth() {
+  return document.querySelector('.nav-auth-desktop');
+}
+
 describe('Navigation (logged out)', () => {
   beforeEach(() => {
     useAuth.mockReturnValue({ isLoggedIn: false, logout: vi.fn() });
@@ -42,7 +50,7 @@ describe('Navigation (logged out)', () => {
 
   it('shows a "Login" button when not authenticated', () => {
     renderNav();
-    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
+    expect(within(getDesktopAuth()).getByRole('button', { name: /login/i })).toBeInTheDocument();
   });
 
   it('does not show the Admin nav link when not authenticated', () => {
@@ -52,20 +60,21 @@ describe('Navigation (logged out)', () => {
 
   it('shows the standard navigation links', () => {
     renderNav();
-    expect(screen.getByRole('link', { name: /home/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /schedule/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /contact/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /rsvp/i })).toBeInTheDocument();
+    const desktopNav = within(getDesktopNav());
+    expect(desktopNav.getByRole('link', { name: /home/i })).toBeInTheDocument();
+    expect(desktopNav.getByRole('link', { name: /schedule/i })).toBeInTheDocument();
+    expect(desktopNav.getByRole('link', { name: /contact/i })).toBeInTheDocument();
+    expect(desktopNav.getByRole('link', { name: /rsvp/i })).toBeInTheDocument();
   });
 
   it('shows the RSVP link when allowRsvp is true', () => {
     renderNav({ ...defaultSettings, allowRsvp: true });
-    expect(screen.getByRole('link', { name: /rsvp/i })).toBeInTheDocument();
+    expect(within(getDesktopNav()).getByRole('link', { name: /rsvp/i })).toBeInTheDocument();
   });
 
   it('hides the RSVP link when allowRsvp is false', () => {
     renderNav({ ...defaultSettings, allowRsvp: false });
-    expect(screen.queryByRole('link', { name: /rsvp/i })).not.toBeInTheDocument();
+    expect(within(getDesktopNav()).queryByRole('link', { name: /rsvp/i })).not.toBeInTheDocument();
   });
 
   it('toggles the mobile drawer from the menu button', () => {
@@ -102,7 +111,7 @@ describe('Navigation (logged out)', () => {
     fireEvent.click(toggleButton);
     expect(navDrawer).toHaveClass('open');
 
-    fireEvent.click(screen.getByRole('link', { name: /^home$/i }));
+    fireEvent.click(within(navDrawer).getByRole('link', { name: /^home$/i }));
     expect(navDrawer).not.toHaveClass('open');
   });
 });
@@ -114,17 +123,17 @@ describe('Navigation (logged in)', () => {
 
   it('shows a "Logout" button when authenticated', () => {
     renderNav();
-    expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument();
+    expect(within(getDesktopAuth()).getByRole('button', { name: /logout/i })).toBeInTheDocument();
   });
 
   it('shows the Admin nav link when authenticated', () => {
     renderNav();
-    expect(screen.getByRole('link', { name: /admin/i })).toBeInTheDocument();
+    expect(within(getDesktopNav()).getByRole('link', { name: /admin/i })).toBeInTheDocument();
   });
 
   it('does not show the "Login" button when authenticated', () => {
     renderNav();
-    expect(screen.queryByRole('button', { name: /^login$/i })).not.toBeInTheDocument();
+    expect(within(getDesktopAuth()).queryByRole('button', { name: /^login$/i })).not.toBeInTheDocument();
   });
 });
 
@@ -136,13 +145,13 @@ describe('Navigation (logged in)', () => {
     it('shows the login modal when the Login button is clicked', () => {
       renderNav();
       expect(screen.queryByTestId('login-modal')).not.toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: /^login$/i }));
+      fireEvent.click(within(getDesktopAuth()).getByRole('button', { name: /^login$/i }));
       expect(screen.getByTestId('login-modal')).toBeInTheDocument();
     });
 
     it('closes the modal when the modal onClose callback fires', () => {
       renderNav();
-      fireEvent.click(screen.getByRole('button', { name: /^login$/i }));
+      fireEvent.click(within(getDesktopAuth()).getByRole('button', { name: /^login$/i }));
       expect(screen.getByTestId('login-modal')).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: /close modal/i }));
       expect(screen.queryByTestId('login-modal')).not.toBeInTheDocument();
@@ -150,7 +159,7 @@ describe('Navigation (logged in)', () => {
 
     it('closes the modal when login succeeds', () => {
       renderNav();
-      fireEvent.click(screen.getByRole('button', { name: /^login$/i }));
+      fireEvent.click(within(getDesktopAuth()).getByRole('button', { name: /^login$/i }));
       expect(screen.getByTestId('login-modal')).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: /login success/i }));
       expect(screen.queryByTestId('login-modal')).not.toBeInTheDocument();

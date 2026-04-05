@@ -220,9 +220,9 @@ $env:CORS_ORIGIN = "http://127.0.0.1:3000"
 
 ## CI / GitHub Actions
 
-Two GitHub Actions workflows run automatically on every push to `main`, `master`, or `develop`, and on any pull request that touches the relevant paths.
+Two GitHub Actions workflows run automatically on every push to `main`, `master`, or `develop`. They also run on every pull request targeting `main`, `master`, or `develop`, even when changed files do not match the usual path filters.
 
-| Workflow | File | Triggers on |
+| Workflow | File | Push triggers on |
 |---|---|---|
 | Frontend CI | `.github/workflows/frontend-ci.yml` | `src/**`, `public/**`, `package*.json`, `vite.config.js`, `eslint.config.js` |
 | Backend CI | `.github/workflows/backend-ci.yml` | `backend/**` |

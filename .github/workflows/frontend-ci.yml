@@ -2,14 +2,10 @@ name: Frontend CI
 
 on:
   pull_request:
-    paths:
-      - 'src/**'
-      - 'public/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'vite.config.js'
-      - 'eslint.config.js'
-      - '.github/workflows/frontend-ci.yml'
+    branches:
+      - main
+      - master
+      - develop
   push:
     branches:
       - main
