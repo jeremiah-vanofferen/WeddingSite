@@ -85,7 +85,9 @@ export default function Gallery() {
               onClick={() => setLightbox(photo)}
               aria-label={`View photo: ${photo.caption || 'Untitled'}`}
             >
-              <img src={photo.url} alt={photo.caption || ''} className="gallery-img" />
+              <div className="gallery-img-wrap">
+                <img src={photo.url} alt={photo.caption || ''} className="gallery-img" />
+              </div>
               {photo.caption && <p className="gallery-caption">{photo.caption}</p>}
             </button>
           ))}

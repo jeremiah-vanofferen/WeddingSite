@@ -1,13 +1,11 @@
 /* Copyright 2026 Jeremiah Van Offeren */
 .photo-carousel {
-  --carousel-height: 500px;
   width: 100%;
 }
 
 .carousel-container {
   position: relative;
   width: 100%;
-  max-height: var(--carousel-height);
   overflow: hidden;
   border-radius: var(--radius-md) var(--radius-md) 0 0;
   background: linear-gradient(135deg, rgba(224, 233, 248, 0.9), rgba(241, 245, 250, 0.96));
@@ -45,12 +43,12 @@
 
 .carousel-image {
   width: 100%;
-  height: var(--carousel-height);
-  object-fit: cover;
+  height: auto;
+  max-height: 80vh;
+  display: block;
+  object-fit: contain;
   pointer-events: none;
   user-select: none;
-
-  display: block;
 }
 
 /* Fade transition */
@@ -72,17 +70,18 @@
 
 /* Slide transition */
 .carousel-slide-wrapper {
-  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
   width: 100%;
-  height: var(--carousel-height);
+  overflow: hidden;
 }
 
 .carousel-slide-wrapper .carousel-image {
-  position: absolute;
-  top: 0;
-  left: 0;
+  grid-area: 1 / 1;
   width: 100%;
-  height: 100%;
+  height: auto;
+  max-height: 80vh;
+  object-fit: contain;
 }
 
 @keyframes slideEnterFromRight {
@@ -211,21 +210,12 @@
 
 /* Responsive design */
 @media (max-width: 768px) {
-  .photo-carousel {
-    --carousel-height: 350px;
-  }
-
   .carousel-container {
     background: #0f172a;
   }
 
   .carousel-empty-state {
     min-height: 220px;
-  }
-
-  .carousel-image {
-    object-fit: cover;
-    object-position: center;
   }
 
   .carousel-btn {
@@ -252,10 +242,6 @@
 }
 
 @media (max-width: 480px) {
-  .photo-carousel {
-    --carousel-height: 250px;
-  }
-
   .carousel-container {
     background: #0f172a;
   }
