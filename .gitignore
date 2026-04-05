@@ -10,9 +10,6 @@ node_modules/
 /.pnp
 .pnp.js
 
-# Testing
-coverage/
-
 # Production
 /build
 /dist
@@ -41,6 +38,3 @@ seed-uploads/*
 *.swp
 *.swo
 *~
-deploy/nginx.conf
-deploy/nginx.compose.conf
-deploy/deploy.sh
