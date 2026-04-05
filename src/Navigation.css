@@ -23,10 +23,7 @@
 }
 
 .nav-drawer {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex: 1;
+  display: none;
 }
 
 .nav-brand {
@@ -81,6 +78,14 @@
   gap: 0.75rem;
 }
 
+.nav-menu-desktop {
+  display: flex;
+}
+
+.nav-auth-desktop {
+  display: flex;
+}
+
 .nav-toggle {
   display: none;
   width: 44px;
@@ -118,10 +123,21 @@
 }
 
 @media (max-width: 900px) {
+  .navbar {
+    z-index: 1300;
+  }
+
   .nav-container {
     border-radius: 18px;
     padding: 1rem;
     gap: 1rem;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  .nav-menu-desktop,
+  .nav-auth-desktop {
+    display: none;
   }
 
   .nav-toggle {
@@ -130,21 +146,29 @@
   }
 
   .nav-drawer {
+    display: flex;
     position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
+    height: 100vh;
     width: min(86vw, 320px);
-    z-index: 1300;
+    z-index: 1310;
     padding: 1.25rem;
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
     border-left: 1px solid var(--outline-color);
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: -24px 0 48px rgba(21, 28, 40, 0.22);
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    opacity: 1;
+    color: var(--text-primary, #0f172a);
+    box-shadow: -30px 0 60px rgba(2, 6, 23, 0.42);
+    backdrop-filter: none;
     display: flex;
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
     gap: 1rem;
+    overflow-y: auto;
     transform: translateX(110%);
     visibility: hidden;
     pointer-events: none;
@@ -172,11 +196,22 @@
   .nav-menu a {
     width: 100%;
     justify-content: flex-start;
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  .nav-drawer .nav-menu a:hover,
+  .nav-drawer .nav-menu a:focus-visible {
+    background: rgba(53, 89, 213, 0.22);
   }
 
   .nav-auth {
     width: 100%;
     margin-top: auto;
+  }
+
+  .nav-auth-mobile {
+    display: flex;
   }
 
   .login-nav-btn,
@@ -187,9 +222,9 @@
   .nav-overlay {
     position: fixed;
     inset: 0;
-    z-index: 1200;
+    z-index: 1250;
     border: 0;
-    background: rgba(10, 12, 18, 0.35);
+    background: transparent;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
