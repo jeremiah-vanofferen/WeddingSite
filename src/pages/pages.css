@@ -1,3 +1,26 @@
+/* Shared cancel button style for all modals */
+.cancel-btn {
+  color: var(--primary-color, #3559d5);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.92));
+  border: 1px solid var(--primary-color, #3559d5);
+  box-shadow: none;
+  backdrop-filter: blur(10px);
+  min-width: 150px;
+  border-radius: 26px;
+  padding: 0.5rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.cancel-btn:hover:not(:disabled),
+.cancel-btn:focus-visible:not(:disabled) {
+  color: var(--primary-color-hover, #5278e6);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(241, 245, 249, 0.98));
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  outline: none;
+}
 /* Copyright 2026 Jeremiah Van Offeren */
 .page {
   max-width: var(--page-max-width);
@@ -218,8 +241,9 @@
 .detail-list {
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: 1.1rem;
   margin-top: 0.8rem;
+  /* Ensure minimum vertical padding between all cells */
 }
 
 .detail-list a {

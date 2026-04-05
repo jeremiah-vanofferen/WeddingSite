@@ -76,7 +76,7 @@ What the script does:
 Set `APP_IMAGE_TAG` in `/weddingsite/.env` and redeploy:
 
 ```env
-APP_IMAGE_TAG=1.0.7
+APP_IMAGE_TAG=1.0.8
 ```
 
 Then run:

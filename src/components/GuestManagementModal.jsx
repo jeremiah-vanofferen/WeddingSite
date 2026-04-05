@@ -352,7 +352,7 @@ export function GuestManagementModal({ onClose }) {
 
           {/* CSV Upload Section */}
           <div className="csv-upload-section">
-            <h3>Import Guests from CSV</h3>
+            <h3 style={{ marginBottom: '1.1rem' }}>Import Guests from CSV</h3>
             <div className="upload-controls">
               <input
                 type="file"
@@ -565,7 +565,7 @@ export function AddGuestModal({ onSave, onClose }) {
           <h2>Add New Guest</h2>
           <button className="admin-modal-close" onClick={onClose}>&times;</button>
         </div>
-        <form className="admin-modal-body admin-form" onSubmit={handleSubmit}>
+        <form className="admin-modal-body admin-form admin-detail-list" onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="name">Guest Name</label>
             <input
@@ -679,7 +679,7 @@ function EditGuestModal({ guest, onSave, onClose }) {
           <h2>Edit Guest</h2>
           <button className="admin-modal-close" onClick={onClose}>&times;</button>
         </div>
-        <form className="admin-modal-body admin-form" onSubmit={handleSubmit}>
+        <form className="admin-modal-body admin-form admin-detail-list" onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="edit-name">Guest Name</label>
             <input
