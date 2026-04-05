@@ -181,19 +181,11 @@ export function PhotoCarousel() {
     handleButtonPress(event, prevSlide);
   };
 
-  const handlePrevTouchStart = (event) => {
-    handleButtonPress(event, prevSlide);
-  };
-
   const handlePrevClick = () => {
     handleButtonClick(prevSlide);
   };
 
   const handleNextMouseDown = (event) => {
-    handleButtonPress(event, nextSlide);
-  };
-
-  const handleNextTouchStart = (event) => {
     handleButtonPress(event, nextSlide);
   };
 
@@ -241,8 +233,7 @@ export function PhotoCarousel() {
         {photos.length > 1 && (
           <button
             className="carousel-btn carousel-prev"
-            onMouseDown={handlePrevMouseDown}
-            onTouchStart={handlePrevTouchStart}
+            onPointerDown={handlePrevMouseDown}
             onClick={handlePrevClick}
             aria-label="Previous photo"
             type="button"
@@ -255,8 +246,7 @@ export function PhotoCarousel() {
         {photos.length > 1 && (
           <button
             className="carousel-btn carousel-next"
-            onMouseDown={handleNextMouseDown}
-            onTouchStart={handleNextTouchStart}
+            onPointerDown={handleNextMouseDown}
             onClick={handleNextClick}
             aria-label="Next photo"
             type="button"

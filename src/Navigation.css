@@ -7,6 +7,7 @@
 }
 
 .nav-container {
+  position: relative;
   max-width: calc(var(--page-max-width) + 48px);
   margin: 0 auto;
   padding: 0.95rem 1.25rem;
@@ -19,6 +20,13 @@
   background: rgba(255, 255, 255, 0.72);
   box-shadow: var(--shadow-2);
   backdrop-filter: blur(18px);
+}
+
+.nav-drawer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
 }
 
 .nav-brand {
@@ -73,6 +81,37 @@
   gap: 0.75rem;
 }
 
+.nav-toggle {
+  display: none;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--outline-color);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.75);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.nav-toggle:hover,
+.nav-toggle:focus-visible {
+  border-color: var(--primary-color, #3559d5);
+  background: rgba(53, 89, 213, 0.1);
+}
+
+.nav-toggle-bar {
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--text-primary);
+}
+
+.nav-overlay {
+  display: none;
+}
+
 .login-nav-btn,
 .logout-nav-btn {
   min-width: 122px;
@@ -80,22 +119,88 @@
 
 @media (max-width: 900px) {
   .nav-container {
-    border-radius: 28px;
+    border-radius: 18px;
     padding: 1rem;
-    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .nav-toggle {
+    display: inline-flex;
+    margin-left: auto;
+  }
+
+  .nav-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(86vw, 320px);
+    z-index: 1300;
+    padding: 1.25rem;
+    border-left: 1px solid var(--outline-color);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: -24px 0 48px rgba(21, 28, 40, 0.22);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 1rem;
+    transform: translateX(110%);
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 0.28s ease;
+  }
+
+  .nav-drawer.open {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
   }
 
   .nav-menu {
-    order: 3;
+    flex: 0;
     width: 100%;
-    justify-content: flex-start;
-    overflow-x: auto;
-    padding-bottom: 0.1rem;
-    scrollbar-width: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
   }
 
-  .nav-menu::-webkit-scrollbar {
-    display: none;
+  .nav-menu li {
+    width: 100%;
+  }
+
+  .nav-menu a {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .nav-auth {
+    width: 100%;
+    margin-top: auto;
+  }
+
+  .login-nav-btn,
+  .logout-nav-btn {
+    width: 100%;
+  }
+
+  .nav-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    border: 0;
+    background: rgba(10, 12, 18, 0.35);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+    display: block;
+  }
+
+  .nav-overlay.open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
   }
 }
 
@@ -112,12 +217,13 @@
     font-size: 1.25rem;
   }
 
-  .nav-auth {
-    width: 100%;
+  .nav-drawer {
+    width: min(90vw, 300px);
+    padding: 1.1rem;
   }
 
-  .login-nav-btn,
-  .logout-nav-btn {
-    width: 100%;
+  .nav-toggle {
+    width: 42px;
+    height: 42px;
   }
 }
