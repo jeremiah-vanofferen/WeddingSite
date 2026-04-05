@@ -8,6 +8,10 @@ yarn-error.log*
 # Dependencies
 node_modules/
 /.pnp
+
+# Testing
+coverage/
+backend/coverage/
 .pnp.js
 
 # Production
