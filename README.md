@@ -234,6 +234,8 @@ Each workflow runs **lint → test** in sequence. Concurrent runs on the same br
 
 The workflow `.github/workflows/deploy-docker.yml` publishes application images to Docker Hub when changes are merged to `main`.
 
+For complete server rollout instructions, see `deploy/DOCKERHUB_DEPLOYMENT.md`.
+
 It gates deployment behind successful checks:
 
 1. Frontend lint and tests
@@ -328,6 +330,15 @@ chmod +x /weddingsite/deploy.sh
 ```
 
 If your Nginx container is managed in a separate compose stack, attach both stacks to a shared external Docker network so Nginx can reach the app service by container name.
+
+### Deployment Documentation Sync
+
+When deployment behavior changes, update docs in the same PR. At minimum, review and update:
+
+- `README.md` Docker Hub deployment and environment variable sections
+- `deploy/DOCKERHUB_DEPLOYMENT.md`
+- `deploy/deploy.sh` usage comments (if commands or required files changed)
+- `.github/workflows/deploy-docker.yml` notes in PR description (trigger/tag/registry behavior)
 
 To use these as required status checks, go to **Settings → Branches → Branch protection rules** in GitHub and add `Lint and Test Frontend` / `Lint and Test Backend` as required checks.
 
