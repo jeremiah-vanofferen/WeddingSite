@@ -177,7 +177,7 @@ export function PhotoCarousel() {
     handler();
   };
 
-  const handlePrevMouseDown = (event) => {
+  const handlePrevPointerDown = (event) => {
     handleButtonPress(event, prevSlide);
   };
 
@@ -185,7 +185,7 @@ export function PhotoCarousel() {
     handleButtonClick(prevSlide);
   };
 
-  const handleNextMouseDown = (event) => {
+  const handleNextPointerDown = (event) => {
     handleButtonPress(event, nextSlide);
   };
 
@@ -233,7 +233,7 @@ export function PhotoCarousel() {
         {photos.length > 1 && (
           <button
             className="carousel-btn carousel-prev"
-            onPointerDown={handlePrevMouseDown}
+            onPointerDown={handlePrevPointerDown}
             onClick={handlePrevClick}
             aria-label="Previous photo"
             type="button"
@@ -246,7 +246,7 @@ export function PhotoCarousel() {
         {photos.length > 1 && (
           <button
             className="carousel-btn carousel-next"
-            onPointerDown={handleNextMouseDown}
+            onPointerDown={handleNextPointerDown}
             onClick={handleNextClick}
             aria-label="Next photo"
             type="button"
