@@ -59,6 +59,21 @@ export default function Navigation({ settings }) {
       <nav className="navbar">
         <div className="nav-container">
           <Link to="/" className="nav-brand" onClick={handleNavClick}>{settings?.websiteName || 'Wedding'}</Link>
+          <ul className="nav-menu nav-menu-desktop">
+            <li><Link to="/">Home</Link></li>
+            <li><Link to="/schedule">Schedule</Link></li>
+            <li><Link to="/gallery">Gallery</Link></li>
+            <li><Link to="/contact">Contact</Link></li>
+            {settings?.allowRsvp && <li><Link to="/rsvp">RSVP</Link></li>}
+            {isLoggedIn && <li><Link to="/admin">Admin</Link></li>}
+          </ul>
+          <div className="nav-auth nav-auth-desktop">
+            {isLoggedIn ? (
+              <button className="logout-nav-btn" onClick={handleLogout}>Logout</button>
+            ) : (
+              <button className="login-nav-btn" onClick={handleOpenLogin}>Login</button>
+            )}
+          </div>
           <button
             className="nav-toggle"
             aria-label="Toggle navigation menu"
@@ -70,25 +85,25 @@ export default function Navigation({ settings }) {
             <span className="nav-toggle-bar" />
             <span className="nav-toggle-bar" />
           </button>
-          <div id="site-navigation" className={`nav-drawer ${mobileMenuOpen ? 'open' : ''}`}>
-            <ul className="nav-menu">
-              <li><Link to="/" onClick={handleNavClick}>Home</Link></li>
-              <li><Link to="/schedule" onClick={handleNavClick}>Schedule</Link></li>
-              <li><Link to="/gallery" onClick={handleNavClick}>Gallery</Link></li>
-              <li><Link to="/contact" onClick={handleNavClick}>Contact</Link></li>
-              {settings?.allowRsvp && <li><Link to="/rsvp" onClick={handleNavClick}>RSVP</Link></li>}
-              {isLoggedIn && <li><Link to="/admin" onClick={handleNavClick}>Admin</Link></li>}
-            </ul>
-            <div className="nav-auth">
-              {isLoggedIn ? (
-                <button className="logout-nav-btn" onClick={handleLogout}>Logout</button>
-              ) : (
-                <button className="login-nav-btn" onClick={handleOpenLogin}>Login</button>
-              )}
-            </div>
-          </div>
         </div>
       </nav>
+      <div id="site-navigation" className={`nav-drawer ${mobileMenuOpen ? 'open' : ''}`}>
+        <ul className="nav-menu nav-menu-mobile">
+          <li><Link to="/" onClick={handleNavClick}>Home</Link></li>
+          <li><Link to="/schedule" onClick={handleNavClick}>Schedule</Link></li>
+          <li><Link to="/gallery" onClick={handleNavClick}>Gallery</Link></li>
+          <li><Link to="/contact" onClick={handleNavClick}>Contact</Link></li>
+          {settings?.allowRsvp && <li><Link to="/rsvp" onClick={handleNavClick}>RSVP</Link></li>}
+          {isLoggedIn && <li><Link to="/admin" onClick={handleNavClick}>Admin</Link></li>}
+        </ul>
+        <div className="nav-auth nav-auth-mobile">
+          {isLoggedIn ? (
+            <button className="logout-nav-btn" onClick={handleLogout}>Logout</button>
+          ) : (
+            <button className="login-nav-btn" onClick={handleOpenLogin}>Login</button>
+          )}
+        </div>
+      </div>
       <button
         type="button"
         className={`nav-overlay ${mobileMenuOpen ? 'open' : ''}`}
