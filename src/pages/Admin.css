@@ -1,3 +1,19 @@
+.photo-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+/* Extra spacing for approval modal caption/feature tag */
+.gallery-approval-caption,
+.gallery-approval-featured {
+  margin-bottom: 0.7rem;
+}
+/* Consistent vertical gap for admin detail/caption/action lists */
+.admin-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
 /* Copyright 2026 Jeremiah Van Offeren */
 .admin-header {
   margin-bottom: 2rem;

@@ -42,7 +42,7 @@ export function WeddingDetailsModal({ details, onSave, onClose }) {
           <h2>Edit Wedding Details</h2>
           <button className="admin-modal-close" onClick={onClose}>&times;</button>
         </div>
-        <form className="admin-modal-body admin-form" onSubmit={handleSubmit}>
+        <form className="admin-modal-body admin-form admin-detail-list" onSubmit={handleSubmit}>
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="date">Wedding Date</label>
@@ -154,15 +154,17 @@ export function ViewDetailsModal({ details, onClose }) {
         <div className="admin-modal-body">
           <div className="demo-card">
             <h3>Wedding Information</h3>
-            <p><strong>Date:</strong> {formatWeddingDate(details.date)}</p>
-            <p><strong>Time:</strong> {formatTimeOfDay(details.time)} ({timeZoneLabel})</p>
-            <p><strong>Time Zone:</strong> {timeZone} ({timeZoneLabel})</p>
-            <p><strong>Venue:</strong> {details.location}</p>
-            <p><strong>Address:</strong> {details.address}</p>
-            <p><strong>Description:</strong> {details.description}</p>
-            {details.registryUrl && (
-              <p><strong>Registry:</strong> <a href={details.registryUrl} target="_blank" rel="noopener noreferrer">View Our Registry</a></p>
-            )}
+            <div className="detail-list">
+              <p><strong>Date:</strong> {formatWeddingDate(details.date)}</p>
+              <p><strong>Time:</strong> {formatTimeOfDay(details.time)} ({timeZoneLabel})</p>
+              <p><strong>Time Zone:</strong> {timeZone} ({timeZoneLabel})</p>
+              <p><strong>Venue:</strong> {details.location}</p>
+              <p><strong>Address:</strong> {details.address}</p>
+              <p><strong>Description:</strong> {details.description}</p>
+              {details.registryUrl && (
+                <p><strong>Registry:</strong> <a href={details.registryUrl} target="_blank" rel="noopener noreferrer">View Our Registry</a></p>
+              )}
+            </div>
           </div>
         </div>
         <div className="admin-modal-footer">

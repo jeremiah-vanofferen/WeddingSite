@@ -97,7 +97,7 @@ export function SettingsModal({ settings, onSave, onClose }) {
         </div>
         <form className="admin-modal-body admin-form" onSubmit={handleSubmit}>
           {/* Website Name Section */}
-          <div className="settings-section">
+          <div className="settings-section admin-detail-list">
             <h3 className="section-title">Basic Information</h3>
             <div className="setting-item">
               <label htmlFor="websiteName">Website Name</label>
@@ -138,7 +138,7 @@ export function SettingsModal({ settings, onSave, onClose }) {
             </div>
           </div>
           {/* Theme & Colors Section */}
-          <div className="settings-section">
+          <div className="settings-section admin-detail-list">
             <h3 className="section-title">Theme & Colors</h3>
             <div className="settings-grid">
               <div className="setting-item">
@@ -270,7 +270,7 @@ export function SettingsModal({ settings, onSave, onClose }) {
             </div>
           </div>
           {/* Features Section */}
-          <div className="settings-section">
+          <div className="settings-section admin-detail-list">
             <h3 className="section-title">Features</h3>
             <div className="settings-grid-full">
               <div className="setting-item">

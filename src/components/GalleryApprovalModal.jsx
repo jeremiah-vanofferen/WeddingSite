@@ -67,7 +67,7 @@ export function GalleryApprovalModal({ onClose }) {
                     className="gallery-approval-image"
                     onError={e => { e.target.style.display = 'none'; }}
                   />
-                  <div className="gallery-approval-meta">
+                  <div className="gallery-approval-meta admin-detail-list">
                     <p className="gallery-approval-caption">
                       {photo.caption || <em className="gallery-approval-no-caption">No caption</em>}
                     </p>
