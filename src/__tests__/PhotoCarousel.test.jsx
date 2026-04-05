@@ -282,7 +282,7 @@ describe('PhotoCarousel', () => {
       expect(screen.getByRole('img', { name: 'First photo' })).toBeInTheDocument();
     });
 
-    fireEvent.mouseDown(screen.getByRole('button', { name: 'Next photo' }));
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Next photo' }));
 
     expect(screen.getByRole('img', { name: 'Second photo' })).toBeInTheDocument();
   });

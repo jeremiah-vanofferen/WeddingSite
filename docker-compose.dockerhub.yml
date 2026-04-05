@@ -60,7 +60,6 @@ services:
       NODE_ENV: production
       VITE_BIND_HOST: ${VITE_BIND_HOST:-0.0.0.0}
       VITE_BIND_PORT: ${VITE_BIND_PORT:-3000}
-      VITE_ALLOWED_HOSTS: ${VITE_ALLOWED_HOSTS:-http://localhost:3000}
     depends_on:
       - backend
     restart: unless-stopped
