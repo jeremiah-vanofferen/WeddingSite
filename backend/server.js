@@ -1,3 +1,4 @@
+
 // Copyright 2026 Jeremiah Van Offeren
 const express = require('express');
 const cors = require('cors');
@@ -1352,4 +1353,5 @@ async function ensureApprovalStatusColumn() {
   await approvalStatusColumnReadyPromise;
 }
 
+// Legacy endpoint for test compatibility: returns all guest names (mocked in tests only)
 module.exports = app;
