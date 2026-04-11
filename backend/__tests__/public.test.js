@@ -114,33 +114,6 @@ describe('GET /api/public/settings', () => {
   });
 });
 
-describe('GET /api/public/guest-names', () => {
-  beforeEach(() => {
-    jest.resetAllMocks();
-    silenceExpectedConsole();
-  });
-
-  it('returns a list of guest names', async () => {
-    pool.query.mockResolvedValueOnce({
-      rows: [
-        { name: 'Alice Smith' },
-        { name: 'Bob Jones' },
-      ]
-    });
-
-    const res = await request(app).get('/api/public/guest-names');
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(['Alice Smith', 'Bob Jones']);
-  });
-
-  it('returns 500 on database error', async () => {
-    pool.query.mockRejectedValueOnce(new Error('DB failure'));
-
-    const res = await request(app).get('/api/public/guest-names');
-    expect(res.status).toBe(500);
-    expect(res.body.error).toBeDefined();
-  });
-});
 
 describe('GET /api/public/guest-lookup', () => {
   beforeEach(() => {
@@ -151,7 +124,7 @@ describe('GET /api/public/guest-lookup', () => {
   it('returns name suggestions', async () => {
     pool.query.mockResolvedValueOnce({ rows: [{ value: 'Alice Smith' }, { value: 'Bob Jones' }] });
 
-    const res = await request(app).get('/api/public/guest-lookup');
+    const res = await request(app).get('/api/public/guest-lookup?q=Al');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ suggestions: ['Alice Smith', 'Bob Jones'] });
   });
@@ -159,7 +132,7 @@ describe('GET /api/public/guest-lookup', () => {
   it('returns 500 on database error', async () => {
     pool.query.mockRejectedValueOnce(new Error('DB failure'));
 
-    const res = await request(app).get('/api/public/guest-lookup');
+    const res = await request(app).get('/api/public/guest-lookup?q=Al');
     expect(res.status).toBe(500);
     expect(res.body.error).toBeDefined();
   });

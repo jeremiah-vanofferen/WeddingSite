@@ -11,27 +11,34 @@ export default function Contact() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [guestSuggestions, setGuestSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
+  // Autocomplete guest name as user types
   useEffect(() => {
-    let isMounted = true;
-
-    const loadGuestNames = async () => {
-      const data = await fetchGuestLookupSuggestions();
-      if (isMounted) {
-        setGuestSuggestions(data.suggestions);
+    let active = true;
+    const fetchSuggestions = async () => {
+      if (form.name && form.name.length >= 2) {
+        const data = await fetchGuestLookupSuggestions(form.name);
+        if (active) setGuestSuggestions(data.suggestions);
+      } else {
+        setGuestSuggestions([]);
       }
     };
-
-    loadGuestNames();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    fetchSuggestions();
+    return () => { active = false; };
+  }, [form.name]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    if (name === 'name') {
+      setShowSuggestions(true);
+    }
+  };
+
+  const handleSuggestionClick = (suggestion) => {
+    setForm((prev) => ({ ...prev, name: suggestion }));
+    setShowSuggestions(false);
   };
 
   const handleSubmit = async (e) => {
@@ -104,14 +111,34 @@ export default function Contact() {
         <div className="demo-card form-card">
           <p className="section-kicker">Send a note</p>
           <form className="contact-form" onSubmit={handleSubmit}>
-            <div className="form-group">
+            <div className="form-group" style={{ position: 'relative' }}>
               <label htmlFor="contact-name">Name</label>
-              <input id="contact-name" name="name" type="text" list="contact-guest-suggestions" value={form.name} onChange={handleChange} required />
-              <datalist id="contact-guest-suggestions">
-                {guestSuggestions.map((name) => (
-                  <option key={name} value={name} />
-                ))}
-              </datalist>
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="contact-name"
+                  name="name"
+                  type="text"
+                  autoComplete="off"
+                  value={form.name}
+                  onChange={handleChange}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 100)}
+                  onFocus={() => form.name.length >= 2 && setShowSuggestions(true)}
+                  required
+                  aria-autocomplete="list"
+                  aria-controls="contact-guest-suggestions-list"
+                />
+                {showSuggestions && guestSuggestions.length > 0 && (
+                  <ul
+                    className="autocomplete-suggestions"
+                    id="contact-guest-suggestions-list"
+                    style={{ top: '100%', left: 0, right: 0, position: 'absolute' }}
+                  >
+                    {guestSuggestions.map((name) => (
+                      <li key={name} onMouseDown={() => handleSuggestionClick(name)}>{name}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
             <div className="form-group">
               <label htmlFor="contact-email">Email</label>
