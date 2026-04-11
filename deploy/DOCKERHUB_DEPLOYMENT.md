@@ -10,7 +10,7 @@ The GitHub Actions workflow `.github/workflows/deploy-docker.yml` runs on pushes
 2. Builds and pushes three Docker images.
 
 3. Tags images with:
-   - `1.1.0` from `package.json`
+   - `1.1.1` from `package.json`
    - `latest`
    - `sha-<commit>`
 4. Creates a GitHub Release tag `v1.0.10` if it does not exist.
