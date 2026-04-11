@@ -41,15 +41,17 @@ export async function fetchPublicSettings() {
   return data && !data.error ? data : null;
 }
 
-export async function fetchGuestLookupSuggestions() {
-  const data = await fetchJsonOrFallback('/public/guest-lookup', { suggestions: [] });
+// Autocomplete guest name suggestions (requires at least 2 chars)
+export async function fetchGuestLookupSuggestions(query) {
+  if (!query || query.length < 2) return { suggestions: [] };
+  const params = new URLSearchParams({ q: query });
+  const data = await fetchJsonOrFallback(`/public/guest-lookup?${params.toString()}`, { suggestions: [] });
   const suggestions = Array.isArray(data?.suggestions)
     ? data.suggestions
       .filter((value) => typeof value === 'string')
       .map((value) => value.trim())
       .filter((value) => value.length > 0)
     : [];
-
   return { suggestions };
 }
 
