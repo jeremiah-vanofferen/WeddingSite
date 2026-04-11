@@ -28,21 +28,23 @@ describe('Contact Page', () => {
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/message/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /send message/i })).toBeInTheDocument();
+    // Simulate typing to trigger suggestions
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Al' } });
     await waitFor(() => {
-      const options = document.querySelectorAll('#contact-guest-suggestions option');
-      expect(options).toHaveLength(2);
+      const suggestions = document.querySelectorAll('#contact-guest-suggestions-list li');
+      expect(suggestions).toHaveLength(2);
     });
   });
 
   it('loads guest names into name autofill suggestions', async () => {
     render(<Contact />);
-
     const nameInput = screen.getByLabelText(/name/i);
-    expect(nameInput).toHaveAttribute('list', 'contact-guest-suggestions');
-
+    fireEvent.change(nameInput, { target: { value: 'Al' } });
     await waitFor(() => {
-      const options = document.querySelectorAll('#contact-guest-suggestions option');
-      expect(options).toHaveLength(2);
+      const suggestions = document.querySelectorAll('#contact-guest-suggestions-list li');
+      expect(suggestions).toHaveLength(2);
+      expect(suggestions[0].textContent).toBe('Alice');
+      expect(suggestions[1].textContent).toBe('Bob');
     });
   });
 

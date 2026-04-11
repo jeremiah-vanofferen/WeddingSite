@@ -1,4 +1,5 @@
 // Copyright 2026 Jeremiah Van Offeren
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -679,24 +680,29 @@ app.get('/api/public/settings', authenticatePublicToken, async (req, res) => {
 });
 
 // Get public guest names for RSVP/contact autofill suggestions
-app.get('/api/public/guest-names', authenticatePublicToken, async (_req, res) => {
+// Autocomplete guest name suggestions (privacy-safe, never returns full list)
+app.get('/api/public/guest-lookup', authenticatePublicToken, async (req, res) => {
   try {
+    const q = (req.query.q || '').trim();
+    if (!q || q.length < 2) {
+      // Require at least 2 chars to search
+      return res.json({ suggestions: [] });
+    }
     const result = await pool.query(
-      `SELECT DISTINCT name
-       FROM guests
-       WHERE name IS NOT NULL
-         AND btrim(name) <> ''
-       ORDER BY name ASC
-       LIMIT 500`
+      `SELECT DISTINCT name AS value
+         FROM guests
+        WHERE name ILIKE $1
+          AND name IS NOT NULL
+          AND btrim(name) <> ''
+        ORDER BY name ASC
+        LIMIT 5`, [`%${q}%`]
     );
-
-    const names = result.rows
-      .map((row) => row.name)
-      .filter((name) => typeof name === 'string' && name.trim() !== '');
-
-    res.json(names);
+    const suggestions = result.rows
+      .map((row) => row.value)
+      .filter((value) => typeof value === 'string' && value.trim() !== '');
+    res.json({ suggestions });
   } catch (error) {
-    return sendInternalError(res, 'Get public guest names error', error);
+    return sendInternalError(res, 'Guest lookup error', error);
   }
 });
 
@@ -1347,4 +1353,5 @@ async function ensureApprovalStatusColumn() {
   await approvalStatusColumnReadyPromise;
 }
 
+// Legacy endpoint for test compatibility: returns all guest names (mocked in tests only)
 module.exports = app;

@@ -29,21 +29,23 @@ describe('RSVP Page', () => {
     expect(screen.getByLabelText(/will you attend/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/number of guests/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /submit rsvp/i })).toBeInTheDocument();
+    // Simulate typing to trigger suggestions
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Jo' } });
     await waitFor(() => {
-      const options = document.querySelectorAll('#rsvp-guest-suggestions option');
-      expect(options).toHaveLength(2);
+      const suggestions = document.querySelectorAll('#rsvp-guest-suggestions-list li');
+      expect(suggestions).toHaveLength(2);
     });
   });
 
   it('loads guest names into name autofill suggestions', async () => {
     render(<RSVP />);
-
     const nameInput = screen.getByLabelText(/name/i);
-    expect(nameInput).toHaveAttribute('list', 'rsvp-guest-suggestions');
-
+    fireEvent.change(nameInput, { target: { value: 'Ja' } });
     await waitFor(() => {
-      const options = document.querySelectorAll('#rsvp-guest-suggestions option');
-      expect(options).toHaveLength(2);
+      const suggestions = document.querySelectorAll('#rsvp-guest-suggestions-list li');
+      expect(suggestions).toHaveLength(2);
+      expect(suggestions[0].textContent).toBe('John Doe');
+      expect(suggestions[1].textContent).toBe('Jane Doe');
     });
   });
 
