@@ -1,5 +1,5 @@
-
 // Copyright 2026 Jeremiah Van Offeren
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');

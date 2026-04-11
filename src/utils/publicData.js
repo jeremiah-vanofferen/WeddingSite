@@ -1,4 +1,6 @@
 // Copyright 2026 Jeremiah Van Offeren
+/* global URLSearchParams */
+// Copyright 2026 Jeremiah Van Offeren
 import { API_BASE_URL } from './api';
 import { clearPublicAccessToken, getPublicAuthHeaders } from './http';
 
