@@ -10,8 +10,8 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy backend runtime source
-COPY server.js ./server.js
+# Copy backend source
+COPY . .
 
 # Expose port
 EXPOSE 5000

@@ -4,7 +4,7 @@ Thanks for contributing to this wedding site project.
 
 This repository contains:
 - React 18 + Vite frontend (`src/`)
-- Node.js 22 + Express backend (`backend/server.js`)
+- Node.js 22 + Express backend (modular routes under `backend/routes/`)
 - PostgreSQL 16 database
 - Docker Compose orchestration for local development
 
@@ -27,7 +27,9 @@ App endpoints in local Docker:
 ### Environment variables
 Configuration is driven by `.env` (do not commit this file).
 
-Required backend vars:
+All variables have defaults in `docker-compose.yml` — an `.env` file is not required to start locally. Override any value in `.env` to customize.
+
+Common vars to override:
 - `DATABASE_URL`
 - `JWT_SECRET`
 - `POSTGRES_DB`
@@ -67,10 +69,12 @@ Optional vars include `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_EMAIL`, `GMAIL_
 Run checks in Docker:
 
 ```bash
-docker exec weddingsite-backend-1 npm run lint
-docker exec weddingsite-wedding-app-1 npm run lint
-docker exec weddingsite-backend-1 npm test
-docker exec weddingsite-wedding-app-1 npx vitest run
+# Run all tests (no running stack required)
+./test-docker.sh
+
+# Run only frontend or backend
+./test-docker.sh frontend
+./test-docker.sh backend
 ```
 
 VS Code tasks are also available:
@@ -112,13 +116,24 @@ By contributing to this repository, you agree that your contributions are licens
 
 ## Database and Seed Notes
 
-`init.sh` runs on first DB volume creation only.
+`init.sh` runs only when the `postgres_data` volume does not yet exist — restarts and `docker compose down` (without `-v`) do not re-trigger it.
+
+| Scenario | Seeding runs? |
+|---|---|
+| Fresh install / first `docker compose up` | ✅ Yes |
+| `docker compose down -v` then `up` | ✅ Yes |
+| `docker compose down` then `up` | ❌ No |
+| `docker compose restart` | ❌ No |
 
 To re-seed from scratch:
 ```bash
 docker-compose down -v
 docker-compose up --build
 ```
+
+> This wipes all data. Export guests from the admin panel first if needed.
+
+CSV files in `seed-uploads/` must quote any field that contains a comma (e.g. addresses), otherwise the column count will be off and the import will be skipped silently.
 
 ## Need Help?
 
@@ -127,4 +142,5 @@ If you are unsure about a pattern, follow existing implementations in:
 - `src/utils/http.js`
 - `src/utils/publicData.js`
 - `src/utils/settings.js`
-- `backend/server.js`
+- `backend/routes/private/guests.js`   ← guest CRUD patterns
+- `backend/routes/public/rsvp.js`      ← public endpoint patterns
