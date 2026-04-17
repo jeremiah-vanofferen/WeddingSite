@@ -20,6 +20,11 @@ const mockRsvpFetch = () => {
 describe('RSVP Page', () => {
   beforeEach(() => {
     mockRsvpFetch();
+    localStorage.setItem('wedding_privacy_accepted', 'true');
+  });
+
+  afterEach(() => {
+    localStorage.clear();
   });
 
   it('renders all form fields', async () => {
@@ -121,6 +126,47 @@ describe('RSVP Page', () => {
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent('Submission failed. Please try again.')
     );
+  });
+
+  it('shows the privacy modal on first submission and submits after accepting', async () => {
+    localStorage.clear();
+    render(<RSVP />);
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Jane Doe' } });
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'jane@example.com' } });
+    fireEvent.change(screen.getByLabelText(/will you attend/i), { target: { value: 'yes' } });
+    fireEvent.change(screen.getByLabelText(/number of guests/i), { target: { value: '2' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /submit rsvp/i }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('dialog', { name: /privacy notice/i })).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /i understand/i }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: /rsvp received/i })).toBeInTheDocument()
+    );
+    expect(localStorage.getItem('wedding_privacy_accepted')).toBe('true');
+  });
+
+  it('does not submit when the privacy modal is declined', async () => {
+    localStorage.clear();
+    render(<RSVP />);
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Jane Doe' } });
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'jane@example.com' } });
+    fireEvent.change(screen.getByLabelText(/will you attend/i), { target: { value: 'yes' } });
+    fireEvent.change(screen.getByLabelText(/number of guests/i), { target: { value: '2' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /submit rsvp/i }));
+    await waitFor(() =>
+      expect(screen.getByRole('dialog', { name: /privacy notice/i })).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /decline/i }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /submit rsvp/i })).toBeInTheDocument();
   });
 
   it('sends the correct payload to the API', async () => {

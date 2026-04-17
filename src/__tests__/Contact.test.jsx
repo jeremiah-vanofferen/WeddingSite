@@ -20,6 +20,11 @@ const mockContactFetch = () => {
 describe('Contact Page', () => {
   beforeEach(() => {
     mockContactFetch();
+    localStorage.setItem('wedding_privacy_accepted', 'true');
+  });
+
+  afterEach(() => {
+    localStorage.clear();
   });
 
   it('renders all form fields', async () => {
@@ -117,6 +122,45 @@ describe('Contact Page', () => {
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent('Submission failed. Please try again.')
     );
+  });
+
+  it('shows the privacy modal on first submission and submits after accepting', async () => {
+    localStorage.clear();
+    render(<Contact />);
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Alice' } });
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'alice@example.com' } });
+    fireEvent.change(screen.getByLabelText(/message/i), { target: { value: 'Hello!' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /send message/i }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('dialog', { name: /privacy notice/i })).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /i understand/i }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: /message sent/i })).toBeInTheDocument()
+    );
+    expect(localStorage.getItem('wedding_privacy_accepted')).toBe('true');
+  });
+
+  it('does not submit when the privacy modal is declined', async () => {
+    localStorage.clear();
+    render(<Contact />);
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Alice' } });
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'alice@example.com' } });
+    fireEvent.change(screen.getByLabelText(/message/i), { target: { value: 'Hello!' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /send message/i }));
+    await waitFor(() =>
+      expect(screen.getByRole('dialog', { name: /privacy notice/i })).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /decline/i }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /send message/i })).toBeInTheDocument();
   });
 
   it('sends the correct payload to the API', async () => {

@@ -22,9 +22,6 @@ backend/coverage/
 backend/uploads/*
 !backend/uploads/.gitkeep
 
-# Seed payload artifacts
-seed-uploads/*
-!seed-uploads/.gitkeep
 
 # Misc
 .DS_Store

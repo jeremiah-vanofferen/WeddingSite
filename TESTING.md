@@ -39,26 +39,12 @@ This project has full test coverage across the frontend (React) and backend (Exp
 
 ### In Docker (recommended)
 
-The application must be running via Docker Compose before executing these commands.
-
 ```bash
-# Start services (if not already running)
-docker-compose up -d
-
-# Run backend tests (Jest)
-docker exec weddingsite-backend-1 npm test
-
-# Run frontend tests (Vitest)
-docker exec weddingsite-wedding-app-1 npx vitest run
+# No running stack required — spins up a one-off container per suite
+./test-docker.sh            # run all tests
+./test-docker.sh frontend   # Vitest only
+./test-docker.sh backend    # Jest only
 ```
-
-If you hit `429 Too many requests` during repeated local runs, restart the backend container to reset the in-memory limiter state:
-
-```bash
-docker restart weddingsite-backend-1
-```
-
-You can also set `RATE_LIMIT_MAX` and `STRICT_RATE_LIMIT_MAX` in `.env` to increase local limits when needed.
 
 Public endpoint auth note:
 
@@ -148,8 +134,8 @@ All test files live in `src/__tests__/`.
 | [Navigation.test.jsx](src/__tests__/Navigation.test.jsx) | `Navigation` | 12 | Auth-based nav items, logout button visibility, RSVP link toggle, website name display, login modal open/close/success |
 | [LoginModal.test.jsx](src/__tests__/LoginModal.test.jsx) | `LoginModal` | 5 | Form rendering, field input, credential submission, error display, close button |
 | [Home.test.jsx](src/__tests__/Home.test.jsx) | `Home` | 7 | Welcome message, venue details, registry link, countdown visibility, post-wedding arrival message, API failure resilience |
-| [RSVP.test.jsx](src/__tests__/RSVP.test.jsx) | `RSVP` | 6 | Form fields, name autofill, successful submission, API error handling, fallback error, payload validation |
-| [Contact.test.jsx](src/__tests__/Contact.test.jsx) | `Contact` | 6 | Form fields, name autofill, API submission, error state display, fallback error, payload validation |
+| [RSVP.test.jsx](src/__tests__/RSVP.test.jsx) | `RSVP` | 8 | Form fields, name autofill, successful submission, API error handling, fallback error, payload validation, privacy modal show/accept/decline |
+| [Contact.test.jsx](src/__tests__/Contact.test.jsx) | `Contact` | 8 | Form fields, name autofill, API submission, error state display, fallback error, payload validation, privacy modal show/accept/decline |
 | [Schedule.test.jsx](src/__tests__/Schedule.test.jsx) | `Schedule` | 4 | Event list fetch, time formatting, empty state, non-array guard |
 | [Admin.test.jsx](src/__tests__/Admin.test.jsx) | `Admin` | 18 | Auth guard, dashboard stats, modal open/close, save-error display, message management |
 | [GuestManagementModal.test.jsx](src/__tests__/GuestManagementModal.test.jsx) | `GuestManagementModal` | 28 | Guest list display, add/edit/delete, RSVP updates, stat counts, CSV export, CSV upload, bulk import (merge & replace), validation errors, legacy format parsing |
@@ -167,7 +153,7 @@ All test files live in `src/__tests__/`.
 | [http.test.js](src/__tests__/http.test.js) | `http` utils | 5 | `getAuthHeaders` header merging, `requestJson` success/network-error/API-error/non-JSON-error paths |
 | [publicData.test.js](src/__tests__/publicData.test.js) | `publicData` utils | 2 | Anonymous-token retry on 401, fallback return on repeated failure |
 
-**Total: 230 frontend tests**
+**Total: 237 frontend tests**
 
 ### Frontend Patterns & Conventions
 
@@ -262,7 +248,7 @@ Seeding regression coverage:
 | [settings-messages.test.js](backend/__tests__/settings-messages.test.js) | `GET/PUT /api/settings`, `GET/PUT /api/settings/admin-email`, `GET /api/messages`, `PUT /api/messages/:id/read` | 17 | Get/update settings, admin-email get/update, list messages, mark as read, auth guard (401), 404/500 paths |
 | [gallery.test.js](backend/__tests__/gallery.test.js) | `POST /api/gallery/upload`, `POST /api/gallery/upload-file`, `GET /api/gallery`, `GET /api/gallery/pending`, `PUT /api/gallery/:id/status`, `PUT /api/gallery/:id`, `DELETE /api/gallery/:id` | 28 | URL and file upload validation (400/201), approved/pending gallery fetch, status approval/rejection, photo edit, delete, auth guard (401), 404/500 paths |
 
-**Total: 115 backend route tests** (+ 5 seeding regression tests in `init-seeding.test.js` = **120 total**)
+**Total: 113 backend route tests** (+ 5 seeding regression tests in `init-seeding.test.js` = **118 total**)
 
 ### Backend Patterns & Conventions
 

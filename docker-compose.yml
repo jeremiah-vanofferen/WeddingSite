@@ -4,12 +4,12 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-wedding_db}
       POSTGRES_USER: ${POSTGRES_USER:-wedding_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-your@email.com}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-password123}
       WEBSITE_NAME: ${WEBSITE_NAME:-My Wedding}
-      REGISTRY_LINK: ${REGISTRY_LINK}
+      REGISTRY_LINK: ${REGISTRY_LINK:-https://www.amazon.com/wedding}
       WEDDING_DATE: ${WEDDING_DATE:-2030-06-20}
       WEDDING_TIME: ${WEDDING_TIME:-16:00}
       WEDDING_TIME_ZONE: ${WEDDING_TIME_ZONE:-America/New_York}
@@ -39,17 +39,18 @@ services:
     environment:
       - NODE_ENV=development
       - BIND_HOST=${BIND_HOST:-0.0.0.0}
-      - DATABASE_URL=${DATABASE_URL}
-      - JWT_SECRET=${JWT_SECRET}
-      - GMAIL_USER=${GMAIL_USER}
-      - GMAIL_PASS=${GMAIL_PASS}
-      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://wedding_user:changeme@postgres:5432/wedding_db}
+      - JWT_SECRET=${JWT_SECRET:-changeme_replace_with_a_long_random_secret}
+      - GMAIL_USER=${GMAIL_USER:-createWedding@gmail.com}
+      - GMAIL_PASS=${GMAIL_PASS:-xxxx xxxx xxxx xxxx}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-your@email.com}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
     depends_on:
       postgres:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:5000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5000/api/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -73,7 +74,7 @@ services:
       - backend
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000 || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

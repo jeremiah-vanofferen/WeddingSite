@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { API_BASE_URL } from '../utils/api';
 import { getPublicAuthHeaders } from '../utils/http';
 import { fetchGuestLookupSuggestions } from '../utils/publicData';
+import PrivacyPolicyModal from '../components/PrivacyPolicyModal';
+
+const PRIVACY_KEY = 'wedding_privacy_accepted';
 
 export default function RSVP() {
   const [form, setForm] = useState({
@@ -17,6 +20,7 @@ export default function RSVP() {
   const [submitting, setSubmitting] = useState(false);
   const [guestSuggestions, setGuestSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   // Autocomplete guest name as user types
   useEffect(() => {
@@ -46,10 +50,9 @@ export default function RSVP() {
     setShowSuggestions(false);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+  const submitRsvp = async () => {
     setSubmitting(true);
+    setError('');
     try {
       const headers = await getPublicAuthHeaders({ 'Content-Type': 'application/json' });
       const response = await fetch(`${API_BASE_URL}/rsvp`, {
@@ -67,17 +70,11 @@ export default function RSVP() {
         setSubmitted(true);
       } else {
         let data = null;
-
-        try {
-          data = await response.json();
-        } catch {
-          data = null;
-        }
-
+        try { data = await response.json(); } catch { data = null; }
         setError(data?.error || 'Submission failed. Please try again.');
       }
-    } catch (error) {
-      if (error instanceof TypeError) {
+    } catch (err) {
+      if (err instanceof TypeError) {
         setError('Network error. Please try again.');
       } else {
         setError('Submission failed. Please try again.');
@@ -85,6 +82,25 @@ export default function RSVP() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!localStorage.getItem(PRIVACY_KEY)) {
+      setShowPrivacy(true);
+      return;
+    }
+    await submitRsvp();
+  };
+
+  const handlePrivacyAccept = () => {
+    localStorage.setItem(PRIVACY_KEY, 'true');
+    setShowPrivacy(false);
+    submitRsvp();
+  };
+
+  const handlePrivacyDecline = () => {
+    setShowPrivacy(false);
   };
 
   if (submitted) {
@@ -98,6 +114,10 @@ export default function RSVP() {
 
   return (
     <div className="page page-rsvp">
+      {showPrivacy && (
+        <PrivacyPolicyModal onAccept={handlePrivacyAccept} onDecline={handlePrivacyDecline} />
+      )}
+
       <section className="page-hero">
         <div className="page-hero-copy narrow-copy">
           <p className="page-eyebrow">Please respond</p>
