@@ -1,6 +1,6 @@
 # Wedding Website
 
-A full-stack wedding website with a React frontend, Node.js/Express backend, and PostgreSQL database. Supports guest management, RSVP, scheduling, contact forms, photo gallery, and a full admin panel.
+A full-stack wedding website with a React frontend, modular Node.js/Express backend, and PostgreSQL database. Supports guest management, RSVP, scheduling, contact forms, photo gallery, and a full admin panel.
 
 ## Tech Stack
 
@@ -30,6 +30,7 @@ A full-stack wedding website with a React frontend, Node.js/Express backend, and
   - Site settings (theme, colors, font, countdown toggle, RSVP toggle, welcome message, admin email)
   - Admin password change
   - Contact message inbox with read/unread tracking
+- **Privacy notice** — First-time RSVP and contact form submissions show a privacy policy modal (stored in localStorage so it only appears once)
 
 ## Contributing
 
@@ -66,7 +67,9 @@ When adding frontend API calls:
 
 ### 1. Configure Environment Variables
 
-Create a `.env` file in the project root:
+A `.env` file is **optional** — all variables have sensible defaults baked into the compose files. You can start the stack with no `.env` at all.
+
+To customize any value, create a `.env` file in the project root and override what you need:
 
 ```env
 # PostgreSQL
@@ -108,6 +111,8 @@ WEDDING_LOCATION=Celebration Venue
 WEDDING_ADDRESS=123 Celebration Ave, Hometown, ST 12345
 WEDDING_DESCRIPTION=Join us for our ceremony and reception.
 ```
+
+> **Production deployments should always use a `.env` file and override `POSTGRES_PASSWORD`, `JWT_SECRET`, and admin credentials** (`ADMIN_USERNAME`, `ADMIN_PASSWORD`). The compose-file defaults are placeholders only.
 
 > **Gmail note:** Use an [App Password](https://support.google.com/accounts/answer/185833), not your regular Gmail password.
 
@@ -165,7 +170,16 @@ docker-compose down -v
 
 ### Re-seeding the Database
 
-The `init.sh` script only runs when the database volume is first created. To apply changes to admin credentials or other seed data to an existing environment:
+`init.sh` runs **only when the PostgreSQL data directory is empty** — i.e., the `postgres_data` volume does not yet exist. This means seeding happens automatically on a fresh install but does not repeat on restarts.
+
+| Scenario | Seeding runs? |
+|---|---|
+| Fresh machine / first `docker compose up` | ✅ Yes |
+| `docker compose down -v` then `docker compose up` | ✅ Yes |
+| `docker compose down` then `docker compose up` | ❌ No (volume persists) |
+| `docker compose restart` | ❌ No |
+
+To re-seed an existing environment (e.g. after updating `seed-uploads/` or changing admin credentials):
 
 ```bash
 docker-compose down -v   # removes the postgres_data volume
@@ -186,6 +200,8 @@ Supported guest CSV formats:
 
 1. `Name,Address,Phone,Email,RSVP,Guest Count`
 2. `First name,Last Name,Dependants,Street address,Address Line,City,State,Zip,Phone,Email`
+
+> **CSV formatting:** Any field containing a comma (e.g. `"123 Main St, Springfield, IL 62701"`) must be wrapped in double quotes, otherwise the column count will be off and the import will be skipped silently.
 
 Guest import normalization:
 
@@ -270,7 +286,7 @@ The compose file pulls:
 - `${DOCKERHUB_USERNAME}/weddingsite-backend:${APP_IMAGE_TAG:-latest}`
 - `${DOCKERHUB_USERNAME}/weddingsite-postgres:${APP_IMAGE_TAG:-latest}`
 
-Set these in `.env` before running:
+A `.env` file is not required — all variables have defaults in `docker-compose.dockerhub.yml`. `DOCKERHUB_USERNAME` defaults to `jeremiah-vanofferen`. Override any value in `.env` to customize:
 
 - `DOCKERHUB_USERNAME`
 - `POSTGRES_PASSWORD`
@@ -362,8 +378,28 @@ To use these as required status checks, go to **Settings → Branches → Branch
 ├── public/
 │   └── sample-guests.csv   # Sample CSV for bulk guest import
 ├── backend/
-│   ├── server.js           # Express API server
-│   └── package.json        # Backend dependencies
+│   ├── server.js           # Express entry point — middleware, mount routers, start server
+│   ├── db.js               # PostgreSQL pool, migrations, shared helpers
+│   ├── middleware.js        # Auth middlewares, rate limiters, error helpers
+│   ├── upload.js           # Multer file upload configuration
+│   ├── routes/
+│   │   ├── health.js
+│   │   ├── public/         # Public endpoints (require anonymous JWT)
+│   │   │   ├── token.js    # POST /api/public/token
+│   │   │   ├── settings.js # GET  /api/public/settings
+│   │   │   ├── guestLookup.js # GET /api/public/guest-lookup
+│   │   │   ├── rsvp.js     # POST /api/rsvp
+│   │   │   ├── messages.js # POST /api/messages
+│   │   │   ├── gallery.js  # GET/POST /api/gallery
+│   │   │   └── schedule.js # GET /api/schedule
+│   │   └── private/        # Admin endpoints (require admin JWT)
+│   │       ├── auth.js     # /api/auth/*
+│   │       ├── guests.js   # /api/guests/*
+│   │       ├── messages.js # GET/PUT /api/messages
+│   │       ├── settings.js # /api/settings/*
+│   │       ├── gallery.js  # Admin /api/gallery/*
+│   │       └── schedule.js # POST/PUT/DELETE /api/schedule
+│   └── package.json
 └── src/
     ├── main.jsx            # React entry point
     ├── App.jsx             # Root component with routing and theme management
@@ -375,7 +411,8 @@ To use these as required status checks, go to **Settings → Branches → Branch
     │   ├── GalleryApprovalModal.jsx    # Pending photo approvals
     │   ├── ScheduleModal.jsx           # Schedule event management
     │   ├── SettingsModal.jsx           # Site-wide settings
-    │   └── WeddingDetailsModal.jsx     # Wedding details management
+    │   ├── WeddingDetailsModal.jsx     # Wedding details management
+    │   └── PrivacyPolicyModal.jsx      # First-time privacy notice for public forms
     ├── utils/
     │   ├── api.js            # API base URL helper
     │   ├── http.js           # Auth headers + strict request helper
@@ -408,7 +445,6 @@ To use these as required status checks, go to **Settings → Branches → Branch
 |---|---|---|
 | `POST` | `/api/public/token` | Mint anonymous public access token (no token required) |
 | `GET` | `/api/public/settings` | Site settings and wedding details |
-| `GET` | `/api/public/guest-names` | Guest name list for RSVP/Contact autofill suggestions |
 | `GET` | `/api/public/guest-lookup` | Lookup field + suggestions for RSVP/Contact autofill |
 | `GET` | `/api/schedule` | Wedding day schedule |
 | `POST` | `/api/rsvp` | Submit a guest RSVP |
@@ -476,30 +512,33 @@ Backend test note:
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|---|---|---|
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `JWT_SECRET` | Yes | Secret key for signing JWTs |
-| `POSTGRES_DB` | Yes | Database name |
-| `POSTGRES_USER` | Yes | Database user |
-| `POSTGRES_PASSWORD` | Yes | Database password |
-| `ADMIN_USERNAME` | No | Admin login username (default: `admin`) |
-| `ADMIN_PASSWORD` | No | Admin login password (default: `password123`) |
-| `WEBSITE_NAME` | No | Website name shown in nav and home page (default: `My Wedding`) |
-| `GMAIL_USER` | No | Gmail address for sending notifications |
-| `GMAIL_PASS` | No | Gmail App Password |
-| `ADMIN_EMAIL` | No | Recipient address for email notifications |
-| `REGISTRY_LINK` | No | Seeds `settings.registryUrl` during first DB initialization |
-| `WEDDING_DATE` | No | Seeds `settings.weddingDate` during first DB initialization |
-| `WEDDING_TIME` | No | Seeds `settings.weddingTime` during first DB initialization |
-| `WEDDING_TIME_ZONE` | No | Seeds `settings.weddingTimeZone` during first DB initialization |
-| `WEDDING_LOCATION` | No | Seeds `settings.weddingLocation` during first DB initialization |
-| `WEDDING_ADDRESS` | No | Seeds `settings.weddingAddress` during first DB initialization |
-| `WEDDING_DESCRIPTION` | No | Seeds `settings.weddingDescription` during first DB initialization |
-| `VITE_API_URL` | No | Backend API base URL (default: `/api` — same origin via Vite proxy) |
-| `RATE_LIMIT_MAX` | No | General `/api/*` max requests per 15 minutes (default: `100` in production, `10000` in `test`/`development`) |
-| `STRICT_RATE_LIMIT_MAX` | No | Sensitive endpoint max requests per 15 minutes (default: `20` in production, `10000` in `test`/`development`) |
-| `PUBLIC_JWT_EXPIRES_IN` | No | Expiration for anonymous public JWTs minted by `/api/public/token` (default: `2h`) |
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `DATABASE_URL` | No | `postgresql://wedding_user:changeme@postgres:5432/wedding_db` | PostgreSQL connection string |
+| `JWT_SECRET` | No | `changeme_replace_with_a_long_random_secret` | Secret key for signing JWTs |
+| `POSTGRES_DB` | No | `wedding_db` | Database name |
+| `POSTGRES_USER` | No | `wedding_user` | Database user |
+| `POSTGRES_PASSWORD` | No | `changeme` | Database password |
+| `ADMIN_USERNAME` | No | `admin` | Admin login username |
+| `ADMIN_PASSWORD` | No | `password123` | Admin login password |
+| `WEBSITE_NAME` | No | `My Wedding` | Website name shown in nav and home page |
+| `GMAIL_USER` | No | `createWedding@gmail.com` | Gmail address for sending notifications |
+| `GMAIL_PASS` | No | `xxxx xxxx xxxx xxxx` | Gmail App Password |
+| `ADMIN_EMAIL` | No | `your@email.com` | Recipient address for email notifications |
+| `REGISTRY_LINK` | No | `https://www.amazon.com/wedding` | Seeds `settings.registryUrl` during first DB initialization |
+| `WEDDING_DATE` | No | `2030-06-20` | Seeds `settings.weddingDate` during first DB initialization |
+| `WEDDING_TIME` | No | `16:00` | Seeds `settings.weddingTime` during first DB initialization |
+| `WEDDING_TIME_ZONE` | No | `America/New_York` | Seeds `settings.weddingTimeZone` during first DB initialization |
+| `WEDDING_LOCATION` | No | `Celebration Venue` | Seeds `settings.weddingLocation` during first DB initialization |
+| `WEDDING_ADDRESS` | No | `123 Celebration Ave, Hometown, ST 12345` | Seeds `settings.weddingAddress` during first DB initialization |
+| `WEDDING_DESCRIPTION` | No | `Join us for our ceremony and reception.` | Seeds `settings.weddingDescription` during first DB initialization |
+| `BIND_HOST` | No | `0.0.0.0` | Host/IP for the backend Express server bind |
+| `VITE_BIND_HOST` | No | `0.0.0.0` | Host/IP for the frontend Vite server bind |
+| `VITE_BIND_PORT` | No | `3000` | Frontend Vite port |
+| `VITE_API_URL` | No | `/api` | Backend API base URL (same origin via Vite proxy) |
+| `RATE_LIMIT_MAX` | No | `100` (prod), `10000` (dev/test) | General `/api/*` max requests per 15 minutes |
+| `STRICT_RATE_LIMIT_MAX` | No | `20` (prod), `10000` (dev/test) | Sensitive endpoint max requests per 15 minutes |
+| `PUBLIC_JWT_EXPIRES_IN` | No | `2h` | Expiration for anonymous public JWTs minted by `/api/public/token` |
 
 > `ADMIN_USERNAME` and `ADMIN_PASSWORD` are consumed by the PostgreSQL container at database initialization. The password is hashed using bcrypt (`pgcrypto`) and stored in `admin_users` — the plaintext is never persisted.
 

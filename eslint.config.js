@@ -1,5 +1,6 @@
 // Copyright 2026 Jeremiah Van Offeren
 import js from '@eslint/js';
+import globals from "globals";
 
 const HEADER = '// Copyright 2026 Jeremiah Van Offeren';
 const copyrightHeader = {
@@ -24,6 +25,7 @@ const copyrightHeader = {
 };
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
+import { afterEach } from 'vitest';
 
 export default [
   js.configs.recommended,
@@ -47,6 +49,7 @@ export default [
         CustomEvent: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
+        afterEach: 'readonly',
       },
       parserOptions: {
         ecmaFeatures: { jsx: true },
