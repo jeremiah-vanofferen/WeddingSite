@@ -11,6 +11,13 @@
   backdrop-filter: blur(4px);
 }
 
+@media (max-width: 600px) {
+  .privacy-overlay {
+    align-items: flex-start;
+    padding-top: 5rem;
+  }
+}
+
 .privacy-modal {
   width: 100%;
   max-width: 520px;

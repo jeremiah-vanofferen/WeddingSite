@@ -13,7 +13,7 @@ The GitHub Actions workflow `.github/workflows/deploy-docker.yml` runs on pushes
    - `1.1.1` from `package.json`
    - `latest`
    - `sha-<commit>`
-4. Creates a GitHub Release tag `v1.0.10` if it does not exist.
+4. Creates a GitHub Release tag `v1.1.2` if it does not exist.
 
 Published repositories:
 
@@ -77,7 +77,7 @@ What the script does:
 Set `APP_IMAGE_TAG` in `/weddingsite/.env` and redeploy:
 
 ```env
-APP_IMAGE_TAG=1.0.9
+APP_IMAGE_TAG=1.1.2
 ```
 
 Then run:
