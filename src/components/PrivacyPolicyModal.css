@@ -14,7 +14,8 @@
 @media (max-width: 600px) {
   .privacy-overlay {
     align-items: flex-start;
-    padding-top: 5rem;
+    padding-top: 7rem;
+    padding-bottom: 5rem;
   }
 }
 
