@@ -163,18 +163,20 @@ async function encryptGuestColumns() {
 
     await client.query(`
       UPDATE guests SET
-        email   = CASE WHEN email   IS NOT NULL THEN encode(pgp_sym_encrypt(email,   $1), 'base64') ELSE NULL END,
-        phone   = CASE WHEN phone   IS NOT NULL THEN encode(pgp_sym_encrypt(phone,   $1), 'base64') ELSE NULL END,
-        address = CASE WHEN address IS NOT NULL THEN encode(pgp_sym_encrypt(address, $1), 'base64') ELSE NULL END
+        email   = CASE WHEN email   IS NOT NULL THEN encode(pgp_sym_encrypt(email,   $1, 'cipher-algo=aes256'), 'base64') ELSE NULL END,
+        phone   = CASE WHEN phone   IS NOT NULL THEN encode(pgp_sym_encrypt(phone,   $1, 'cipher-algo=aes256'), 'base64') ELSE NULL END,
+        address = CASE WHEN address IS NOT NULL THEN encode(pgp_sym_encrypt(address, $1, 'cipher-algo=aes256'), 'base64') ELSE NULL END
     `, [key]);
 
     await client.query('DROP INDEX IF EXISTS idx_guests_email');
     await client.query('ALTER TABLE guests DROP CONSTRAINT IF EXISTS guests_email_key');
 
+    // Mark both migrations done — data is already AES-256 so the re-encrypt step is not needed
     await client.query("INSERT INTO schema_migrations (name) VALUES ('encrypt_guest_columns')");
+    await client.query("INSERT INTO schema_migrations (name) VALUES ('reencrypt_guest_columns_aes256')");
 
     await client.query('COMMIT');
-    console.log('Guest sensitive columns encrypted');
+    console.log('Guest sensitive columns encrypted with AES-256');
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;

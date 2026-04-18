@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
     applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Fresh installs seed encrypted data from the start — mark migration as done
+-- Fresh installs seed encrypted data from the start — mark migrations as done
 INSERT INTO schema_migrations (name) VALUES ('encrypt_guest_columns') ON CONFLICT DO NOTHING;
 
 -- Create indexes

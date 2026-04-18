@@ -54,9 +54,9 @@ router.post('/', authenticateToken, async (req, res) => {
     const result = await pool.query(
       `INSERT INTO guests (name, email, phone, address, rsvp, guest_count)
        VALUES ($1,
-         CASE WHEN $2::text IS NOT NULL THEN encode(pgp_sym_encrypt($2::text, $7), 'base64') ELSE NULL END,
-         CASE WHEN $3::text IS NOT NULL THEN encode(pgp_sym_encrypt($3::text, $7), 'base64') ELSE NULL END,
-         CASE WHEN $4::text IS NOT NULL THEN encode(pgp_sym_encrypt($4::text, $7), 'base64') ELSE NULL END,
+         CASE WHEN $2::text IS NOT NULL THEN encode(pgp_sym_encrypt($2::text, $7, 'cipher-algo=aes256'), 'base64') ELSE NULL END,
+         CASE WHEN $3::text IS NOT NULL THEN encode(pgp_sym_encrypt($3::text, $7, 'cipher-algo=aes256'), 'base64') ELSE NULL END,
+         CASE WHEN $4::text IS NOT NULL THEN encode(pgp_sym_encrypt($4::text, $7, 'cipher-algo=aes256'), 'base64') ELSE NULL END,
          $5, $6)
        RETURNING ${guestDecryptCols('$7')}`,
       [name, email || null, phone || null, address || null, rsvp || 'Pending', normalizedGuestCount, key]
@@ -104,8 +104,8 @@ router.post('/bulk', authenticateToken, async (req, res) => {
             await client.query(
               `UPDATE guests
                SET name = $1,
-                 phone   = CASE WHEN $2::text IS NOT NULL THEN encode(pgp_sym_encrypt($2::text, $3), 'base64') ELSE NULL END,
-                 address = CASE WHEN $4::text IS NOT NULL THEN encode(pgp_sym_encrypt($4::text, $3), 'base64') ELSE NULL END,
+                 phone   = CASE WHEN $2::text IS NOT NULL THEN encode(pgp_sym_encrypt($2::text, $3, 'cipher-algo=aes256'), 'base64') ELSE NULL END,
+                 address = CASE WHEN $4::text IS NOT NULL THEN encode(pgp_sym_encrypt($4::text, $3, 'cipher-algo=aes256'), 'base64') ELSE NULL END,
                  rsvp = $5, guest_count = $6, updated_at = CURRENT_TIMESTAMP
                WHERE id = $7`,
               [guestName, guestPhone, key, guestAddress, guestRsvp, guestCount, existing.rows[0].id]
@@ -114,9 +114,9 @@ router.post('/bulk', authenticateToken, async (req, res) => {
             await client.query(
               `INSERT INTO guests (name, email, phone, address, rsvp, guest_count)
                VALUES ($1,
-                 encode(pgp_sym_encrypt($2::text, $7), 'base64'),
-                 CASE WHEN $3::text IS NOT NULL THEN encode(pgp_sym_encrypt($3::text, $7), 'base64') ELSE NULL END,
-                 CASE WHEN $4::text IS NOT NULL THEN encode(pgp_sym_encrypt($4::text, $7), 'base64') ELSE NULL END,
+                 encode(pgp_sym_encrypt($2::text, $7, 'cipher-algo=aes256'), 'base64'),
+                 CASE WHEN $3::text IS NOT NULL THEN encode(pgp_sym_encrypt($3::text, $7, 'cipher-algo=aes256'), 'base64') ELSE NULL END,
+                 CASE WHEN $4::text IS NOT NULL THEN encode(pgp_sym_encrypt($4::text, $7, 'cipher-algo=aes256'), 'base64') ELSE NULL END,
                  $5, $6)`,
               [guestName, guestEmail, guestPhone, guestAddress, guestRsvp, guestCount, key]
             );
@@ -125,8 +125,8 @@ router.post('/bulk', authenticateToken, async (req, res) => {
           await client.query(
             `INSERT INTO guests (name, phone, address, rsvp, guest_count)
              VALUES ($1,
-               CASE WHEN $2::text IS NOT NULL THEN encode(pgp_sym_encrypt($2::text, $4), 'base64') ELSE NULL END,
-               CASE WHEN $3::text IS NOT NULL THEN encode(pgp_sym_encrypt($3::text, $4), 'base64') ELSE NULL END,
+               CASE WHEN $2::text IS NOT NULL THEN encode(pgp_sym_encrypt($2::text, $4, 'cipher-algo=aes256'), 'base64') ELSE NULL END,
+               CASE WHEN $3::text IS NOT NULL THEN encode(pgp_sym_encrypt($3::text, $4, 'cipher-algo=aes256'), 'base64') ELSE NULL END,
                $5, $6)`,
             [guestName, guestPhone, guestAddress, key, guestRsvp, guestCount]
           );
@@ -169,9 +169,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const result = await pool.query(
       `UPDATE guests
        SET name = $1,
-         email   = CASE WHEN $2::text IS NOT NULL THEN encode(pgp_sym_encrypt($2::text, $7), 'base64') ELSE NULL END,
-         phone   = CASE WHEN $3::text IS NOT NULL THEN encode(pgp_sym_encrypt($3::text, $7), 'base64') ELSE NULL END,
-         address = CASE WHEN $4::text IS NOT NULL THEN encode(pgp_sym_encrypt($4::text, $7), 'base64') ELSE NULL END,
+         email   = CASE WHEN $2::text IS NOT NULL THEN encode(pgp_sym_encrypt($2::text, $7, 'cipher-algo=aes256'), 'base64') ELSE NULL END,
+         phone   = CASE WHEN $3::text IS NOT NULL THEN encode(pgp_sym_encrypt($3::text, $7, 'cipher-algo=aes256'), 'base64') ELSE NULL END,
+         address = CASE WHEN $4::text IS NOT NULL THEN encode(pgp_sym_encrypt($4::text, $7, 'cipher-algo=aes256'), 'base64') ELSE NULL END,
          rsvp = $5, guest_count = $6, updated_at = CURRENT_TIMESTAMP
        WHERE id = $8
        RETURNING ${guestDecryptCols('$7')}`,

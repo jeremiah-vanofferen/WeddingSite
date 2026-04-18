@@ -34,6 +34,6 @@ describe('init.sh seeding safeguards', () => {
   });
 
   it('normalizes guest_count with numeric guard when importing simple CSV', () => {
-    expect(initScript).toContain("CASE WHEN TRIM(guest_count) ~ '^[0-9]+$' THEN TRIM(guest_count)::INTEGER ELSE 1 END");
+    expect(initScript).toContain("CASE WHEN TRIM(s.guest_count) ~ '^[0-9]+$' THEN TRIM(s.guest_count)::INTEGER ELSE 1 END");
   });
 });

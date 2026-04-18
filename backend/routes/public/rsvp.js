@@ -65,7 +65,7 @@ router.post('/rsvp', authenticatePublicToken, async (req, res) => {
       result = await pool.query(
         `UPDATE guests
          SET name = $1,
-           email = encode(pgp_sym_encrypt($2::text, $6), 'base64'),
+           email = encode(pgp_sym_encrypt($2::text, $6, 'cipher-algo=aes256'), 'base64'),
            rsvp = $3, guest_count = $4, approval_status = 'pending', updated_at = CURRENT_TIMESTAMP
          WHERE id = $5
          RETURNING ${guestDecryptCols('$6')}`,
@@ -89,7 +89,7 @@ router.post('/rsvp', authenticatePublicToken, async (req, res) => {
       } else {
         result = await pool.query(
           `INSERT INTO guests (name, email, rsvp, guest_count, approval_status)
-           VALUES ($1, encode(pgp_sym_encrypt($2::text, $5), 'base64'), $3, $4, 'pending')
+           VALUES ($1, encode(pgp_sym_encrypt($2::text, $5, 'cipher-algo=aes256'), 'base64'), $3, $4, 'pending')
            RETURNING ${guestDecryptCols('$5')}`,
           [normalizedName, normalizedEmail, rsvpStatus, parsedGuests, key]
         );

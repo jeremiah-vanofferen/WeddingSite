@@ -18,6 +18,7 @@ jest.mock('bcryptjs');
 jest.mock('jsonwebtoken');
 
 process.env.JWT_SECRET = 'test-secret';
+process.env.ENCRYPTION_KEY = 'test-encryption-key';
 process.env.NODE_ENV = 'test';
 
 const request = require('supertest');
@@ -93,7 +94,9 @@ describe('POST /api/guests', () => {
 
   it('creates a guest and returns 201', async () => {
     const guest = { id: 1, name: 'Jane Doe', email: 'jane@example.com', rsvp: 'Pending', plus_one: false };
-    pool.query.mockResolvedValueOnce({ rows: [guest] });
+    pool.query
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] }) // duplicate email check
+      .mockResolvedValueOnce({ rows: [guest] });         // insert
 
     const res = await request(app)
       .post('/api/guests')
@@ -104,8 +107,7 @@ describe('POST /api/guests', () => {
   });
 
   it('returns 409 on duplicate email', async () => {
-    const err = Object.assign(new Error('duplicate'), { code: '23505' });
-    pool.query.mockRejectedValueOnce(err);
+    pool.query.mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 1 }] }); // duplicate found
 
     const res = await request(app)
       .post('/api/guests')
@@ -125,7 +127,9 @@ describe('PUT /api/guests/:id', () => {
 
   it('updates a guest and returns the updated record', async () => {
     const updated = { id: 1, name: 'John Updated', email: 'john@example.com', rsvp: 'Yes', plus_one: true };
-    pool.query.mockResolvedValueOnce({ rows: [updated] });
+    pool.query
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] }) // duplicate email check
+      .mockResolvedValueOnce({ rows: [updated] });       // update
 
     const res = await request(app)
       .put('/api/guests/1')
@@ -136,7 +140,9 @@ describe('PUT /api/guests/:id', () => {
   });
 
   it('returns 404 when guest does not exist', async () => {
-    pool.query.mockResolvedValueOnce({ rows: [] });
+    pool.query
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] }) // duplicate email check
+      .mockResolvedValueOnce({ rows: [] });              // update finds nothing
 
     const res = await request(app)
       .put('/api/guests/999')

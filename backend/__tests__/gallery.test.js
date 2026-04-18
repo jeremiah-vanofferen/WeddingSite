@@ -18,6 +18,7 @@ jest.mock('bcryptjs');
 jest.mock('jsonwebtoken');
 
 process.env.JWT_SECRET = 'test-secret';
+process.env.ENCRYPTION_KEY = 'test-encryption-key';
 process.env.NODE_ENV = 'test';
 delete process.env.GMAIL_USER;
 delete process.env.GMAIL_PASS;
