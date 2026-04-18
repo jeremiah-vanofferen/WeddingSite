@@ -18,6 +18,11 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
+if (!process.env.ENCRYPTION_KEY) {
+  console.error('FATAL: ENCRYPTION_KEY environment variable is not set');
+  process.exit(1);
+}
+
 app.use(helmet());
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' ? (process.env.CORS_ORIGIN || false) : true,

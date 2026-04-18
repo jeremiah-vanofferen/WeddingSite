@@ -5,7 +5,8 @@ psql -v ON_ERROR_STOP=1 \
      --username "$POSTGRES_USER" \
      --dbname "$POSTGRES_DB" \
      -v admin_username="${ADMIN_USERNAME:-admin}" \
-    -v admin_password="${ADMIN_PASSWORD:-password123}" \
+     -v admin_password="${ADMIN_PASSWORD:-password123}" \
+     -v encryption_key="${ENCRYPTION_KEY:-change_me_encryption_key}" \
     -v registry_link="${REGISTRY_LINK}" \
     -v wedding_date="${WEDDING_DATE:-2030-06-20}" \
     -v wedding_time="${WEDDING_TIME:-16:00}" \
@@ -21,8 +22,8 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE TABLE IF NOT EXISTS guests (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE,
-    phone VARCHAR(50),
+    email TEXT,
+    phone TEXT,
     address TEXT,
     rsvp VARCHAR(20) DEFAULT 'Pending' CHECK (rsvp IN ('Yes', 'No', 'Pending')),
     guest_count INTEGER DEFAULT 1 CONSTRAINT guests_guest_count_non_negative CHECK (guest_count >= 0),
@@ -106,8 +107,16 @@ CREATE TABLE IF NOT EXISTS photo_uploads (
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Migration tracking table (checked by backend startup migrations)
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    name VARCHAR(255) PRIMARY KEY,
+    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Fresh installs seed encrypted data from the start — mark migration as done
+INSERT INTO schema_migrations (name) VALUES ('encrypt_guest_columns') ON CONFLICT DO NOTHING;
+
 -- Create indexes
-CREATE INDEX IF NOT EXISTS idx_guests_email ON guests(email);
 CREATE INDEX IF NOT EXISTS idx_guests_rsvp ON guests(rsvp);
 CREATE INDEX IF NOT EXISTS idx_admin_users_username ON admin_users(username);
 CREATE INDEX IF NOT EXISTS idx_messages_email ON messages(email);
@@ -173,7 +182,8 @@ for csv_file in "$UPLOADS_SEED_DIR"/*.csv; do
     # Format 1: Name,Address,Phone,Email,RSVP,Guest Count
     if psql -v ON_ERROR_STOP=1 \
          --username "$POSTGRES_USER" \
-         --dbname "$POSTGRES_DB" <<EOSQL
+         --dbname "$POSTGRES_DB" \
+         -v encryption_key="${ENCRYPTION_KEY:-change_me_encryption_key}" <<EOSQL
 CREATE TEMP TABLE guests_staging_simple (
     name TEXT,
     address TEXT,
@@ -186,20 +196,27 @@ CREATE TEMP TABLE guests_staging_simple (
 
 INSERT INTO guests (name, email, phone, address, rsvp, guest_count, approval_status)
 SELECT
-    TRIM(name),
-    NULLIF(TRIM(email), ''),
-    NULLIF(TRIM(phone), ''),
-    NULLIF(TRIM(address), ''),
+    TRIM(s.name),
+    CASE WHEN NULLIF(TRIM(s.email), '') IS NOT NULL THEN encode(pgp_sym_encrypt(NULLIF(TRIM(s.email), ''), :'encryption_key'), 'base64') ELSE NULL END,
+    CASE WHEN NULLIF(TRIM(s.phone), '') IS NOT NULL THEN encode(pgp_sym_encrypt(NULLIF(TRIM(s.phone), ''), :'encryption_key'), 'base64') ELSE NULL END,
+    CASE WHEN NULLIF(TRIM(s.address), '') IS NOT NULL THEN encode(pgp_sym_encrypt(NULLIF(TRIM(s.address), ''), :'encryption_key'), 'base64') ELSE NULL END,
     CASE
-        WHEN UPPER(TRIM(rsvp)) = 'YES' THEN 'Yes'
-        WHEN UPPER(TRIM(rsvp)) = 'NO' THEN 'No'
+        WHEN UPPER(TRIM(s.rsvp)) = 'YES' THEN 'Yes'
+        WHEN UPPER(TRIM(s.rsvp)) = 'NO' THEN 'No'
         ELSE 'Pending'
     END,
-    CASE WHEN TRIM(guest_count) ~ '^[0-9]+$' THEN TRIM(guest_count)::INTEGER ELSE 1 END,
+    CASE WHEN TRIM(s.guest_count) ~ '^[0-9]+$' THEN TRIM(s.guest_count)::INTEGER ELSE 1 END,
     'approved'
-FROM guests_staging_simple
-WHERE TRIM(name) != ''
-ON CONFLICT (email) DO NOTHING;
+FROM guests_staging_simple s
+WHERE TRIM(s.name) != ''
+AND (
+    NULLIF(TRIM(s.email), '') IS NULL
+    OR NOT EXISTS (
+        SELECT 1 FROM guests g
+        WHERE g.email IS NOT NULL
+        AND pgp_sym_decrypt(decode(g.email, 'base64'), :'encryption_key') = NULLIF(TRIM(s.email), '')
+    )
+);
 EOSQL
     then
         echo "Guest seed import succeeded using 6-column format"
@@ -209,7 +226,8 @@ EOSQL
     # Format 2: First name,Last Name,Dependants,Street address,Address Line,City,State,Zip,Phone,Email
     if psql -v ON_ERROR_STOP=1 \
          --username "$POSTGRES_USER" \
-         --dbname "$POSTGRES_DB" <<EOSQL
+         --dbname "$POSTGRES_DB" \
+         -v encryption_key="${ENCRYPTION_KEY:-change_me_encryption_key}" <<EOSQL
 CREATE TEMP TABLE guests_staging_extended (
     first_name TEXT,
     last_name TEXT,
@@ -226,27 +244,37 @@ CREATE TEMP TABLE guests_staging_extended (
 
 INSERT INTO guests (name, email, phone, address, rsvp, guest_count, approval_status)
 SELECT
-    TRIM(CONCAT_WS(' ', NULLIF(TRIM(first_name), ''), NULLIF(TRIM(last_name), ''))),
-    NULLIF(TRIM(email), ''),
-    NULLIF(TRIM(phone), ''),
-    NULLIF(
-        TRIM(
-            CONCAT_WS(', ',
-                NULLIF(TRIM(street_address), ''),
-                NULLIF(TRIM(address_line), ''),
-                NULLIF(TRIM(city), ''),
-                NULLIF(TRIM(state), ''),
-                NULLIF(TRIM(zip), '')
-            )
-        ),
-        ''
-    ),
+    TRIM(CONCAT_WS(' ', NULLIF(TRIM(s.first_name), ''), NULLIF(TRIM(s.last_name), ''))),
+    CASE WHEN NULLIF(TRIM(s.email), '') IS NOT NULL THEN encode(pgp_sym_encrypt(NULLIF(TRIM(s.email), ''), :'encryption_key'), 'base64') ELSE NULL END,
+    CASE WHEN NULLIF(TRIM(s.phone), '') IS NOT NULL THEN encode(pgp_sym_encrypt(NULLIF(TRIM(s.phone), ''), :'encryption_key'), 'base64') ELSE NULL END,
+    CASE WHEN NULLIF(TRIM(CONCAT_WS(', ',
+        NULLIF(TRIM(s.street_address), ''),
+        NULLIF(TRIM(s.address_line), ''),
+        NULLIF(TRIM(s.city), ''),
+        NULLIF(TRIM(s.state), ''),
+        NULLIF(TRIM(s.zip), '')
+    )), '') IS NOT NULL
+    THEN encode(pgp_sym_encrypt(NULLIF(TRIM(CONCAT_WS(', ',
+        NULLIF(TRIM(s.street_address), ''),
+        NULLIF(TRIM(s.address_line), ''),
+        NULLIF(TRIM(s.city), ''),
+        NULLIF(TRIM(s.state), ''),
+        NULLIF(TRIM(s.zip), '')
+    )), ''), :'encryption_key'), 'base64')
+    ELSE NULL END,
     'Pending',
     1,
     'approved'
-FROM guests_staging_extended
-WHERE TRIM(CONCAT_WS(' ', NULLIF(TRIM(first_name), ''), NULLIF(TRIM(last_name), ''))) != ''
-ON CONFLICT (email) DO NOTHING;
+FROM guests_staging_extended s
+WHERE TRIM(CONCAT_WS(' ', NULLIF(TRIM(s.first_name), ''), NULLIF(TRIM(s.last_name), ''))) != ''
+AND (
+    NULLIF(TRIM(s.email), '') IS NULL
+    OR NOT EXISTS (
+        SELECT 1 FROM guests g
+        WHERE g.email IS NOT NULL
+        AND pgp_sym_decrypt(decode(g.email, 'base64'), :'encryption_key') = NULLIF(TRIM(s.email), '')
+    )
+);
 EOSQL
     then
         echo "Guest seed import succeeded using 10-column format"

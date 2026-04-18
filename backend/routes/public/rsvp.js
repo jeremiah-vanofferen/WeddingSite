@@ -2,7 +2,7 @@
 
 const { Router } = require('express');
 const nodemailer = require('nodemailer');
-const { pool, getAdminEmail } = require('../../db');
+const { pool, getAdminEmail, guestDecryptCols } = require('../../db');
 const { authenticatePublicToken, sendBadRequest, sendInternalError } = require('../../middleware');
 
 const router = Router();
@@ -35,16 +35,19 @@ router.post('/rsvp', authenticatePublicToken, async (req, res) => {
     const normalizedName = name.trim();
     const normalizedEmail = email.trim().toLowerCase();
     const rsvpStatus = normalizedRsvp === 'yes' ? 'Yes' : 'No';
+    const key = process.env.ENCRYPTION_KEY;
 
     // Match guest by name only when the matched record has no email yet
     // (admin pre-added guest without an email is eligible to be "claimed" via name).
     // If the matched guest already has an email, insert a new RSVP to prevent
     // one guest from overwriting another guest's record via a shared name.
     const existingByNameResult = await pool.query(
-      `SELECT id, email FROM guests
+      `SELECT id,
+        CASE WHEN email IS NOT NULL THEN pgp_sym_decrypt(decode(email, 'base64'), $2) ELSE NULL END AS email
+       FROM guests
        WHERE lower(btrim(name)) = lower(btrim($1))
        ORDER BY created_at DESC LIMIT 1`,
-      [normalizedName]
+      [normalizedName, key]
     );
 
     const matchedByName = existingByNameResult.rowCount > 0 ? existingByNameResult.rows[0] : null;
@@ -53,37 +56,42 @@ router.post('/rsvp', authenticatePublicToken, async (req, res) => {
     let result;
     if (canClaimByName) {
       const emailOwnerResult = await pool.query(
-        'SELECT id FROM guests WHERE email = $1 AND id <> $2 LIMIT 1',
-        [normalizedEmail, matchedByName.id]
+        `SELECT id FROM guests WHERE email IS NOT NULL AND pgp_sym_decrypt(decode(email, 'base64'), $1) = $2 AND id <> $3 LIMIT 1`,
+        [key, normalizedEmail, matchedByName.id]
       );
       if (emailOwnerResult.rowCount > 0) {
         return res.status(409).json({ error: 'Email already exists' });
       }
       result = await pool.query(
         `UPDATE guests
-         SET name = $1, email = $2, rsvp = $3, guest_count = $4, approval_status = 'pending', updated_at = CURRENT_TIMESTAMP
-         WHERE id = $5 RETURNING *`,
-        [normalizedName, normalizedEmail, rsvpStatus, parsedGuests, matchedByName.id]
+         SET name = $1,
+           email = encode(pgp_sym_encrypt($2::text, $6), 'base64'),
+           rsvp = $3, guest_count = $4, approval_status = 'pending', updated_at = CURRENT_TIMESTAMP
+         WHERE id = $5
+         RETURNING ${guestDecryptCols('$6')}`,
+        [normalizedName, normalizedEmail, rsvpStatus, parsedGuests, matchedByName.id, key]
       );
     } else {
       // Upsert by email: allow guests to update an existing RSVP by resubmitting
       // with the same email address (preserves prior upsert behavior).
       const existingByEmailResult = await pool.query(
-        'SELECT id FROM guests WHERE email = $1 LIMIT 1',
-        [normalizedEmail]
+        `SELECT id FROM guests WHERE email IS NOT NULL AND pgp_sym_decrypt(decode(email, 'base64'), $1) = $2 LIMIT 1`,
+        [key, normalizedEmail]
       );
       if (existingByEmailResult.rowCount > 0) {
         result = await pool.query(
           `UPDATE guests
            SET name = $1, rsvp = $2, guest_count = $3, approval_status = 'pending', updated_at = CURRENT_TIMESTAMP
-           WHERE id = $4 RETURNING *`,
-          [normalizedName, rsvpStatus, parsedGuests, existingByEmailResult.rows[0].id]
+           WHERE id = $4
+           RETURNING ${guestDecryptCols('$5')}`,
+          [normalizedName, rsvpStatus, parsedGuests, existingByEmailResult.rows[0].id, key]
         );
       } else {
         result = await pool.query(
           `INSERT INTO guests (name, email, rsvp, guest_count, approval_status)
-           VALUES ($1, $2, $3, $4, 'pending') RETURNING *`,
-          [normalizedName, normalizedEmail, rsvpStatus, parsedGuests]
+           VALUES ($1, encode(pgp_sym_encrypt($2::text, $5), 'base64'), $3, $4, 'pending')
+           RETURNING ${guestDecryptCols('$5')}`,
+          [normalizedName, normalizedEmail, rsvpStatus, parsedGuests, key]
         );
       }
     }
@@ -110,9 +118,6 @@ router.post('/rsvp', authenticatePublicToken, async (req, res) => {
 
     res.status(201).json({ success: true, guest: result.rows[0] });
   } catch (error) {
-    if (error.code === '23505') {
-      return res.status(409).json({ error: 'Email already exists' });
-    }
     return sendInternalError(res, 'RSVP error', error);
   }
 });
