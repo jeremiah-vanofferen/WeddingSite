@@ -7,7 +7,7 @@ Node.js 22.x, PostgreSQL 16 via `pg`. CommonJS throughout.
 ```
 backend/
   server.js           ← slim entry point: middleware, mount routers, start server
-  db.js               ← pool, migrations (ensureGuestCountColumn, ensureApprovalStatusColumn), getAdminEmail, normalizeGuestCount
+  db.js               ← pool, migrations (ensureGuestCountColumn, ensureApprovalStatusColumn, encryptGuestColumns), getAdminEmail, normalizeGuestCount, guestDecryptCols
   middleware.js       ← authenticateToken, authenticatePublicToken, limiter, strictLimiter, sendError helpers
   upload.js           ← multer config (uploadDir, uploadPhoto)
   routes/
@@ -44,7 +44,7 @@ backend/
 
 Route files import shared utilities:
 ```js
-const { pool, getAdminEmail, normalizeGuestCount, ensureApprovalStatusColumn } = require('../../db');
+const { pool, getAdminEmail, normalizeGuestCount, ensureApprovalStatusColumn, guestDecryptCols } = require('../../db');
 const { authenticateToken, authenticatePublicToken, strictLimiter, sendBadRequest, sendNotFound, sendInternalError } = require('../../middleware');
 const { uploadPhoto, uploadDir } = require('../../upload'); // only if handling file uploads
 ```
@@ -75,6 +75,16 @@ const { uploadPhoto, uploadDir } = require('../../upload'); // only if handling 
   }
   ```
 - Boolean settings stored as strings `'true'`/`'false'` in the `settings` table.
+
+## Guest PII Encryption
+
+`email`, `phone`, and `address` on the `guests` table are encrypted at rest using pgcrypto's `pgp_sym_encrypt`. Values are stored as base64-encoded TEXT.
+
+- **Write**: `encode(pgp_sym_encrypt($n::text, $key), 'base64')` — wrap nullable columns with `CASE WHEN $n::text IS NOT NULL THEN ... ELSE NULL END`.
+- **Read**: use `guestDecryptCols(keyParam)` from `db.js` as the SELECT column list, passing the `$n` param that holds `process.env.ENCRYPTION_KEY`.
+- **Lookup by email**: `WHERE email IS NOT NULL AND pgp_sym_decrypt(decode(email, 'base64'), $key) = $value` (full scan — acceptable for guest-list scale).
+- The email unique constraint is removed; duplicate checks are done manually before INSERT/UPDATE.
+- `encryptGuestColumns()` migration runs on first backend startup against an existing DB and marks completion in `schema_migrations`. Fresh installs via `init.sh` seed encrypted data directly and pre-mark the migration done.
 
 ## Auth
 
@@ -126,6 +136,7 @@ cd backend && npm test   # Jest --runInBand
   jest.mock('bcryptjs');
   jest.mock('jsonwebtoken');
   process.env.JWT_SECRET = 'test-secret';
+  process.env.ENCRYPTION_KEY = 'test-encryption-key';
   process.env.NODE_ENV = 'test';
   ```
 - Capture pool: `const pool = Pool.mock.results[0].value;`

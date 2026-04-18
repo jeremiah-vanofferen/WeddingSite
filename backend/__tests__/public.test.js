@@ -18,6 +18,7 @@ jest.mock('bcryptjs');
 jest.mock('jsonwebtoken');
 
 process.env.JWT_SECRET = 'test-secret';
+process.env.ENCRYPTION_KEY = 'test-encryption-key';
 process.env.NODE_ENV = 'test';
 // Ensure email sending is skipped (no Gmail credentials)
 delete process.env.GMAIL_USER;
@@ -234,7 +235,7 @@ describe('POST /api/rsvp', () => {
 
     const updateCall = pool.query.mock.calls.find(([sql]) => sql.includes('UPDATE guests') && sql.includes('SET name = $1'));
     expect(updateCall).toBeDefined();
-    expect(updateCall[1]).toEqual(['Alex Guest', 'alex@example.com', 'Yes', 1, 3]);
+    expect(updateCall[1]).toEqual(['Alex Guest', 'alex@example.com', 'Yes', 1, 3, 'test-encryption-key']);
   });
 
   it('inserts a new RSVP when name matches an existing guest that already has an email', async () => {
@@ -273,7 +274,7 @@ describe('POST /api/rsvp', () => {
 
     const updateCall = pool.query.mock.calls.find(([sql]) => sql.includes('UPDATE guests') && sql.includes('SET name = $1'));
     expect(updateCall).toBeDefined();
-    expect(updateCall[1]).toEqual(['Jane Doe', 'No', 0, 5]);
+    expect(updateCall[1]).toEqual(['Jane Doe', 'No', 0, 5, 'test-encryption-key']);
   });
 });
 

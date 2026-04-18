@@ -122,15 +122,79 @@ async function ensureApprovalStatusColumn() {
   await approvalStatusColumnReadyPromise;
 }
 
+// Returns a SELECT column list that decrypts email/phone/address using the given SQL param reference.
+function guestDecryptCols(keyParam) {
+  return `id, name,
+    CASE WHEN email IS NOT NULL THEN pgp_sym_decrypt(decode(email, 'base64'), ${keyParam}) ELSE NULL END AS email,
+    CASE WHEN phone IS NOT NULL THEN pgp_sym_decrypt(decode(phone, 'base64'), ${keyParam}) ELSE NULL END AS phone,
+    CASE WHEN address IS NOT NULL THEN pgp_sym_decrypt(decode(address, 'base64'), ${keyParam}) ELSE NULL END AS address,
+    rsvp, guest_count, approval_status, created_at, updated_at`;
+}
+
+async function encryptGuestColumns() {
+  if (process.env.NODE_ENV === 'test') return;
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        name VARCHAR(255) PRIMARY KEY,
+        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    const already = await client.query(
+      "SELECT 1 FROM schema_migrations WHERE name = 'encrypt_guest_columns' LIMIT 1"
+    );
+    if (already.rowCount > 0) {
+      await client.query('ROLLBACK');
+      return;
+    }
+
+    const key = process.env.ENCRYPTION_KEY;
+    if (!key) throw new Error('ENCRYPTION_KEY is required for migration');
+
+    // Widen columns to TEXT before encrypting — base64 ciphertext exceeds VARCHAR(50/255)
+    await client.query('ALTER TABLE guests ALTER COLUMN email   TYPE TEXT');
+    await client.query('ALTER TABLE guests ALTER COLUMN phone   TYPE TEXT');
+    await client.query('ALTER TABLE guests ALTER COLUMN address TYPE TEXT');
+
+    await client.query(`
+      UPDATE guests SET
+        email   = CASE WHEN email   IS NOT NULL THEN encode(pgp_sym_encrypt(email,   $1, 'cipher-algo=aes256'), 'base64') ELSE NULL END,
+        phone   = CASE WHEN phone   IS NOT NULL THEN encode(pgp_sym_encrypt(phone,   $1, 'cipher-algo=aes256'), 'base64') ELSE NULL END,
+        address = CASE WHEN address IS NOT NULL THEN encode(pgp_sym_encrypt(address, $1, 'cipher-algo=aes256'), 'base64') ELSE NULL END
+    `, [key]);
+
+    await client.query('DROP INDEX IF EXISTS idx_guests_email');
+    await client.query('ALTER TABLE guests DROP CONSTRAINT IF EXISTS guests_email_key');
+
+    // Mark both migrations done — data is already AES-256 so the re-encrypt step is not needed
+    await client.query("INSERT INTO schema_migrations (name) VALUES ('encrypt_guest_columns')");
+    await client.query("INSERT INTO schema_migrations (name) VALUES ('reencrypt_guest_columns_aes256')");
+
+    await client.query('COMMIT');
+    console.log('Guest sensitive columns encrypted with AES-256');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function runMigrations() {
   if (process.env.NODE_ENV === 'test') return;
   try {
     await ensureGuestCountColumn();
     await ensureApprovalStatusColumn();
+    await encryptGuestColumns();
   } catch (error) {
     console.error('Startup migration error:', error);
     throw error;
   }
 }
 
-module.exports = { pool, getAdminEmail, normalizeGuestCount, ensureApprovalStatusColumn, runMigrations };
+module.exports = { pool, getAdminEmail, normalizeGuestCount, ensureApprovalStatusColumn, runMigrations, guestDecryptCols };

@@ -18,6 +18,7 @@ jest.mock('bcryptjs');
 jest.mock('jsonwebtoken');
 
 process.env.JWT_SECRET = 'test-secret';
+process.env.ENCRYPTION_KEY = 'test-encryption-key';
 process.env.NODE_ENV = 'test';
 
 const request = require('supertest');
@@ -137,8 +138,8 @@ describe('PUT /api/guests/:id (409 duplicate and 500 paths)', () => {
   });
 
   it('returns 409 on duplicate email', async () => {
-    const err = Object.assign(new Error('dup'), { code: '23505' });
-    pool.query.mockRejectedValueOnce(err);
+    pool.query.mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 2 }] }); // duplicate found for different guest
+
     const res = await request(app)
       .put('/api/guests/1')
       .set('Authorization', AUTH)
