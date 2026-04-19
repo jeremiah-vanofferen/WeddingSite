@@ -1,8 +1,6 @@
 FROM postgres:16
 
 COPY init.sh /docker-entrypoint-initdb.d/init.sh
-COPY seed-uploads /seed-uploads
-
 RUN chmod +x /docker-entrypoint-initdb.d/init.sh \
   && mkdir -p /uploads-target \
-  && chown -R postgres:postgres /seed-uploads /uploads-target
+  && chown -R postgres:postgres /uploads-target
