@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: ${DOCKERHUB_USERNAME:-jeremiah-vanofferen490}/weddingsite-postgres:${APP_IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USERNAME:-jeremiahvanofferen490}/weddingsite-postgres:${APP_IMAGE_TAG:-latest}
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-wedding_db}
       POSTGRES_USER: ${POSTGRES_USER:-wedding_user}
@@ -29,7 +29,7 @@ services:
     restart: unless-stopped
 
   backend:
-    image: ${DOCKERHUB_USERNAME:-jeremiah-vanofferen490}/weddingsite-backend:${APP_IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USERNAME:-jeremiahvanofferen490}/weddingsite-backend:${APP_IMAGE_TAG:-latest}
     ports:
       - "5000:5000"
     environment:
@@ -55,7 +55,7 @@ services:
       - backend_uploads:/app/uploads
 
   wedding-app:
-    image: ${DOCKERHUB_USERNAME:-jeremiah-vanofferen490}/weddingsite-frontend:${APP_IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USERNAME:-jeremiahvanofferen490}/weddingsite-frontend:${APP_IMAGE_TAG:-latest}
     ports:
       - "3000:3000"
     environment:
