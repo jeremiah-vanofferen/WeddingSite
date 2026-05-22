@@ -48,6 +48,7 @@ export default function Navigation({ settings }) {
   const handleLogout = () => {
     setMobileMenuOpen(false);
     logout();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleNavClick = () => {

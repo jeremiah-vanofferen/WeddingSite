@@ -540,17 +540,13 @@ export function AddGuestModal({ onSave, onClose }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'guestCount' ? Number.parseInt(value, 10) || 0 : value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const normalizedGuestCount = Number.isInteger(formData.guestCount) && formData.guestCount >= 0
-      ? formData.guestCount
-      : 1;
+    const parsed = Number.parseInt(formData.guestCount, 10);
+    const normalizedGuestCount = Number.isInteger(parsed) && parsed >= 0 ? parsed : 1;
     onSave({
       ...formData,
       guestCount: normalizedGuestCount,
@@ -654,17 +650,13 @@ function EditGuestModal({ guest, onSave, onClose }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'guestCount' ? Number.parseInt(value, 10) || 0 : value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const normalizedGuestCount = Number.isInteger(formData.guestCount) && formData.guestCount >= 0
-      ? formData.guestCount
-      : 1;
+    const parsed = Number.parseInt(formData.guestCount, 10);
+    const normalizedGuestCount = Number.isInteger(parsed) && parsed >= 0 ? parsed : 1;
     onSave({
       ...formData,
       guestCount: normalizedGuestCount,

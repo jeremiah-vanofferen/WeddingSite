@@ -38,7 +38,7 @@ describe('PublicPhotoUploadModal', () => {
     fireEvent.submit(container.querySelector('form'));
 
     await waitFor(() => {
-      expect(screen.getByText('Please select an image file.')).toBeInTheDocument();
+      expect(screen.getByText('Please select at least one image file.')).toBeInTheDocument();
     });
     expect(global.fetch).not.toHaveBeenCalled();
     expect(onSuccess).not.toHaveBeenCalled();
