@@ -21,6 +21,7 @@ describe('RSVP Page', () => {
   beforeEach(() => {
     mockRsvpFetch();
     localStorage.setItem('wedding_privacy_accepted', 'true');
+    window.scrollTo = vi.fn();
   });
 
   afterEach(() => {

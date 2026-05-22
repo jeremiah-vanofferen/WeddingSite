@@ -22,6 +22,10 @@ export default function RSVP() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
 
+  useEffect(() => {
+    if (submitted) window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [submitted]);
+
   // Autocomplete guest name as user types
   useEffect(() => {
     let active = true;

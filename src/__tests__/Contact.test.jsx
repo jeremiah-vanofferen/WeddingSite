@@ -21,6 +21,7 @@ describe('Contact Page', () => {
   beforeEach(() => {
     mockContactFetch();
     localStorage.setItem('wedding_privacy_accepted', 'true');
+    window.scrollTo = vi.fn();
   });
 
   afterEach(() => {

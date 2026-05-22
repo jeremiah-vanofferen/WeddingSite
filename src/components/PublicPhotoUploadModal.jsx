@@ -10,31 +10,35 @@ export function PublicPhotoUploadModal({ onSuccess, onClose }) {
   const [uploadError, setUploadError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [selectedCount, setSelectedCount] = useState(0);
   const fileInputRef = useRef(null);
 
   const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
+    const files = Array.from(e.target.files || []);
+    const file = files[0];
     if (!file) {
       setPreviewUrl('');
+      setSelectedCount(0);
       return;
     }
+    setSelectedCount(files.length);
     setPreviewUrl(window.URL.createObjectURL(file));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setUploadError('');
-    const file = fileInputRef.current?.files?.[0];
+    const files = Array.from(fileInputRef.current?.files || []);
 
-    if (!file) {
-      setUploadError('Please select an image file.');
+    if (files.length === 0) {
+      setUploadError('Please select at least one image file.');
       return;
     }
 
     try {
       setUploading(true);
       const formData = new window.FormData();
-      formData.append('photo', file);
+      files.forEach((file) => formData.append('photo', file));
       if (caption) formData.append('caption', caption);
       if (submitterName) formData.append('submitterName', submitterName);
 
@@ -85,12 +89,13 @@ export function PublicPhotoUploadModal({ onSuccess, onClose }) {
         <form className="gallery-modal-body" onSubmit={handleSubmit}>
           {uploadError && <p className="form-error">{uploadError}</p>}
           <div className="form-group">
-            <label htmlFor="photo">Photo File <span aria-hidden="true">*</span></label>
+            <label htmlFor="photo">Photo Files <span aria-hidden="true">*</span></label>
             <input
               id="photo"
               name="photo"
               type="file"
               accept="image/jpeg,image/png,image/gif,image/webp"
+              multiple
               onChange={handleFileChange}
               ref={fileInputRef}
               required
@@ -122,7 +127,9 @@ export function PublicPhotoUploadModal({ onSuccess, onClose }) {
           </div>
           {previewUrl && (
             <div className="photo-preview">
-              <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>Preview:</p>
+              <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>
+                Preview{selectedCount > 1 ? ` (first of ${selectedCount} selected)` : ''}:
+              </p>
               <img src={previewUrl} alt="Preview" className="preview-img" />
             </div>
           )}

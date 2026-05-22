@@ -27,6 +27,7 @@ export default function Gallery() {
     setUploadSuccess(true);
     setUploadModalOpen(false);
     fetchPhotos();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     window.setTimeout(() => setUploadSuccess(false), 5000);
   };
 

@@ -22,6 +22,7 @@ const approvedPhotos = [
 
 beforeEach(() => {
   vi.clearAllMocks();
+  window.scrollTo = vi.fn();
   consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation((...args) => {
     const message = String(args[0] || '');
     if (message.includes('not wrapped in act')) {
